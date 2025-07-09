@@ -1,5 +1,5 @@
-const userService = require("./user");
 const bcrypt = require("bcryptjs");
+const { findUserByProperty } = require("./user");
 
 const registerService = async ({ email, password }) => {
   const user = await userService.findUserByProperty("email", email);
@@ -16,4 +16,28 @@ const registerService = async ({ email, password }) => {
   });
 };
 
-module.exports = { registerService };
+// login service
+const loginService = async (email, password) => {
+  const user = await findUserByProperty("email", email).select("+password");
+
+  // if the user is not in the database
+  if (!user) {
+    const err = new Error("No user found with that email");
+    err.status = 404;
+    throw err;
+  }
+
+  const isMatched = await bcrypt.compare(password, user.password);
+
+  // if password not matched with the database
+  if (!isMatched) {
+    const err = new Error("Password not matched");
+    err.status = 401;
+    throw err;
+  }
+
+  user.password = undefined;
+  return user;
+};
+
+module.exports = { loginService, registerService };
