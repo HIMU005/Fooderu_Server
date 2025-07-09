@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { findUserByProperty } = require("./user");
-
+const jwt = require("jsonwebtoken");
 const registerService = async ({ email, password }) => {
   const user = await userService.findUserByProperty("email", email);
 
@@ -37,6 +37,12 @@ const loginService = async (email, password) => {
   }
 
   user.password = undefined;
+  // jwt code is here
+  const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "4h",
+  });
+  console.log(token);
+
   return user;
 };
 
