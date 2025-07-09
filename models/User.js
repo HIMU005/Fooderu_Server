@@ -40,3 +40,6 @@ const userSchema = new Schema(
     toObject: { virtuals: true },
   }
 );
+
+const User = model("User", userSchema);
+module.exports = User;
