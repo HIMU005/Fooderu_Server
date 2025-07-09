@@ -1,6 +1,6 @@
 const { registerService } = require("../services/auth");
 const { findUserByProperty } = require("../services/user");
-
+const bcrypt = require("bcryptjs");
 const registerController = async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -32,9 +32,11 @@ const logInController = async (req, res, next) => {
         message: "No user find with that email",
       });
     }
-    if (user.password !== password) {
+    const isMatched = await bcrypt.compare(password, user.password);
+    if (!isMatched) {
       return res.json({ status: 404, message: "password not matched" });
     } else {
+      user.password = undefined;
       return res.json({
         status: 200,
         data: user,
