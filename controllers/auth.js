@@ -6,7 +6,7 @@ const registerController = async (req, res, next) => {
 
   //   validation
   if (!email || !password) {
-    throw error("Invalid data", 400);
+    throw error("Email and Password are required", 400);
   }
 
   try {
@@ -14,6 +14,7 @@ const registerController = async (req, res, next) => {
       email,
       password,
     });
+    user.password = undefined;
 
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
