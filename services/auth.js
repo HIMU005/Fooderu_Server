@@ -1,6 +1,9 @@
 const bcrypt = require("bcryptjs");
 const { findUserByProperty } = require("./user");
 const jwt = require("jsonwebtoken");
+const { assignToken } = require("../utils/jwtFunction");
+
+// register service
 const registerService = async ({ email, password }) => {
   const user = await userService.findUserByProperty("email", email);
 
@@ -38,12 +41,12 @@ const loginService = async (email, password) => {
 
   user.password = undefined;
   // jwt code is here
-  const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "4h",
-  });
-  console.log(token);
+  const token = assignToken(email);
+  const userObj = user.toObject();
+  userObj.jwtToken = token;
+  // user.jwtToken = token;
 
-  return user;
+  return userObj;
 };
 
 module.exports = { loginService, registerService };
