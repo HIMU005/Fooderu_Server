@@ -1,4 +1,5 @@
 const { registerService } = require("../services/auth");
+const { findUserByProperty } = require("../services/user");
 
 const registerController = async (req, res, next) => {
   const { email, password } = req.body;
@@ -19,5 +20,28 @@ const registerController = async (req, res, next) => {
     next(error);
   }
 };
+const logInController = async (req, res, next) => {
+  const { email, password } = req.body;
 
-module.exports = { registerController };
+  try {
+    const user = await findUserByProperty("email", email).select("+password");
+    if (!user) {
+      return res.json({
+        status: 404,
+        message: "No user find with that email",
+      });
+    }
+    if (user.password !== password) {
+      return res.json({ status: 404, message: "password not matched" });
+    } else {
+      return res.json({
+        status: 200,
+        data: user,
+      });
+    }
+  } catch (error) {
+    return res.json({ status: 500, message: `server error ${error} ` });
+  }
+};
+
+module.exports = { registerController, logInController };
