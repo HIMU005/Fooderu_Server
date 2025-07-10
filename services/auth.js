@@ -1,19 +1,23 @@
 const bcrypt = require("bcryptjs");
-const { findUserByProperty } = require("./user");
+const { findUserByProperty, createNewUser } = require("./user");
 const jwt = require("jsonwebtoken");
 const { assignToken } = require("../utils/jwtFunction");
 
 // register service
 const registerService = async ({ email, password }) => {
-  const user = await userService.findUserByProperty("email", email);
+  const user = await findUserByProperty("email", email);
 
-  if (user) throw error("User already exists", 400);
+  if (user) {
+    const err = new Error("User already resigtered");
+    err.status = 400;
+    throw err;
+  }
 
   //   hash the password before saving it to the database
   const salt = await bcrypt.genSalt(10);
   const hash = await bcrypt.hash(password, salt);
 
-  return userService.createNewUser({
+  return createNewUser({
     email,
     password: hash,
   });
