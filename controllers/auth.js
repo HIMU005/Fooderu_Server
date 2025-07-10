@@ -26,7 +26,7 @@ const registerController = async (req, res, next) => {
   }
 };
 
-// controller for user
+// controller for user login
 const logInController = async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -38,9 +38,10 @@ const logInController = async (req, res, next) => {
   }
 };
 
+// controller for social login
 const logInWithSocialController = async (req, res, next) => {
   const {
-    auth_id,
+    oauth_id,
     email,
     oauth_provider,
     profile_picture,
@@ -48,27 +49,31 @@ const logInWithSocialController = async (req, res, next) => {
     lastName,
   } = req.body;
 
-  const user = await findUserByProperty("email", email);
+  try {
+    let user = await findUserByProperty("email", email);
 
-  if (!user) {
-    user = await User.create({
-      auth_id,
-      email,
-      oauth_provider,
-      profile_picture,
-      name: `${firstName} ${lastName}`,
+    if (!user) {
+      user = await User.create({
+        oauth_id,
+        email,
+        oauth_provider,
+        profile_picture,
+        name: `${firstName} ${lastName}`,
+      });
+    }
+
+    const token = assignToken(email);
+    const userObj = user.toObject();
+    userObj.jwtToken = token;
+
+    return res.json({
+      status: 200,
+      message: "social login successfull",
+      user: userObj,
     });
+  } catch (error) {
+    return res.json({ status: 500, message: `server error ${error} ` });
   }
-
-  const token = assignToken(email);
-  const userObj = user.toObject();
-  userObj.jwtToken = token;
-
-  return res.json({
-    status: 200,
-    message: "social login successfull",
-    user: userObj,
-  });
 };
 
 module.exports = {
