@@ -1,45 +1,62 @@
 const { Schema, model } = require("mongoose");
 
-const userSchema = new Schema(
-  {
-    name: {
-      type: String,
-      trim: true,
-      minlength: [2, "Name must be at least 2 Characters"],
-    },
-
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-      validate: {
-        validator: (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-        message: "Please provide a valid email",
-      },
-    },
-    phone: {
-      type: String,
-      trim: true,
-      validate: {
-        validator: (phone) => /^(?:\+?88)?01[3-9]\d{8}$/.test(phone),
-        message: "Please provide a valid Bangladeshi phone number",
-      },
-    },
-    password: {
-      type: String,
-      required: [true, "Password is required"],
-      minlength: 6,
-      select: false,
-    },
-    passwordChangedAt: Date,
+const userSchema = new mongoose.Schema({
+  id: {
+    type: String,
+    required: true,
+    unique: true,
   },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
-);
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+  },
+  phone: {
+    type: String,
+  },
+  password: {
+    type: String,
+    select: false, // hides it from query results
+  },
+  oauth_provider: {
+    type: String, // e.g., 'google', 'facebook'
+  },
+  oauth_id: {
+    type: String, // ID from provider (e.g. Google user ID)
+  },
+  user_type: {
+    type: String,
+    enum: ["admin", "user"], // update as needed
+    default: "user",
+  },
+  name: {
+    type: String,
+  },
+  profile_picture: {
+    type: String,
+  },
+  location: {
+    type: String,
+  },
+  interests: {
+    type: String,
+  },
+  status: {
+    type: String,
+    enum: ["active", "inactive", "banned"],
+    default: "active",
+  },
+
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
+  updated_at: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
 const User = model("User", userSchema);
 module.exports = User;
