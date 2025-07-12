@@ -15,10 +15,13 @@ app.get("/", (_req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
-  const message = err.message ? err.message : "Server error Occured";
-  const status = err.status ? err.status : 500;
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || "error";
 
-  res.status(status).json({ message });
+  res.status(err.statusCode).json({
+    status: err.status,
+    message: err.message,
+  });
 });
 
 connectDB(process.env.DB_URL)
