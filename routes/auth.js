@@ -7,7 +7,7 @@ const {
 
 router.post("/register", registerController);
 
-router.get("/login", logInController);
+router.post("/login", logInController);
 
 router.post("/login_with_social", logInWithSocialController);
 
