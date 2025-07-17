@@ -17,15 +17,18 @@ const createMenuItemController = async (req, res, next) => {
       throw new AppError("Name and Price are required", 400);
     }
 
-    const newItem = await createMenuItem({
-      name,
-      price,
-      description,
-      image_url,
-      is_boosted,
-      boosted_until,
-      restaurant_id: restaurantId,
-    });
+    const newItem = await createMenuItem(
+      {
+        name,
+        price,
+        description,
+        image_url,
+        is_boosted,
+        boosted_until,
+        restaurant_id: restaurantId,
+      },
+      restaurantId
+    );
 
     res.status(201).json({
       status: "success",
