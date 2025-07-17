@@ -6,6 +6,8 @@ const { assignToken } = require("../utils/jwtFunction");
 
 // controller for register
 const registerController = async (req, res, next) => {
+
+  
   const { email, password } = req.body;
 
   //   validation
