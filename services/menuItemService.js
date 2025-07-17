@@ -36,3 +36,5 @@ const createMenuItem = async (itemData, restaurantId) => {
     throw new AppError(`Failed to create menu Item: ${error.message}`, 400);
   }
 };
+
+module.exports = { createMenuItem };
