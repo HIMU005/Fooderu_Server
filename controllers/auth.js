@@ -3,6 +3,7 @@ const { registerService, loginService } = require("../services/auth");
 const { findUserByProperty } = require("../services/user");
 const bcrypt = require("bcryptjs");
 const { assignToken } = require("../utils/jwtFunction");
+const AppError = require("../utils/AppError");
 
 // controller for register
 const registerController = async (req, res, next) => {
@@ -12,7 +13,7 @@ const registerController = async (req, res, next) => {
 
   //   validation
   if (!email || !password) {
-    throw error("Email and Password are required", 400);
+    throw new AppError("Email and Password are required", 400);
   }
 
   try {
