@@ -3,6 +3,7 @@ const { createRestaurantService } = require("../services/restaurantService");
 
 const createRestaurant = async (req, res, next) => {
   const { restaurantInfo } = req.body;
+  console.log(restaurantInfo);
 
   if (
     !restaurantInfo ||
