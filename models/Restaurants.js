@@ -4,8 +4,7 @@ const { Schema, model } = mongoose;
 const restaurantSchema = new mongoose.Schema(
   {
     owner_id: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: String, 
       required: true,
     },
     name: {
