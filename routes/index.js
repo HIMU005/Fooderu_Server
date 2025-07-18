@@ -9,7 +9,4 @@ router.use("/auth", authRoutes);
 // for restaurant routes
 router.use("/restaurants", restaurantRoutes);
 
-// items routes
-router.use("/restaurants/:restaurantId", menuItemRoutes);
-
 module.exports = router;
