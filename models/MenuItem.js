@@ -14,11 +14,6 @@ const menuItemSchema = new Schema(
     price: {
       type: Number,
       required: [true, "Price is required"],
-      set: (v) => parseFloat(v.toFixed(2)),
-      validate: {
-        validator: Number.isFinite,
-        message: "Price must be a valid number",
-      },
     },
     restaurant_id: {
       type: Schema.Types.ObjectId,

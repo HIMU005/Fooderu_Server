@@ -9,28 +9,28 @@ const AppError = require("../utils/AppError");
  * @returns {Promise<MenuItem>} Created menu item
  */
 
-const createMenuItem = async (itemData, restaurantId) => {
+const createMenuItem = async (itemData) => {
   // verify restaurant exists
-  const restaurant = await Restaurant.findById(restaurantId);
-  console.log(restaurant);
+  const restaurant = await Restaurant.findById(itemData.restaurant_id);
 
   if (!restaurant) {
     throw new AppError("Restaurant not found", 404);
   }
 
-  //   Validate boost date if provided
-  if (
-    itemData.boosted_until &&
-    new Date(itemData.boosted_until) <= new Date()
-  ) {
-    throw new AppError("Boost date must be in the future", 400);
-  }
+  //   TODO:Validate boost date if provided
+  // if (
+  //   itemData.boosted_until &&
+  //   new Date(itemData.boosted_until) <= new Date()
+  // ) {
+  //   console.log("Date errror occured");
+
+  //   throw new AppError("Boost date must be in the future", 400);
+  // }
 
   //   Create the item
   try {
     const menuItem = await MenuItem.create({
       ...itemData,
-      restaurant_id: restaurantId,
     });
 
     return menuItem;
