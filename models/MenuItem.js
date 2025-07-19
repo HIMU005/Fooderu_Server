@@ -32,10 +32,10 @@ const menuItemSchema = new Schema(
     image_url: {
       type: String,
       trim: true,
-      validate: {
-        validator: (v) => !v || /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v),
-        message: "Invalid image URL format",
-      },
+      // validate: {
+      //   validator: (v) => !v || /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v),
+      //   message: "Invalid image URL format",
+      // },
     },
     is_boosted: {
       type: Boolean,
@@ -43,13 +43,13 @@ const menuItemSchema = new Schema(
     },
     boosted_until: {
       type: Date,
-      validate: {
-        validator: function (v) {
-          if (!this.is_boosted || !v) return true;
-          return v > new Date();
-        },
-        message: "Boost date must be in the future when active",
-      },
+      // validate: {
+      //   validator: function (v) {
+      //     if (!this.is_boosted || !v) return true;
+      //     return v > new Date();
+      //   },
+      //   message: "Boost date must be in the future when active",
+      // },
     },
     created_at: {
       type: Date,
