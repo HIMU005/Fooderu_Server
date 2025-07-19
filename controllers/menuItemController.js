@@ -11,9 +11,12 @@ const createMenuItemController = async (req, res, next) => {
   try {
     const { name, price, description, image_url, is_boosted, boosted_until } =
       req.body;
+    console.log('got menu item from front end ', req.body);
     const { restaurantId } = req.params;
+    console.log('restaurant id' , restaurantId);
 
     if (!name || !price) {
+      console.log('no name or nor price ');
       throw new AppError("Name and Price are required", 400);
     }
 
