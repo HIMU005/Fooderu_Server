@@ -100,7 +100,7 @@ const logInWithClerkcontroller = async (req, res, next) => {
     const exitsingUser = await findUserByProperty("email", email);
 
     // if user already exists in the database
-    if (exitsingUser) {
+    if (exitsingUser && exitsingUser.oauth_provider === null) {
       // if user is registered with clerk delete from the clerk store
       await clerkClient.users.deleteUser(clerk_id);
       return res.json({
@@ -109,23 +109,45 @@ const logInWithClerkcontroller = async (req, res, next) => {
       });
     }
 
-    const user = await User.create({
-      oauth_id,
-      email,
-      oauth_provider,
-      profile_picture,
-      name: `${firstName} ${lastName}`,
-    });
-    // assign jwt token
-    const token = assignToken(email);
-    const userObj = user.toObject();
-    userObj.jwtToken = token;
+    if (exitsingUser && exitsingUser.oauth_provider !== oauth_provider) {
+      return res.json({
+        status: 409,
+        message: "Email already registered. please try with email and password",
+      });
+    }
 
-    return res.json({
-      status: 200,
-      message: "login successfull",
-      user: userObj,
-    });
+    if (exitsingUser && exitsingUser.oauth_provider === oauth_provider) {
+      const token = assignToken(email);
+      const user = { ...exitsingUser, jwtToken: token };
+      return res.json({
+        status: 200,
+        data: {
+          jwtToken: token,
+          email: email,
+        },
+        message: "login successfull",
+      });
+    }
+
+    if (!exitsingUser) {
+      const user = await User.create({
+        oauth_id,
+        email,
+        oauth_provider,
+        profile_picture,
+        name: `${firstName} ${lastName}`,
+      });
+      // assign jwt token
+      const token = assignToken(email);
+      const userObj = user.toObject();
+      userObj.jwtToken = token;
+
+      return res.json({
+        status: 200,
+        message: "login successfull",
+        user: userObj,
+      });
+    }
   } catch (error) {
     return res.json({ status: 500, message: `server error ${error} ` });
   }
