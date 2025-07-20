@@ -8,6 +8,10 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
   },
+  clerk_id: {
+    type: String,
+    unique: true,
+  },
   phone: {
     type: String,
   },
