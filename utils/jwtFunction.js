@@ -5,6 +5,15 @@ const assignToken = (email) =>
   jwt.sign({ email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "4h" });
 
 // verify token code will be here
+const verifyToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    return decoded.email;
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+};
 //
-// const verifyToken = (email)=> {}
-module.exports = { assignToken };
+
+module.exports = { assignToken, verifyToken };
