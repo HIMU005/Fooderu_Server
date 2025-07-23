@@ -2,11 +2,15 @@ const router = require("express").Router();
 const authRoutes = require("./auth");
 const restaurantRoutes = require("./restaurants");
 const menuItemRoutes = require("./menuItemRoutes");
+const userRoutes = require("./userRoutes");
 
 // auth routes
 router.use("/auth", authRoutes);
 
 // for restaurant routes
 router.use("/restaurants", restaurantRoutes);
+
+// protected routes
+router.use("/users", userRoutes);
 
 module.exports = router;
