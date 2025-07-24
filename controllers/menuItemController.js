@@ -1,4 +1,8 @@
-const { createMenuItem } = require("../services/menuItemService");
+const Restaurant = require("../models/Restaurants");
+const {
+  createMenuItem,
+  getAllItemsUnderARestaurantService,
+} = require("../services/menuItemService");
 const AppError = require("../utils/AppError");
 
 /**
@@ -11,12 +15,9 @@ const createMenuItemController = async (req, res, next) => {
   try {
     const { name, price, description, image_url, is_boosted, boosted_until } =
       req.body;
-    console.log('got menu item from front end ', req.body);
     const { restaurantId } = req.params;
-    console.log('restaurant id' , restaurantId);
 
     if (!name || !price) {
-      console.log('no name or nor price ');
       throw new AppError("Name and Price are required", 400);
     }
 
@@ -39,6 +40,20 @@ const createMenuItemController = async (req, res, next) => {
   }
 };
 
+// get all restaurants items
+const getAllItemsUnderARestaurant = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const response = await getAllItemsUnderARestaurantService(restaurantId);
+    res.json({ status: 200, data: response, message: "success" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
 module.exports = {
   createMenuItemController,
+  getAllItemsUnderARestaurant,
 };

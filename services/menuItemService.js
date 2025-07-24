@@ -22,7 +22,7 @@ const createMenuItem = async (itemData) => {
   //   itemData.boosted_until &&
   //   new Date(itemData.boosted_until) <= new Date()
   // ) {
-  //   console.log("Date errror occured");
+  //
 
   //   throw new AppError("Boost date must be in the future", 400);
   // }
@@ -39,4 +39,19 @@ const createMenuItem = async (itemData) => {
   }
 };
 
-module.exports = { createMenuItem };
+const getAllItemsUnderARestaurantService = async (restaurantId) => {
+  const restaurant = await Restaurant.findById(restaurantId);
+
+  if (!restaurant) {
+    throw new AppError("Restaurant not found", 404);
+  }
+
+  try {
+    const response = await MenuItem.find({ restaurant_id: restaurantId });
+    return response;
+  } catch (error) {
+    throw new AppError(`Failed to get menu Items: ${error.message}`, 400);
+  }
+};
+
+module.exports = { createMenuItem, getAllItemsUnderARestaurantService };
