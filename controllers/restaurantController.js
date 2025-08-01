@@ -54,6 +54,13 @@ const createRestaurant = async (req, res, next) => {
   }
 
   try {
+    const owenerInfo = await User.findById(restaurantInfo.owner_id);
+    if (owenerInfo.hasRestaurant) {
+      return res.json({
+        status: 409,
+        message: "You have already a restaurant........",
+      });
+    }
     const data = await createRestaurantService(restaurantInfo);
     if (!data) {
       return res
@@ -69,7 +76,7 @@ const createRestaurant = async (req, res, next) => {
       data.owner_id,
       {
         $set: {
-          restaurant_id: data.restaurant_id,
+          restaurant_id: data._id,
           hasRestaurant: true,
         },
       },
