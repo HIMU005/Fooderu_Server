@@ -1,9 +1,11 @@
 const Restaurant = require("../models/Restaurants");
+const User = require("../models/User");
 const {
   createRestaurantService,
   getAllRestaurantsService,
   getRestaurantById,
 } = require("../services/restaurantService");
+const AppError = require("../utils/AppError");
 
 // Public access
 const getRestaurant = async (req, res, next) => {
@@ -52,6 +54,13 @@ const createRestaurant = async (req, res, next) => {
   }
 
   try {
+    const owenerInfo = await User.findById(restaurantInfo.owner_id);
+    if (owenerInfo.hasRestaurant) {
+      return res.json({
+        status: 409,
+        message: "You have already a restaurant........",
+      });
+    }
     const data = await createRestaurantService(restaurantInfo);
     if (!data) {
       return res
@@ -61,6 +70,19 @@ const createRestaurant = async (req, res, next) => {
     if (data.errors) {
       return res.status(400).json({ status: 400, message: data.errors });
     }
+
+    // update user info
+    const updateUserInfo = await User.findByIdAndUpdate(
+      data.owner_id,
+      {
+        $set: {
+          restaurant_id: data._id,
+          hasRestaurant: true,
+        },
+      },
+      { new: true }
+    );
+
     return res
       .status(201)
       .json({ status: 201, message: "Restaurant created successfully", data });
@@ -87,9 +109,27 @@ const getAllRestaurants = async (req, res) => {
   }
 };
 
+const getARestaurantByTheOwerId = async (req, res) => {
+  const { ownerId } = req.params;
+  try {
+    const restaurantInfo = await Restaurant.find({ owner_id: ownerId });
+    if (!restaurantInfo) {
+      return res.json({ status: 404, message: "User have no restaurant" });
+    }
+    return res.json({
+      status: 200,
+      message: "Restaurant information fetched successfully",
+      data: restaurantInfo,
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `server errro!! ${error}` });
+  }
+};
+
 module.exports = {
   createRestaurant,
   getAllRestaurants,
   getRestaurant,
   getMyRestaurant,
+  getARestaurantByTheOwerId,
 };
