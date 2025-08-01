@@ -47,6 +47,10 @@ const userSchema = new mongoose.Schema({
     enum: ["active", "inactive", "banned"],
     default: "active",
   },
+  restaurant_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Restaurant",
+  },
 
   created_at: {
     type: Date,
