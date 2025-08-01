@@ -5,6 +5,7 @@ const {
   getAllRestaurantsService,
   getRestaurantById,
 } = require("../services/restaurantService");
+const AppError = require("../utils/AppError");
 
 // Public access
 const getRestaurant = async (req, res, next) => {
@@ -101,9 +102,27 @@ const getAllRestaurants = async (req, res) => {
   }
 };
 
+const getARestaurantByTheOwerId = async (req, res) => {
+  const { ownerId } = req.params;
+  try {
+    const restaurantInfo = await Restaurant.find({ owner_id: ownerId });
+    if (!restaurantInfo) {
+      return res.json({ status: 404, message: "User have no restaurant" });
+    }
+    return res.json({
+      status: 200,
+      message: "Restaurant information fetched successfully",
+      data: restaurantInfo,
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `server errro!! ${error}` });
+  }
+};
+
 module.exports = {
   createRestaurant,
   getAllRestaurants,
   getRestaurant,
   getMyRestaurant,
+  getARestaurantByTheOwerId,
 };

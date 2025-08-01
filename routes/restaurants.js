@@ -2,6 +2,7 @@ const {
   createRestaurant,
   getAllRestaurants,
   getRestaurant,
+  getARestaurantByTheOwerId,
 } = require("../controllers/restaurantController");
 const {
   createMenuItemController,
@@ -13,6 +14,8 @@ const router = require("express").Router({ mergeParams: true });
 // get all restaurant items
 router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
 router.get("/:restaurantId", getRestaurant);
+
+router.get("/byUserId/:ownerId", getARestaurantByTheOwerId);
 
 // get all restaurant
 router.get("/", getAllRestaurants);
