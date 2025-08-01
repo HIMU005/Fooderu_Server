@@ -1,4 +1,5 @@
 const Restaurant = require("../models/Restaurants");
+const User = require("../models/User");
 const {
   createRestaurantService,
   getAllRestaurantsService,
@@ -61,6 +62,19 @@ const createRestaurant = async (req, res, next) => {
     if (data.errors) {
       return res.status(400).json({ status: 400, message: data.errors });
     }
+
+    // update user info
+    const updateUserInfo = await User.findByIdAndUpdate(
+      data.owner_id,
+      {
+        $set: {
+          restaurant_id: data.restaurant_id,
+          hasRestaurant: true,
+        },
+      },
+      { new: true }
+    );
+
     return res
       .status(201)
       .json({ status: 201, message: "Restaurant created successfully", data });
