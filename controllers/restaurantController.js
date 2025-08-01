@@ -2,7 +2,37 @@ const Restaurant = require("../models/Restaurants");
 const {
   createRestaurantService,
   getAllRestaurantsService,
+  getRestaurantById,
 } = require("../services/restaurantService");
+
+// Public access
+const getRestaurant = async (req, res, next) => {
+  try {
+    const restaurant = await getRestaurantById(req.params.id);
+    res.status(200).json({
+      status: "success",
+      data: { restaurant },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Owner access only
+const getMyRestaurant = async (req, res, next) => {
+  try {
+    const restaurant = await getRestaurantById(
+      req.params.id,
+      req.user.id // Pass user ID for ownership check
+    );
+    res.status(200).json({
+      status: "success",
+      data: { restaurant },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 const createRestaurant = async (req, res, next) => {
   const { restaurantInfo } = req.body;
@@ -60,4 +90,6 @@ const getAllRestaurants = async (req, res) => {
 module.exports = {
   createRestaurant,
   getAllRestaurants,
+  getRestaurant,
+  getMyRestaurant,
 };
