@@ -112,7 +112,7 @@ const getAllRestaurants = async (req, res) => {
 const getARestaurantByTheOwerId = async (req, res) => {
   const { ownerId } = req.params;
   try {
-    const restaurantInfo = await Restaurant.find({ owner_id: ownerId });
+    const restaurantInfo = await Restaurant.findOne({ owner_id: ownerId });
     if (!restaurantInfo) {
       return res.json({ status: 404, message: "User have no restaurant" });
     }
