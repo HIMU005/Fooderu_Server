@@ -8,8 +8,6 @@ const { Clerk } = require("@clerk/clerk-sdk-node");
 
 // controller for register
 const registerController = async (req, res, next) => {
-
-  
   const { email, password } = req.body;
 
   //   validation
@@ -26,7 +24,7 @@ const registerController = async (req, res, next) => {
 
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
-    next(error);
+    throw new AppError(error, 500);
   }
 };
 
