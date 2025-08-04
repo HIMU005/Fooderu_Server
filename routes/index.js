@@ -3,7 +3,7 @@ const authRoutes = require("./auth");
 const restaurantRoutes = require("./restaurants");
 const menuItemRoutes = require("./menuItemRoutes");
 const userRoutes = require("./userRoutes");
-const eventRoutes = require('./eventRoutes');
+const eventRoutes = require("./eventRoutes");
 
 // auth routes
 router.use("/auth", authRoutes);
@@ -15,6 +15,6 @@ router.use("/restaurants", restaurantRoutes);
 router.use("/users", userRoutes);
 
 //event routes
-router.use('/restaurants/:restaurantId/events', eventRoutes);
+router.use("/restaurants/:restaurantId/events", eventRoutes);
 
 module.exports = router;
