@@ -10,7 +10,6 @@ const verifyToken = (token) => {
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     return decoded.email;
   } catch (error) {
-    console.error("Token verification failed:", error);
     return null;
   }
 };

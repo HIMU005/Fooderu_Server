@@ -10,7 +10,6 @@ const userSchema = new mongoose.Schema({
   },
   clerk_id: {
     type: String,
-    unique: true,
   },
   phone: {
     type: String,
@@ -47,7 +46,14 @@ const userSchema = new mongoose.Schema({
     enum: ["active", "inactive", "banned"],
     default: "active",
   },
-
+  restaurant_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Restaurant",
+  },
+  hasRestaurant: {
+    type: Boolean,
+    default: false,
+  },
   created_at: {
     type: Date,
     default: Date.now,

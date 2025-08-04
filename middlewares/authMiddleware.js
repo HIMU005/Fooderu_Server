@@ -5,8 +5,6 @@ const { verifyToken } = require("../utils/jwtFunction");
 
 exports.protect = async (req, res, next) => {
   try {
-    console.log("hi from auth-middleware");
-    // console.log(req.headers.authorization);
     let token;
 
     // 1. Get token

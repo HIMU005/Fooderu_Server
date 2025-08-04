@@ -4,7 +4,8 @@ const { Schema, model } = mongoose;
 const restaurantSchema = new mongoose.Schema(
   {
     owner_id: {
-      type: String, 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     name: {
@@ -30,7 +31,7 @@ const restaurantSchema = new mongoose.Schema(
       enum: ["active", "inactive", "banned"],
       default: "active",
     },
-    Restaurant_type: {
+    restaurant_type: {
       type: String,
       enum: ["fast_food", "fine_dining", "cafe", "food_truck", "other"],
       default: "other",
