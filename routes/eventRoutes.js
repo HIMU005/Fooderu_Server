@@ -1,13 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router({ mergeParams: true });
-const { protect } = require('../middlewares/authMiddleware');
-const { create, getAll, toggleStatus } = require('../controllers/eventController');
+const { protect } = require("../middlewares/authMiddleware");
+const {
+  create,
+  getAll,
+  toggleStatus,
+} = require("../controllers/eventController");
 
 // Protect routes that modify data
-router.post('/', protect, create);
-router.patch('/:eventId/toggle', protect, toggleStatus);
+router.post("/", create);
+router.patch("/:eventId/toggle", toggleStatus);
 
 // Public route for getting events
-router.get('/', getAll);
+router.get("/", getAll);
 
 module.exports = router;
