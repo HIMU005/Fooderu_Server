@@ -1,27 +1,28 @@
-const Event = require('../models/Event');
-const Restaurant = require('../models/Restaurants');
+const Event = require("../models/Event");
+const Restaurant = require("../models/Restaurants");
 
 // Create a new event
 const createEvent = async (restaurantId, eventData) => {
   // Check if restaurant exists
-  const restaurantExists = await Restaurant.exists({ _id: restaurantId });
+  const restaurantExists = await Restaurant.findOne({ _id: restaurantId });
+  console.log("exist : ", restaurantExists);
   if (!restaurantExists) {
-    throw new Error('Restaurant not found');
+    throw new Error("Restaurant not found");
   }
 
   // Create and save the event
   const event = new Event({
     restaurant_id: restaurantId,
-    ...eventData
+    ...eventData,
   });
-  
+
   return await event.save();
 };
 
 // Get events for a restaurant
 const getEvents = async (restaurantId, onlyLive = false) => {
   const query = { restaurant_id: restaurantId };
-  
+
   // Filter for live events if requested
   if (onlyLive) {
     query.is_live = true;
@@ -35,7 +36,7 @@ const getEvents = async (restaurantId, onlyLive = false) => {
 const toggleEventStatus = async (eventId) => {
   const event = await Event.findById(eventId);
   if (!event) {
-    throw new Error('Event not found');
+    throw new Error("Event not found");
   }
 
   event.is_live = !event.is_live;
@@ -45,5 +46,5 @@ const toggleEventStatus = async (eventId) => {
 module.exports = {
   createEvent,
   getEvents,
-  toggleEventStatus
+  toggleEventStatus,
 };
