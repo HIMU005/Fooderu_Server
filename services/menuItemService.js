@@ -12,6 +12,7 @@ const AppError = require("../utils/AppError");
 const createMenuItem = async (itemData) => {
   // verify restaurant exists
   const restaurant = await Restaurant.findById(itemData.restaurant_id);
+  console.log("restaurant found indicator", restaurant);
 
   if (!restaurant) {
     throw new AppError("Restaurant not found", 404);
