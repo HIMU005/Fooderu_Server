@@ -16,7 +16,7 @@ const create = async (req, res) => {
         .status(400)
         .json({ error: "Title and expiration date are required" });
     }
-
+     
     const newEvent = await createEvent(restaurantId, {
       event_title,
       description,
