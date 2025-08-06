@@ -10,7 +10,6 @@ const userSchema = new mongoose.Schema({
   },
   clerk_id: {
     type: String,
-    unique: true,
   },
   phone: {
     type: String,
