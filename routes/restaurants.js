@@ -3,11 +3,14 @@ const {
   getAllRestaurants,
   getRestaurant,
   getARestaurantByTheOwerId,
+  followController,
+  unfollowRestaurant,
 } = require("../controllers/restaurantController");
 const {
   createMenuItemController,
   getAllItemsUnderARestaurant,
 } = require("../controllers/menuItemController");
+const { protect } = require("../middlewares/authMiddleware");
 
 const router = require("express").Router({ mergeParams: true });
 
@@ -22,6 +25,8 @@ router.get("/", getAllRestaurants);
 
 // POST /restaurants/:restaurantId/items
 router.post("/:restaurantId/items", createMenuItemController);
+router.post("/:restaurantId/follows", protect, followController);
+router.post("/:restaurantId/unFollows", protect, unfollowRestaurant);
 
 // POST /restaurants
 router.post("/", createRestaurant);

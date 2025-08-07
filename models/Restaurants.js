@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { trim } = require("validator");
+const User = require("./User");
 const { Schema, model } = mongoose;
 const restaurantSchema = new mongoose.Schema(
   {
@@ -44,6 +45,12 @@ const restaurantSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    followedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: User,
+      },
+    ],
   },
   {
     timestamps: true,
