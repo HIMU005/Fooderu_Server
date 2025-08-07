@@ -121,10 +121,7 @@ const logInWithClerkcontroller = async (req, res, next) => {
       const user = { ...exitsingUser, jwtToken: token };
       return res.json({
         status: 200,
-        data: {
-          jwtToken: token,
-          email: email,
-        },
+        user,
         message: "login successfull",
       });
     }
