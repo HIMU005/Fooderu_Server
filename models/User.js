@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
+const Restaurant = require("./Restaurants");
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -54,6 +55,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  followRestaurants: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: Restaurant,
+    },
+  ],
   created_at: {
     type: Date,
     default: Date.now,
