@@ -5,20 +5,18 @@ const { verifyToken } = require("../utils/jwtFunction");
 
 exports.protect = async (req, res, next) => {
   try {
-    // let token;
-
     // 1. Get token
-    //one way
+    // let token;
     // if (
-    //   req.headers.authorization &&
-    //   req.headers.authorization.startsWith("Bearer")
+    //   req.config.headers.authorization &&
+    //   req.config.headers.authorization.startsWith("Bearer")
     // ) {
     //   token = req.headers.authorization.split(" ")[1];
     // }
 
-    //another way
+    // another way
     const token = req?.headers?.auth;
-    console.log("token from middle ware ", token);
+    // console.log("token from middle ware ", token);
 
     if (!token) {
       throw new AppError("Not authorized", 401);
