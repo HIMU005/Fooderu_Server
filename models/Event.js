@@ -16,7 +16,7 @@ const eventSchema = new Schema({
   description: String, // Optional description
   is_live: {
     type: Boolean,
-    default: false, // Events start as not live
+    default: true, // Events start as not live
   },
   image_url: String, // Optional image link
   expires_at: {
