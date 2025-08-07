@@ -5,6 +5,7 @@ const {
   getARestaurantByTheOwerId,
   followController,
   unfollowRestaurant,
+  getAllRestaurant,
 } = require("../controllers/restaurantController");
 const {
   createMenuItemController,
@@ -17,6 +18,7 @@ const router = require("express").Router({ mergeParams: true });
 // get all restaurant items
 router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
 router.get("/:restaurantId", getRestaurant);
+router.get("/", getAllRestaurant);
 
 router.get("/byUserId/:ownerId", getARestaurantByTheOwerId);
 

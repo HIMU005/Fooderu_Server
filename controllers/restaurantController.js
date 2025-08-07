@@ -20,6 +20,26 @@ const getRestaurant = async (req, res, next) => {
   }
 };
 
+// get all restaurants
+const getAllRestaurant = async (req, res, next) => {
+  try {
+    const restaurants = Restaurant.find();
+
+    res.status(200).json({
+      status: "success",
+      results: restaurants.length,
+      data: restaurants,
+    });
+  } catch (error) {
+    console.error("Error getting restaurants: ", error);
+    res.status(500).json({
+      status: "fail",
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 // Owner access only
 const getMyRestaurant = async (req, res, next) => {
   try {
@@ -196,4 +216,5 @@ module.exports = {
   getARestaurantByTheOwerId,
   followController,
   unfollowRestaurant,
+  getAllRestaurant,
 };
