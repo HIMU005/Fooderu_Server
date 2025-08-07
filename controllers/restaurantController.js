@@ -23,7 +23,7 @@ const getRestaurant = async (req, res, next) => {
 // get all restaurants
 const getAllRestaurant = async (req, res, next) => {
   try {
-    const restaurants = Restaurant.find();
+    const restaurants = await Restaurant.find();
 
     res.status(200).json({
       status: "success",
@@ -149,7 +149,7 @@ const getARestaurantByTheOwerId = async (req, res) => {
 // follows a restaurant by a user
 const followController = async (req, res) => {
   const userId = req.user._id;
-  const restaurantId = req.restaurant.id;
+  const { restaurantId } = req.params;
 
   console.log(userId, restaurantId);
 
