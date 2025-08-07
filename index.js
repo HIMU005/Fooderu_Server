@@ -10,6 +10,9 @@ app.use(express.json());
 app.use(cors());
 app.use(router);
 
+// event status auto update
+require("./cronJobs/updateEventStatus");
+
 app.get("/", (_req, res) => {
   res.json({ message: "Home Route" });
 });
