@@ -20,6 +20,26 @@ const getRestaurant = async (req, res, next) => {
   }
 };
 
+// get all restaurants
+const getAllRestaurant = async (req, res, next) => {
+  try {
+    const restaurants = await Restaurant.find();
+
+    res.status(200).json({
+      status: "success",
+      results: restaurants.length,
+      data: restaurants,
+    });
+  } catch (error) {
+    console.error("Error getting restaurants: ", error);
+    res.status(500).json({
+      status: "fail",
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 // Owner access only
 const getMyRestaurant = async (req, res, next) => {
   try {
@@ -126,10 +146,75 @@ const getARestaurantByTheOwerId = async (req, res) => {
   }
 };
 
+// follows a restaurant by a user
+const followController = async (req, res) => {
+  const userId = req.user._id;
+  const { restaurantId } = req.params;
+
+  console.log(userId, restaurantId);
+
+  try {
+    // Check if already followed
+    const user = await User.findById(userId);
+    if (user.followRestaurants.includes(restaurantId)) {
+      return res
+        .status(400)
+        .json({ message: "Already following this restaurant." });
+    }
+
+    // Add restaurant to user's follow list
+    await user.findByIdAndUpdate(userId, {
+      $addToSet: { followRestaurants: restaurantId },
+    });
+
+    // Add user to restaurant's followed list
+    await Restaurant.findById(restaurantId, {
+      $addToSet: { followedBy: userId },
+    });
+
+    res.status(200).json({ message: "Restaurant followed successfully." });
+  } catch (error) {
+    console.error("follow Error: ", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const unfollowRestaurant = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const restaurantId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user.followRestaurants.includes(restaurantId)) {
+      return res
+        .status(400)
+        .json({ message: "Not following this restaurant." });
+    }
+
+    // Remove restaurant from user's follow list
+    await User.findByIdAndUpdate(userId, {
+      $pull: { followRestaurants: restaurantId },
+    });
+
+    // Remove user from restaurant's followedBy list
+    await Restaurant.findByIdAndUpdate(restaurantId, {
+      $pull: { followedBy: userId },
+    });
+
+    res.status(200).json({ message: "Restaurant unfollowed successfully." });
+  } catch (error) {
+    console.error("Unfollow error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   createRestaurant,
   getAllRestaurants,
   getRestaurant,
   getMyRestaurant,
   getARestaurantByTheOwerId,
+  followController,
+  unfollowRestaurant,
+  getAllRestaurant,
 };
