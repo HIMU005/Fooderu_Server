@@ -29,8 +29,23 @@ const getAllPosts = async (req, res) => {
       message: "Posts fetched successfully",
     });
   } catch (error) {
-    AppError(`server error ${error} `, 500);
+    throw new AppError(`server error ${error} `, 500);
   }
 };
 
-module.exports = { postByUser, getAllPosts };
+// get a single post details
+const getASinglePost = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await Post.findById(id);
+    return res.json({
+      status: 200,
+      data: post,
+      message: "Single post fetched",
+    });
+  } catch (error) {
+    throw new AppError(`server error ${error} `, 500);
+  }
+};
+
+module.exports = { postByUser, getAllPosts, getASinglePost };
