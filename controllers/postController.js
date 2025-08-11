@@ -4,8 +4,7 @@ const AppError = require("../utils/AppError");
 const postByUser = async (req, res) => {
   const { user_id, description, photo, isEvent } = req.body;
   if (!user_id) {
-    // return res.json({ status: 404, message: "postId is required" });
-    AppError("postId is required", 404);
+    return res.json({ status: 404, message: "postId is required" });
   }
   try {
     const response = await Post.create({
@@ -20,4 +19,18 @@ const postByUser = async (req, res) => {
   }
 };
 
-module.exports = { postByUser };
+// get all posts
+const getAllPosts = async (req, res) => {
+  try {
+    const posts = await Post.find();
+    res.json({
+      status: 200,
+      data: posts,
+      message: "Posts fetched successfully",
+    });
+  } catch (error) {
+    AppError(`server error ${error} `, 500);
+  }
+};
+
+module.exports = { postByUser, getAllPosts };
