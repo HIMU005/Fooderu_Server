@@ -18,3 +18,6 @@ const postSchema = new Schema({
     default: false,
   },
 });
+
+const Post = model("Post", postSchema);
+module.exports = Post;
