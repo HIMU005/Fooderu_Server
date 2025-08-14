@@ -45,17 +45,26 @@ const restaurantSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    followedBy: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: User,
-      },
-    ],
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+restaurantSchema.virtual("followers", {
+  ref: "RestaurantFollow",
+  localField: "_id",
+  foreignField: "restaurant_id",
+});
+
+restaurantSchema.virtual("followersCount", {
+  ref: "RestaurantFollow",
+  localField: "_id",
+  foreignField: "restaurant_id",
+  count: true,
+});
 
 const Restaurant = model("Restaurant", restaurantSchema);
 module.exports = Restaurant;

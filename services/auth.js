@@ -42,7 +42,7 @@ const loginService = async (email, password) => {
 
   user.password = undefined;
   // jwt code is here
-  const token = assignToken(email);
+  const token = assignToken(user._id, email);
   const userObj = user.toObject();
   userObj.jwtToken = token;
   // user.jwtToken = token;
