@@ -4,6 +4,7 @@ const restaurantRoutes = require("./restaurants");
 const menuItemRoutes = require("./menuItemRoutes");
 const userRoutes = require("./userRoutes");
 const eventRoutes = require("./eventRoutes");
+const PostRoutes = require("./postsRoutes");
 const followRoutes = require("./followRoutes");
 
 // auth routes
@@ -17,6 +18,9 @@ router.use("/users", userRoutes);
 
 //event routes
 router.use("/restaurants/:restaurantId/events", eventRoutes);
+
+// posts routes
+router.use("/posts", PostRoutes);
 
 router.use("/follow", followRoutes);
 
