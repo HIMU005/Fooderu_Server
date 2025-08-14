@@ -55,12 +55,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  followRestaurants: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: Restaurant,
-    },
-  ],
   created_at: {
     type: Date,
     default: Date.now,

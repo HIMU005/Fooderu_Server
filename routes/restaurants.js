@@ -3,22 +3,23 @@ const {
   getAllRestaurants,
   getRestaurant,
   getARestaurantByTheOwerId,
-  followController,
-  unfollowRestaurant,
   getAllRestaurant,
+  getRestaurantsWithFollowStatus,
 } = require("../controllers/restaurantController");
 const {
   createMenuItemController,
   getAllItemsUnderARestaurant,
 } = require("../controllers/menuItemController");
+
 const { protect } = require("../middlewares/authMiddleware");
 
 const router = require("express").Router({ mergeParams: true });
 
+router.get("/follow-status", protect, getRestaurantsWithFollowStatus);
+
 // get all restaurant items
 router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
 router.get("/:restaurantId", getRestaurant);
-router.get("/", getAllRestaurant);
 
 router.get("/byUserId/:ownerId", getARestaurantByTheOwerId);
 
@@ -27,8 +28,6 @@ router.get("/", getAllRestaurants);
 
 // POST /restaurants/:restaurantId/items
 router.post("/:restaurantId/items", createMenuItemController);
-router.post("/:restaurantId/follows", protect, followController);
-router.post("/:restaurantId/unFollows", protect, unfollowRestaurant);
 
 // POST /restaurants
 router.post("/", createRestaurant);

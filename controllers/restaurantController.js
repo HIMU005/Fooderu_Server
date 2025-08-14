@@ -1,4 +1,5 @@
 const Restaurant = require("../models/Restaurants");
+const RestaurantFollow = require("../models/RestaurantFollow");
 const User = require("../models/User");
 const {
   createRestaurantService,
@@ -146,65 +147,57 @@ const getARestaurantByTheOwerId = async (req, res) => {
   }
 };
 
-// follows a restaurant by a user
-const followController = async (req, res) => {
-  const userId = req.user._id;
-  const { restaurantId } = req.params;
-
-  console.log(userId, restaurantId);
-
+// controllers/restaurantController.js
+const getRestaurantsWithFollowStatus = async (req, res) => {
   try {
-    // Check if already followed
-    const user = await User.findById(userId);
-    if (user.followRestaurants.includes(restaurantId)) {
-      return res
-        .status(400)
-        .json({ message: "Already following this restaurant." });
-    }
+    const userId = req.user._id; // From auth middleware
 
-    // Add restaurant to user's follow list
-    await user.findByIdAndUpdate(userId, {
-      $addToSet: { followRestaurants: restaurantId },
+    // 1. Get all restaurants
+    const restaurants = await Restaurant.find({}).lean();
+
+    // 2. Get all follow relationships for this user at once (more efficient)
+    const userFollows = await RestaurantFollow.find({
+      user_id: userId,
+    }).select("restaurant_id -_id");
+
+    const userFollowsMap = new Map();
+    userFollows.forEach((follow) => {
+      userFollowsMap.set(follow.restaurant_id.toString(), true);
     });
 
-    // Add user to restaurant's followed list
-    await Restaurant.findById(restaurantId, {
-      $addToSet: { followedBy: userId },
+    // 3. Get followers count for all restaurants at once
+    const followersCounts = await RestaurantFollow.aggregate([
+      {
+        $group: {
+          _id: "$restaurant_id",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const followersCountMap = new Map();
+    followersCounts.forEach((item) => {
+      followersCountMap.set(item._id.toString(), item.count);
     });
 
-    res.status(200).json({ message: "Restaurant followed successfully." });
+    // 4. Combine the data
+    const restaurantsWithStatus = restaurants.map((restaurant) => ({
+      ...restaurant,
+      isFollowing: userFollowsMap.has(restaurant._id.toString()),
+      followersCount: followersCountMap.get(restaurant._id.toString()) || 0,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: restaurantsWithStatus.length,
+      data: restaurantsWithStatus,
+    });
   } catch (error) {
-    console.error("follow Error: ", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-const unfollowRestaurant = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const restaurantId = req.params.id;
-
-    const user = await User.findById(userId);
-    if (!user.followRestaurants.includes(restaurantId)) {
-      return res
-        .status(400)
-        .json({ message: "Not following this restaurant." });
-    }
-
-    // Remove restaurant from user's follow list
-    await User.findByIdAndUpdate(userId, {
-      $pull: { followRestaurants: restaurantId },
+    console.error("Error getting restaurants with follow status:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
     });
-
-    // Remove user from restaurant's followedBy list
-    await Restaurant.findByIdAndUpdate(restaurantId, {
-      $pull: { followedBy: userId },
-    });
-
-    res.status(200).json({ message: "Restaurant unfollowed successfully." });
-  } catch (error) {
-    console.error("Unfollow error:", error);
-    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -214,7 +207,6 @@ module.exports = {
   getRestaurant,
   getMyRestaurant,
   getARestaurantByTheOwerId,
-  followController,
-  unfollowRestaurant,
   getAllRestaurant,
+  getRestaurantsWithFollowStatus,
 };

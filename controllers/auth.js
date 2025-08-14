@@ -64,7 +64,7 @@ const logInWithSocialController = async (req, res, next) => {
       });
     }
 
-    const token = assignToken(email);
+    const token = assignToken(user._id, email);
     const userObj = user.toObject();
     userObj.jwtToken = token;
 
@@ -117,7 +117,7 @@ const logInWithClerkcontroller = async (req, res, next) => {
     }
 
     if (exitsingUser && exitsingUser.oauth_provider === oauth_provider) {
-      const token = assignToken(email);
+      const token = assignToken(exitsingUser._id, email);
       const user = { ...exitsingUser, jwtToken: token };
       return res.json({
         status: 200,
@@ -135,7 +135,7 @@ const logInWithClerkcontroller = async (req, res, next) => {
         name: `${firstName} ${lastName}`,
       });
       // assign jwt token
-      const token = assignToken(email);
+      const token = assignToken(user._id, email);
       const userObj = user.toObject();
       userObj.jwtToken = token;
 
