@@ -9,7 +9,7 @@ const menuItemSchema = new Schema(
       required: [true, "Item name is required"],
       trim: true,
       maxlength: [100, "Name cannot exceed 100 characters"],
-      index: true, // Added for faster name searches
+      index: true,
     },
     price: {
       type: Number,
@@ -32,10 +32,6 @@ const menuItemSchema = new Schema(
     image_url: {
       type: String,
       trim: true,
-      // validate: {
-      //   validator: (v) => !v || /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v),
-      //   message: "Invalid image URL format",
-      // },
     },
     is_boosted: {
       type: Boolean,
@@ -43,35 +39,22 @@ const menuItemSchema = new Schema(
     },
     boosted_until: {
       type: Date,
-      // validate: {
-      //   validator: function (v) {
-      //     if (!this.is_boosted || !v) return true;
-      //     return v > new Date();
-      //   },
-      //   message: "Boost date must be in the future when active",
-      // },
     },
-    created_at: {
-      type: Date,
-      default: Date.now,
-      immutable: true,
+    averageRating: {
+      type: Number,
+      default: 0,
     },
-    updated_at: {
-      type: Date,
-      default: Date.now,
+    totalRatings: {
+      type: Number,
+      default: 0,
     },
   },
   {
+    timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
 );
-
-// Auto-update timestamp
-menuItemSchema.pre("save", function (next) {
-  this.updated_at = Date.now();
-  next();
-});
 
 // Compound indexes for performance
 menuItemSchema.index({

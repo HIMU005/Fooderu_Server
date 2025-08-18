@@ -22,6 +22,9 @@ router.use("/restaurants/:restaurantId/events", eventRoutes);
 // posts routes
 router.use("/posts", PostRoutes);
 
+// for menuItems
+router.use("/menuItems", menuItemRoutes);
+
 router.use("/follow", followRoutes);
 
 module.exports = router;
