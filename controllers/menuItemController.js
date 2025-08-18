@@ -1,9 +1,12 @@
+const { default: mongoose } = require("mongoose");
+const MenuItemRating = require("../models/MenuItemRating");
 const Restaurant = require("../models/Restaurants");
 const {
   createMenuItem,
   getAllItemsUnderARestaurantService,
 } = require("../services/menuItemService");
 const AppError = require("../utils/AppError");
+const MenuItem = require("../models/MenuItem");
 
 /**
  * @desc    Create a new menu item under a restaurant
@@ -16,7 +19,8 @@ const createMenuItemController = async (req, res, next) => {
     const { name, price, description, image_url, is_boosted, boosted_until } =
       req.body;
     console.log(req.body);
-    const { restaurantId } = req.params; console.log('restaurant id : ', restaurantId);
+    const { restaurantId } = req.params;
+    console.log("restaurant id : ", restaurantId);
 
     if (!name || !price) {
       throw new AppError("Name and Price are required", 400);
@@ -54,7 +58,126 @@ const getAllItemsUnderARestaurant = async (req, res) => {
   }
 };
 
+// post a rating for a menu item
+const PostARating = async (rq, res) => {
+  try {
+    const userId = req.user._id;
+    const { menuItemId } = req.params;
+    const { rating } = req.body;
+
+    // as raing is mandatoryo and rating can't be less than 1 or greater than 5
+    if (!rating || rating < 1 || rating > 5) {
+      return res
+        .status(400)
+        .json({ message: "Rating must be between 1 and 5" });
+    }
+    // create and update rating of the menu item here
+    await MenuItemRating.findOneAndUpdate(
+      {
+        user: userId,
+        menuItem: menuItemId,
+      },
+      {
+        rating,
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      }
+    );
+    // create or update is done here
+
+    // recalculate average rating here
+    const calculatedRating = await MenuItemRating.aggregate([
+      {
+        $match: { menuItem: new mongoose.Types.ObjectId(menuItemId) },
+      },
+      {
+        $group: {
+          _id: "$menuItem",
+          avarageRating: {
+            $avg: "$rating",
+          },
+          totalRatings: { $sum: 1 },
+        },
+      },
+    ]);
+    // calculation done here
+
+    // if it is aggregated update the rating of the menu item
+    await MenuItem.findByIdAndUpdate(menuItemId, {
+      averageRating: agg[0]?.averageRating || 0,
+      totalRatings: agg[0]?.totalRatings || 0,
+    });
+
+    // if all is successfull then return success response
+    return res.json({
+      status: 200,
+      message: "Thansks for your rating.",
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
+// get a single menu item by its id
+const GetASingleMenuItem = async (req, res) => {
+  try {
+    const { menuItemId } = req.params;
+    const menuItem = await MenuItem.findById(menuItemId).populate(
+      "restaurant_id",
+      "name"
+    );
+
+    if (!menuItem) {
+      return res.json({ status: 404, message: "Menu item not found" });
+    }
+    res.json({
+      status: 200,
+      data: menuItem,
+      message: "Menu item fetched successfully",
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
+const GetMyRating = async (req, res) => {
+  try {
+    // const userId = req.user._id;
+    const userId = "64f0c8b2e4b0d3f1a8c8b8c9";
+    const { menuItemId } = req.params;
+
+    const rating = await MenuItemRating.findOne({
+      user: userId,
+      menuItem: menuItemId,
+    });
+    // .populate("menuItem", "name price image_url averageRating totalRatings");
+
+    // if no rating found for this user and menu item by this user
+    if (!rating) {
+      return res.json({
+        status: 404,
+        message: "Rating not found for this menu item by this user",
+      });
+    }
+
+    // rturn the rating
+    res.json({
+      status: 200,
+      data: rating,
+      message: "Rating fetched for the item by this user successfully done",
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
 module.exports = {
   createMenuItemController,
   getAllItemsUnderARestaurant,
+  PostARating,
+  GetASingleMenuItem,
+  GetMyRating,
 };
