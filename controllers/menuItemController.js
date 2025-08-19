@@ -59,9 +59,12 @@ const getAllItemsUnderARestaurant = async (req, res) => {
 };
 
 // post a rating for a menu item
-const PostARating = async (rq, res) => {
+// TODO MAKE IT PROTECTED
+const PostARating = async (req, res) => {
   try {
-    const userId = req.user._id;
+    // const userId = req.user._id;  // when the frontend wil be connected
+    // const userId = "688e2ae1117148e446299150"; //himu@gmail.com
+    const userId = "688eddea1a6d8960842ce861"; // hashanuzzaman99@gmail.com
     const { menuItemId } = req.params;
     const { rating } = req.body;
 
@@ -89,20 +92,20 @@ const PostARating = async (rq, res) => {
     // create or update is done here
 
     // recalculate average rating here
-    const calculatedRating = await MenuItemRating.aggregate([
+    const agg = await MenuItemRating.aggregate([
       {
         $match: { menuItem: new mongoose.Types.ObjectId(menuItemId) },
       },
       {
         $group: {
           _id: "$menuItem",
-          avarageRating: {
-            $avg: "$rating",
-          },
+          averageRating: { $avg: "$rating" },
           totalRatings: { $sum: 1 },
         },
       },
     ]);
+
+    console.log(agg[0]);
     // calculation done here
 
     // if it is aggregated update the rating of the menu item
@@ -146,7 +149,7 @@ const GetASingleMenuItem = async (req, res) => {
 const GetMyRating = async (req, res) => {
   try {
     // const userId = req.user._id;
-    const userId = "64f0c8b2e4b0d3f1a8c8b8c9";
+    const userId = "688eddea1a6d8960842ce861";
     const { menuItemId } = req.params;
 
     const rating = await MenuItemRating.findOne({
