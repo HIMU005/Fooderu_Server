@@ -17,7 +17,12 @@ const commentSchema = new mongoose.Schema(
   {
     postId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Post", // or "MenuItem" if it’s for menu-items
+      ref: "Post", // "post" if it’s for posts
+      required: true,
+    },
+    menuItemId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post", // "MenuItem" if it’s for menu-items
       required: true,
     },
     userId: {
