@@ -9,17 +9,12 @@ exports.protect = async (req, res, next) => {
     // console.log(req.headers.authorization);
 
     // 1. Get token
-    // let token;
-    // if (
-    //   req.config.headers.authorization &&
-    //   req.config.headers.authorization.startsWith("Bearer")
-    // ) {
-    //   token = req.headers.authorization.split(" ")[1];
-    // }
-
-    // another way
-    const token = req?.headers?.auth;
-    // console.log("token from middle ware ", token);
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    }
 
     if (!token) {
       throw new AppError("Not authorized, no token", 401);
@@ -44,6 +39,6 @@ exports.protect = async (req, res, next) => {
     next();
   } catch (error) {
     console.log("Authentication error:", error);
-    throw new AppError("Authentication error:", 401);
-  }
+    throw new AppError("Authentication error:", 401);
+  }
 };
