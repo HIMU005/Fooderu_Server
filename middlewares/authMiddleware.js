@@ -9,12 +9,17 @@ exports.protect = async (req, res, next) => {
     // console.log(req.headers.authorization);
 
     // 1. Get token
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
+    // let token;
+    // if (
+    //   req.config.headers.authorization &&
+    //   req.config.headers.authorization.startsWith("Bearer")
+    // ) {
+    //   token = req.headers.authorization.split(" ")[1];
+    // }
+
+    // another way
+    const token = req?.headers?.auth;
+    // console.log("token from middle ware ", token);
 
     if (!token) {
       throw new AppError("Not authorized, no token", 401);
