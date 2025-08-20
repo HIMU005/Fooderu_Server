@@ -62,9 +62,9 @@ const getAllItemsUnderARestaurant = async (req, res) => {
 // TODO MAKE IT PROTECTED
 const PostARating = async (req, res) => {
   try {
-    // const userId = req.user._id;  // when the frontend wil be connected
+    const userId = req.user._id; // when the frontend wil be connected
     // const userId = "688e2ae1117148e446299150"; //himu@gmail.com
-    const userId = "688eddea1a6d8960842ce861"; // hashanuzzaman99@gmail.com
+    // const userId = "688eddea1a6d8960842ce861"; // hashanuzzaman99@gmail.com
     const { menuItemId } = req.params;
     const { rating } = req.body;
 
@@ -105,19 +105,20 @@ const PostARating = async (req, res) => {
       },
     ]);
 
-    console.log(agg[0]);
     // calculation done here
 
     // if it is aggregated update the rating of the menu item
-    await MenuItem.findByIdAndUpdate(menuItemId, {
+    const menu = await MenuItem.findByIdAndUpdate(menuItemId, {
       averageRating: agg[0]?.averageRating || 0,
       totalRatings: agg[0]?.totalRatings || 0,
     });
+    console.log(menu);
 
     // if all is successfull then return success response
     return res.json({
       status: 200,
       message: "Thansks for your rating.",
+      // data: menu,
     });
   } catch (error) {
     return res.json({ status: 500, message: `Server error: ${error.message}` });
@@ -149,8 +150,8 @@ const GetASingleMenuItem = async (req, res) => {
 // get the rating number by the logged in user
 const GetMyRating = async (req, res) => {
   try {
-    // const userId = req.user._id;
-    const userId = "688eddea1a6d8960842ce861";
+    const userId = req.user._id;
+    // const userId = "688eddea1a6d8960842ce861";
     const { menuItemId } = req.params;
 
     const rating = await MenuItemRating.findOne({
@@ -166,7 +167,6 @@ const GetMyRating = async (req, res) => {
         message: "Rating not found for this menu item by this user",
       });
     }
-
     // rturn the rating
     res.json({
       status: 200,
