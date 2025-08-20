@@ -3,9 +3,9 @@ const { Schema, model } = mongoose;
 
 const postSchema = new Schema(
   {
-    user_id: {
+    restaurant_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Restaurant",
       required: true,
       index: true,
     },
@@ -13,7 +13,7 @@ const postSchema = new Schema(
       type: String,
       trim: true,
     },
-    photo: {
+    image_url: {
       type: String,
       trim: true,
     },

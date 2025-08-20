@@ -1,4 +1,4 @@
-const Restaurant = require("../models/Restaurants");
+const Restaurant = require("../models/Restaurant");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const User = require("../models/User");
 const {
