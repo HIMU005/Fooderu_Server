@@ -1,4 +1,4 @@
-const Post = require("../models/Posts");
+const Post = require("../models/Post");
 const AppError = require("../utils/AppError");
 
 const postByUser = async (req, res) => {

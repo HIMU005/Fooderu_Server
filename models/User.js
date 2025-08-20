@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
-const Restaurant = require("./Restaurants");
+const Restaurant = require("./Restaurant");
 
 const userSchema = new mongoose.Schema({
   email: {
