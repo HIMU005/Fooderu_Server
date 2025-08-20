@@ -1,5 +1,5 @@
 // models/Comment.js
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const replySchema = new mongoose.Schema(
   {
@@ -26,9 +26,9 @@ const commentSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String, required: true },
-    replies: [replySchema], // ✅ one-level replies inside comments
+    replies: [replySchema], //  one-level replies inside comments
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Comment", commentSchema);
+module.exports = mongoose.model("Comment", commentSchema);
