@@ -146,6 +146,7 @@ const GetASingleMenuItem = async (req, res) => {
   }
 };
 
+// get the rating number by the logged in user
 const GetMyRating = async (req, res) => {
   try {
     // const userId = req.user._id;
@@ -177,10 +178,29 @@ const GetMyRating = async (req, res) => {
   }
 };
 
+// get all the menuItems
+const getAllMenuItems = async (req, res) => {
+  try {
+    const menuItems = await MenuItem.find().populate(
+      "restaurant_id",
+      "name displayPicture"
+    );
+
+    return res.json({
+      status: 200,
+      data: menuItems,
+      message: "All menu items fetched successfully",
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
 module.exports = {
   createMenuItemController,
   getAllItemsUnderARestaurant,
   PostARating,
   GetASingleMenuItem,
   GetMyRating,
+  getAllMenuItems,
 };
