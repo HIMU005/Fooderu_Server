@@ -13,7 +13,7 @@ const postSchema = new Schema(
       type: String,
       trim: true,
     },
-    photo: {
+    image_url: {
       type: String,
       trim: true,
     },
