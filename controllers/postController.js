@@ -1,21 +1,23 @@
-const Post = require("../models/Posts");
+const Post = require("../models/Post");
 const AppError = require("../utils/AppError");
 
 const postByUser = async (req, res) => {
-  const { user_id, description, photo, isEvent } = req.body;
-  if (!user_id) {
-    return res.json({ status: 404, message: "postId is required" });
+  const { restaurant_id, description, image_url, isEvent } = req.body;
+  if (!restaurant_id) {
+    return res.json({ status: 404, message: "restaurant_id is required" });
   }
   try {
     const response = await Post.create({
-      user_id,
+      restaurant_id,
       description,
-      photo,
+      image_url,
       isEvent,
     });
     return res.json({ status: 201, message: "A post is created..." });
   } catch (error) {
-    AppError(`server error ${error} `, 500);
+    console.error(error);
+
+    throw new AppError(`server error ${error} `, 500);
   }
 };
 
@@ -29,6 +31,8 @@ const getAllPosts = async (req, res) => {
       message: "Posts fetched successfully",
     });
   } catch (error) {
+    console.log(error);
+
     throw new AppError(`server error ${error} `, 500);
   }
 };

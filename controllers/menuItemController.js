@@ -1,6 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const MenuItemRating = require("../models/MenuItemRating");
-const Restaurant = require("../models/Restaurants");
+const Restaurant = require("../models/Restaurant");
 const {
   createMenuItem,
   getAllItemsUnderARestaurantService,

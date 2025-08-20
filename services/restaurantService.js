@@ -1,4 +1,4 @@
-const Restaurant = require("../models/Restaurants");
+const Restaurant = require("../models/Restaurant");
 const AppError = require("../utils/AppError");
 
 const getRestaurantById = async (restaurantId, userId = null) => {

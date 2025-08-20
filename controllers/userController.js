@@ -1,5 +1,5 @@
 const User = require("../models/User");
-const Restaurant = require("../models/Restaurants");
+const Restaurant = require("../models/Restaurant");
 const AppError = require("../utils/AppError");
 
 exports.getUserProfile = async (req, res, next) => {

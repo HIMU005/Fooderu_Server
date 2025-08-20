@@ -1,5 +1,5 @@
 const MenuItem = require("../models/MenuItem");
-const Restaurant = require("../models/Restaurants");
+const Restaurant = require("../models/Restaurant");
 const AppError = require("../utils/AppError");
 
 /**
