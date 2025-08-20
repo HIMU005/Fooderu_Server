@@ -6,6 +6,9 @@ const userRoutes = require("./userRoutes");
 const eventRoutes = require("./eventRoutes");
 const PostRoutes = require("./postsRoutes");
 const followRoutes = require("./followRoutes");
+
+const uploadRoutes = require("./uploadRoutes");
+
 const commentRoutes = require("./commentRoutes")
 
 // auth routes
@@ -27,6 +30,10 @@ router.use("/posts", PostRoutes);
 router.use("/menuItems", menuItemRoutes);
 
 router.use("/follow", followRoutes);
+//comment routes
+router.use("/comments", commentRoutes);
+
+router.use("/upload", uploadRoutes);
 //comment routes
 router.use("/comments", commentRoutes);
 

@@ -1,5 +1,5 @@
 const Event = require("../models/Event");
-const Restaurant = require("../models/Restaurants");
+const Restaurant = require("../models/Restaurant");
 
 // Create a new event
 const createEvent = async (restaurantId, eventData) => {

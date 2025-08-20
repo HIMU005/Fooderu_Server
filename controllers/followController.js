@@ -1,6 +1,6 @@
 // controllers/followController.js
 const RestaurantFollow = require("../models/RestaurantFollow");
-const Restaurant = require("../models/Restaurants");
+const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
 
 const toggleFollow = async (req, res) => {
