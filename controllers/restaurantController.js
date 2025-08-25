@@ -67,7 +67,8 @@ const createRestaurant = async (req, res, next) => {
     !restaurantInfo.registration_no ||
     !restaurantInfo.phone ||
     !restaurantInfo.address ||
-    !restaurantInfo.description
+    !restaurantInfo.description||
+    !restaurantInfo.location
   ) {
     return res
       .status(400)
