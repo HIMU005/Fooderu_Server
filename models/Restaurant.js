@@ -31,6 +31,7 @@ const restaurantSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ["Point"], // GeoJSON type
+        default: "Point", // auto-set
         required: true,
       },
       coordinates: {
