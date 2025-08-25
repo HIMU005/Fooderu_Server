@@ -27,6 +27,17 @@ const restaurantSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"], // GeoJSON type
+        required: true,
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true,
+      },
+    },
     status: {
       type: String,
       enum: ["active", "inactive", "banned"],
