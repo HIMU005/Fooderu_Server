@@ -20,11 +20,11 @@ const commentSchema = new mongoose.Schema(
       ref: "Post", // "post" if it’s for posts
       required: true,
     },
-    menuItemId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Post", // "MenuItem" if it’s for menu-items
-      required: true,
-    },
+    // menuItemId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Post", // "MenuItem" if it’s for menu-items
+    //   required: true,
+    // },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

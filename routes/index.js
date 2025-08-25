@@ -35,6 +35,6 @@ router.use("/comments", commentRoutes);
 
 router.use("/upload", uploadRoutes);
 //comment routes
-router.use("/comments", commentRoutes);
+// router.use("/comments", commentRoutes);
 
 module.exports = router;
