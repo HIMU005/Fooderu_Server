@@ -58,8 +58,7 @@ const getMyRestaurant = async (req, res, next) => {
 };
 
 const createRestaurant = async (req, res, next) => {
-  const { restaurantInfo } = req.body;
-
+  const restaurantInfo = req.body;
   if (
     !restaurantInfo ||
     !restaurantInfo.owner_id ||
@@ -67,7 +66,7 @@ const createRestaurant = async (req, res, next) => {
     !restaurantInfo.registration_no ||
     !restaurantInfo.phone ||
     !restaurantInfo.address ||
-    !restaurantInfo.description||
+    !restaurantInfo.description ||
     !restaurantInfo.location
   ) {
     return res
