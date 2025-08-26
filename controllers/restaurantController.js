@@ -58,8 +58,7 @@ const getMyRestaurant = async (req, res, next) => {
 };
 
 const createRestaurant = async (req, res, next) => {
-  const { restaurantInfo } = req.body;
-
+  const restaurantInfo = req.body;
   if (
     !restaurantInfo ||
     !restaurantInfo.owner_id ||
@@ -67,7 +66,8 @@ const createRestaurant = async (req, res, next) => {
     !restaurantInfo.registration_no ||
     !restaurantInfo.phone ||
     !restaurantInfo.address ||
-    !restaurantInfo.description
+    !restaurantInfo.description ||
+    !restaurantInfo.location
   ) {
     return res
       .status(400)
@@ -151,9 +151,16 @@ const getARestaurantByTheOwerId = async (req, res) => {
 const getRestaurantsWithFollowStatus = async (req, res) => {
   try {
     const userId = req.user._id; // From auth middleware
+    // the search item from the query parameter
+    const { item } = req.query;
 
+    const queryParams = {}; // configure the query parameters
+
+    if (item) {
+      queryParams.name = { $regex: item, $options: "i" }; // now not case sensitive
+    }
     // 1. Get all restaurants
-    const restaurants = await Restaurant.find({}).lean();
+    const restaurants = await Restaurant.find(queryParams).lean();
 
     // 2. Get all follow relationships for this user at once (more efficient)
     const userFollows = await RestaurantFollow.find({

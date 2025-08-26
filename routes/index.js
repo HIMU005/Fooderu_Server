@@ -9,7 +9,7 @@ const followRoutes = require("./followRoutes");
 
 const uploadRoutes = require("./uploadRoutes");
 
-const commentRoutes = require("./commentRoutes")
+const commentRoutes = require("./commentRoutes");
 
 // auth routes
 router.use("/auth", authRoutes);
