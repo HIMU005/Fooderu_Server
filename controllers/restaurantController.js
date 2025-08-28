@@ -152,13 +152,23 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
   try {
     const userId = req.user._id; // From auth middleware
     // the search item from the query parameter
-    const { item } = req.query;
+    const { item, place } = req.query;
 
     const queryParams = {}; // configure the query parameters
 
     if (item) {
       queryParams.name = { $regex: item, $options: "i" }; // now not case sensitive
     }
+
+    // Place filter (match division, district, or upazila)
+    if (place) {
+      queryParams.$or = [
+        { "address.division": { $regex: place, $options: "i" } },
+        { "address.district": { $regex: place, $options: "i" } },
+        { "address.upazila": { $regex: place, $options: "i" } },
+      ];
+    }
+
     // 1. Get all restaurants
     const restaurants = await Restaurant.find(queryParams).lean();
 
