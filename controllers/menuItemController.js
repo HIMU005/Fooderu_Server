@@ -118,7 +118,8 @@ const PostARating = async (req, res) => {
     return res.json({
       status: 200,
       message: "Thansks for your rating.",
-      // data: menu,
+      averageRating: agg[0]?.averageRating || 0,
+      totalRatings: agg[0]?.totalRatings || 0,
     });
   } catch (error) {
     return res.json({ status: 500, message: `Server error: ${error.message}` });
