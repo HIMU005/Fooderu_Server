@@ -25,9 +25,8 @@ const restaurantSchema = new mongoose.Schema(
     },
     //updated address field
     address: {
-      division: { type: String, required: true, trim: true },
-      district: { type: String, required: true, trim: true },
-      upazila: { type: String, required: true, trim: true },
+      country: { type: String, required: true, trim: true },
+      city: { type: String, required: true, trim: true },
       fullAddress: { type: String, required: true, trim: true }, //  text for detailed address
     },
     location: {
