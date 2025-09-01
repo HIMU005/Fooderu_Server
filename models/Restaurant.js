@@ -27,7 +27,8 @@ const restaurantSchema = new mongoose.Schema(
     address: {
       country: { type: String, required: true, trim: true },
       city: { type: String, required: true, trim: true },
-      fullAddress: { type: String, required: true, trim: true }, //  text for detailed address
+      manualAddress: { type: String, required: true, trim: true }, //  text for manual address
+      mapAddress: { type: String, required: true, trim: true }, //  text for map address
     },
     location: {
       type: {
