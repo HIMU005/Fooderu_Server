@@ -182,10 +182,36 @@ const GetMyRating = async (req, res) => {
 // get all the menuItems
 const getAllMenuItems = async (req, res) => {
   try {
-    const menuItems = await MenuItem.find().populate(
-      "restaurant_id",
-      "name displayPicture"
-    );
+    const { item, place, price, rating } = req.query;
+
+    const queryParams = {};
+
+    if (item) {
+      queryParams.name = { $regex: item, $options: "i" }; // now not case sensitive
+    }
+
+    if (price) {
+      queryParams.price = { $lte: Number(price) };
+    }
+
+    if (rating) {
+      queryParams.averageRating = { $lte: Number(rating) };
+    }
+
+    const menuItems = await MenuItem.find()
+      .populate("restaurant_id", "name displayPicture address")
+      .lean();
+
+    if (place) {
+      menuItems = menuItems.filter((item) => {
+        item.restaurant_id?.address?.city
+          ?.toLowerCase()
+          .includes(place.toLowerCase()) ||
+          item.restaurant_id?.address?.country
+            ?.toLowerCase()
+            .includes(place.toLowerCase());
+      });
+    }
 
     return res.json({
       status: 200,
