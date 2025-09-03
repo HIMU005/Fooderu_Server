@@ -160,12 +160,11 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
       queryParams.name = { $regex: item, $options: "i" }; // now not case sensitive
     }
 
-    // Place filter (match division, district, or upazila)
+    // Place filter (match city or country)
     if (place) {
       queryParams.$or = [
-        { "address.division": { $regex: place, $options: "i" } },
-        { "address.district": { $regex: place, $options: "i" } },
-        { "address.upazila": { $regex: place, $options: "i" } },
+        { "address.city": { $regex: place, $options: "i" } },
+        { "address.country": { $regex: place, $options: "i" } },
       ];
     }
 
