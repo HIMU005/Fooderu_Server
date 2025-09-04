@@ -16,6 +16,8 @@ app.use(
   })
 );
 
+app.options("*", cors());
+
 app.use(router);
 app.use("/images", express.static(path.join(__dirname, "images")));
 
