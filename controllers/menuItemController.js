@@ -198,19 +198,17 @@ const getAllMenuItems = async (req, res) => {
       queryParams.averageRating = { $lte: Number(rating) };
     }
 
-    const menuItems = await MenuItem.find()
+    let menuItems = await MenuItem.find(queryParams)
       .populate("restaurant_id", "name displayPicture address")
       .lean();
 
     if (place) {
-      menuItems = menuItems.filter((item) => {
-        item.restaurant_id?.address?.city
-          ?.toLowerCase()
-          .includes(place.toLowerCase()) ||
-          item.restaurant_id?.address?.country
-            ?.toLowerCase()
-            .includes(place.toLowerCase());
-      });
+      menuItems = menuItems.filter((item) =>
+        item.restaurant_id?.address?.mapAddress
+          ?.trim()
+          .toLowerCase()
+          .includes(place.trim().toLowerCase())
+      );
     }
 
     return res.json({
