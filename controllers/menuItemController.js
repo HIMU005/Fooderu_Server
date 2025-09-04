@@ -184,6 +184,8 @@ const getAllMenuItems = async (req, res) => {
   try {
     const { item, place, price, rating } = req.query;
 
+    console.log("from get all menu item controller", req.query);
+
     const queryParams = {};
 
     if (item) {
@@ -197,6 +199,8 @@ const getAllMenuItems = async (req, res) => {
     if (rating) {
       queryParams.averageRating = { $lte: Number(rating) };
     }
+
+    console.log(queryParams);
 
     const menuItems = await MenuItem.find()
       .populate("restaurant_id", "name displayPicture address")
