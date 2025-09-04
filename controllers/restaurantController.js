@@ -162,10 +162,7 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
 
     // Place filter (match city or country)
     if (place) {
-      queryParams.$or = [
-        { "address.city": { $regex: place, $options: "i" } },
-        { "address.country": { $regex: place, $options: "i" } },
-      ];
+      queryParams["address.mapAddress"] = { $regex: place, $options: "i" };
     }
 
     // 1. Get all restaurants
