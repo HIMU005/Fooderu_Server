@@ -8,7 +8,14 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+const corsOptions = {
+  origin: [process.env.FRONTEND_URL],
+  // credentials: true,
+  optionSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+// app.options("*", cors());
+
 app.use(router);
 app.use("/images", express.static(path.join(__dirname, "images")));
 
