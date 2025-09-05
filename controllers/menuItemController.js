@@ -7,6 +7,7 @@ const {
 } = require("../services/menuItemService");
 const AppError = require("../utils/AppError");
 const MenuItem = require("../models/MenuItem");
+const RestaurantFollow = require("../models/RestaurantFollow");
 
 /**
  * @desc    Create a new menu item under a restaurant
@@ -223,6 +224,47 @@ const getAllMenuItems = async (req, res) => {
   }
 };
 
+const getMenuItemsByFollowedRestaurants = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // find all the restaurants followed by this user
+    const followedRestaurants = await RestaurantFollow.find({
+      user_id: userId,
+    })
+      .select("restaurant_id")
+      .lean();
+    // if no restaurants is followed then return an empty array
+    if (!followedRestaurants.length) {
+      return res.json({
+        status: 200,
+        data: [],
+        message: "No follwed restaurants, so no menu items found",
+      });
+    }
+
+    // map all  the restaurants ids
+    const followedIds = followedRestaurants.map((f) => f.restaurant_id);
+
+    // find all the menu items from the restaurants that are followed by this user
+    const menuItems = await MenuItem.find({
+      restaurant_id: { $in: followedIds },
+    })
+      .populate("restaurant_id", "name displayPicture address")
+      .lean();
+
+    console.log(menuItems);
+
+    return res.json({
+      status: 200,
+      data: menuItems,
+      message: "Menu items from followed restaurants fetched successfully",
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
 module.exports = {
   createMenuItemController,
   getAllItemsUnderARestaurant,
@@ -230,4 +272,5 @@ module.exports = {
   GetASingleMenuItem,
   GetMyRating,
   getAllMenuItems,
+  getMenuItemsByFollowedRestaurants,
 };
