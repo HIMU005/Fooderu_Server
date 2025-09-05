@@ -4,9 +4,16 @@ const {
   GetASingleMenuItem,
   GetMyRating,
   getAllMenuItems,
+  getMenuItemsByFollowedRestaurants,
 } = require("../controllers/menuItemController");
 const { protect } = require("../middlewares/authMiddleware");
 const router = express.Router();
+
+router.get(
+  "/getMenuItemsByFollowedRestaurants",
+  protect,
+  getMenuItemsByFollowedRestaurants
+);
 
 //post route for rating a menu item
 router.post("/:menuItemId/rate", protect, PostARating);
