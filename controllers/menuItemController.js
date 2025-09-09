@@ -191,11 +191,9 @@ const getAllMenuItems = async (req, res) => {
     if (item) {
       queryParams.name = { $regex: item, $options: "i" }; // now not case sensitive
     }
-
     if (price) {
       queryParams.price = { $lte: Number(price) };
     }
-
     if (rating) {
       queryParams.averageRating = { $lte: Number(rating) };
     }

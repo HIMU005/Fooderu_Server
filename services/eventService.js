@@ -20,7 +20,7 @@ const createEvent = async (restaurantId, eventData) => {
 };
 
 // Get events for a restaurant
-const getEvents = async (restaurantId, onlyLive = false) => {
+const getEventsOfRestaurant = async (restaurantId, onlyLive = false) => {
   const query = { restaurant_id: restaurantId };
 
   // Filter for live events if requested
@@ -45,6 +45,6 @@ const toggleEventStatus = async (eventId) => {
 
 module.exports = {
   createEvent,
-  getEvents,
+  getEventsOfRestaurant,
   toggleEventStatus,
 };
