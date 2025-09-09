@@ -20,7 +20,7 @@ const createEvent = async (restaurantId, eventData) => {
 };
 
 // Get events for a restaurant
-const getEvents = async (restaurantId, onlyLive = false) => {
+const getEventsOfRestaurant = async (restaurantId, onlyLive = false) => {
   const query = { restaurant_id: restaurantId };
 
   // Filter for live events if requested
@@ -31,6 +31,8 @@ const getEvents = async (restaurantId, onlyLive = false) => {
 
   return await Event.find(query).sort({ created_at: -1 }); // Newest first
 };
+
+
 
 // Toggle an event's live status
 const toggleEventStatus = async (eventId) => {
@@ -45,6 +47,6 @@ const toggleEventStatus = async (eventId) => {
 
 module.exports = {
   createEvent,
-  getEvents,
+  getEventsOfRestaurant,
   toggleEventStatus,
 };

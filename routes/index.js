@@ -21,7 +21,8 @@ router.use("/restaurants", restaurantRoutes);
 router.use("/users", userRoutes);
 
 //event routes
-router.use("/restaurants/:restaurantId/events", eventRoutes);
+// router.use("/restaurants/:restaurantId/events", eventRoutes); ----> prev
+router.use("/events", eventRoutes);  // -----------------------------> new
 
 // posts routes
 router.use("/posts", PostRoutes);
