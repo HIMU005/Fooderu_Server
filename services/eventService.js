@@ -32,6 +32,8 @@ const getEventsOfRestaurant = async (restaurantId, onlyLive = false) => {
   return await Event.find(query).sort({ created_at: -1 }); // Newest first
 };
 
+
+
 // Toggle an event's live status
 const toggleEventStatus = async (eventId) => {
   const event = await Event.findById(eventId);

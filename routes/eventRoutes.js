@@ -5,7 +5,7 @@ const {
   create,
   getEventsOfSingleRestaurant,
   toggleStatus,
-  getAllEvents,
+  getAllEventsFromAllRestaurants,
 } = require("../controllers/eventController");
 
 // Protect routes that modify data
@@ -14,6 +14,6 @@ router.patch("/:restaurantId/:eventId/toggle", toggleStatus);
 // Public route for getting events of a single restaurant
 router.get("/:restaurantId", getEventsOfSingleRestaurant);
 //api for getting all the events of all restaurant
-router.get("/", getAllEvents);
+router.get("/", getAllEventsFromAllRestaurants);
 
 module.exports = router;
