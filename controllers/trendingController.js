@@ -1,9 +1,11 @@
+// controllers/trendingController.js
 const mongoose = require("mongoose");
 const Restaurant = require("../models/Restaurant");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const Post = require("../models/Post");
 const MenuItem = require("../models/MenuItem");
 const Comment = require("../models/Comment");
+const MenuItemRating = require("../models/MenuItemRating"); // ADD THIS LINE
 
 const getTrendingRestaurants = async (req, res) => {
   try {
@@ -167,4 +169,5 @@ const getTrendingRestaurants = async (req, res) => {
     });
   }
 };
+
 module.exports = { getTrendingRestaurants };
