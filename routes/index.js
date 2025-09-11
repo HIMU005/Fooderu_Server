@@ -6,10 +6,9 @@ const userRoutes = require("./userRoutes");
 const eventRoutes = require("./eventRoutes");
 const PostRoutes = require("./postsRoutes");
 const followRoutes = require("./followRoutes");
-
 const uploadRoutes = require("./uploadRoutes");
-
 const commentRoutes = require("./commentRoutes");
+const trendingRoutes = require("./trendingRoutes");
 
 // auth routes
 router.use("/auth", authRoutes);
@@ -22,7 +21,7 @@ router.use("/users", userRoutes);
 
 //event routes
 // router.use("/restaurants/:restaurantId/events", eventRoutes); ----> prev
-router.use("/events", eventRoutes);  // -----------------------------> new
+router.use("/events", eventRoutes); // -----------------------------> new
 
 // posts routes
 router.use("/posts", PostRoutes);
@@ -35,7 +34,8 @@ router.use("/follow", followRoutes);
 router.use("/comments", commentRoutes);
 
 router.use("/upload", uploadRoutes);
-//comment routes
-// router.use("/comments", commentRoutes);
+
+// trending routes
+router.use("/trendings", trendingRoutes);
 
 module.exports = router;
