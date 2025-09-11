@@ -3,15 +3,17 @@ const router = express.Router({ mergeParams: true });
 const { protect } = require("../middlewares/authMiddleware");
 const {
   create,
-  getAll,
+  getEventsOfSingleRestaurant,
   toggleStatus,
+  getAllEventsFromAllRestaurants,
 } = require("../controllers/eventController");
 
 // Protect routes that modify data
-router.post("/", create);
-router.patch("/:eventId/toggle", toggleStatus);
-
-// Public route for getting events
-router.get("/", getAll);
+router.post("/:restaurantId", create);
+router.patch("/:restaurantId/:eventId/toggle", toggleStatus);
+// Public route for getting events of a single restaurant
+router.get("/:restaurantId", getEventsOfSingleRestaurant);
+//api for getting all the events of all restaurant
+router.get("/", getAllEventsFromAllRestaurants);
 
 module.exports = router;
