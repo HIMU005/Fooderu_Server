@@ -36,6 +36,9 @@ const userSchema = new mongoose.Schema({
   profile_picture: {
     type: String,
   },
+  coverPhoto: {
+    type: String,
+  },
   location: {
     type: String,
   },

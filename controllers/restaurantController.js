@@ -214,6 +214,34 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
   }
 };
 
+// update my restaurant
+const updateMyRestaurant = async (req, res, next) => {
+  console.log("hit");
+  try {
+    const restaurantId = req.params.restaurantId;
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      return next(new AppError("No restaurant found with that Id", 404));
+    }
+    if (restaurant.owner_id.toString() !== req.user._id.toString()) {
+      return next(
+        new AppError(
+          "You do not have permission to update this restaurant",
+          403
+        )
+      );
+    }
+    const update = req.body;
+    console.log(update);
+    await Restaurant.findByIdAndUpdate(restaurantId, update, {
+      new: true,
+      runValidators: true,
+    });
+    return res.json({ status: 200, message: "Restaurant updated" });
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   createRestaurant,
   getAllRestaurants,
@@ -222,4 +250,5 @@ module.exports = {
   getARestaurantByTheOwerId,
   getAllRestaurant,
   getRestaurantsWithFollowStatus,
+  updateMyRestaurant,
 };
