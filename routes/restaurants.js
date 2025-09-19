@@ -21,7 +21,7 @@ router.get("/follow-status", protect, getRestaurantsWithFollowStatus);
 // get all restaurant items
 router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
 router.get("/:restaurantId", getRestaurant);
-router.put("/:restaurantId", updateMyRestaurant);
+router.put("/:restaurantId", protect, updateMyRestaurant);
 
 router.get("/byUserId/:ownerId", getARestaurantByTheOwerId);
 
