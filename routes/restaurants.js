@@ -5,6 +5,7 @@ const {
   getARestaurantByTheOwerId,
   getAllRestaurant,
   getRestaurantsWithFollowStatus,
+  updateMyRestaurant,
 } = require("../controllers/restaurantController");
 const {
   createMenuItemController,
@@ -20,6 +21,7 @@ router.get("/follow-status", protect, getRestaurantsWithFollowStatus);
 // get all restaurant items
 router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
 router.get("/:restaurantId", getRestaurant);
+router.put("/:restaurantId", updateMyRestaurant);
 
 router.get("/byUserId/:ownerId", getARestaurantByTheOwerId);
 
