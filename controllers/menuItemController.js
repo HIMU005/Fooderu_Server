@@ -263,6 +263,78 @@ const getMenuItemsByFollowedRestaurants = async (req, res) => {
   }
 };
 
+// update menuITems
+const updateMenuItem = async (req, res) => {
+  try {
+    const { menuItemId } = req.params;
+    const updateData = req.body;
+    const userId = req.user._id;
+    // const userId = "68b993dc1597be1c656b3bbf";
+
+    const menuItem = await MenuItem.findById(menuItemId).populate(
+      "restaurant_id",
+      "owner_id"
+    );
+
+    if (!menuItem) {
+      return res.json({ status: 404, message: "Menu item not found" });
+    }
+
+    if (menuItem?.restaurant_id?.owner_id.toString() !== userId.toString()) {
+      return res.json({
+        staus: 403,
+        message: "Only the owner of the restaurant can update the menu item",
+      });
+    }
+
+    const newMenuItem = await MenuItem.findByIdAndUpdate(
+      menuItemId,
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    return res.json({
+      status: 200,
+      message: "Menuitem update successfully",
+      data: newMenuItem,
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
+// delete menuItem
+const deleteMenuItem = async (req, res) => {
+  try {
+    const { menuItemId } = req.params;
+    const userId = req.user._id;
+    // const userId = "68b993dc1597be1c656b3bbf";
+
+    const menuItem = await MenuItem.findById(menuItemId).populate(
+      "restaurant_id",
+      "owner_id"
+    );
+
+    if (!menuItem) {
+      return res.json({ status: 404, message: "Menu item not found" });
+    }
+
+    if (menuItem?.restaurant_id?.owner_id.toString() !== userId.toString()) {
+      return res.json({
+        staus: 403,
+        message: "Only the owner of the restaurant can delete the menu item",
+      });
+    }
+    await MenuItem.findByIdAndDelete(menuItemId);
+    return res.json({ status: 200, message: "MenuItem deleted successfully" });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
 module.exports = {
   createMenuItemController,
   getAllItemsUnderARestaurant,
@@ -271,4 +343,6 @@ module.exports = {
   GetMyRating,
   getAllMenuItems,
   getMenuItemsByFollowedRestaurants,
+  updateMenuItem,
+  deleteMenuItem,
 };
