@@ -31,7 +31,7 @@ const getAllPosts = async (req, res) => {
       message: "Posts fetched successfully",
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     throw new AppError(`server error ${error} `, 500);
   }

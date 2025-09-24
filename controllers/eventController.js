@@ -9,9 +9,9 @@ const {
 const create = async (req, res) => {
   try {
     const { restaurantId } = req.params;
-    console.log(restaurantId);
+    // console.log(restaurantId);
     const { event_title, description, image_url, expires_at } = req.body;
-    console.log(req.body);
+    // console.log(req.body);
 
     // Basic validation
     if (!event_title || !expires_at) {

@@ -5,7 +5,7 @@ const Restaurant = require("../models/Restaurant");
 const createEvent = async (restaurantId, eventData) => {
   // Check if restaurant exists
   const restaurantExists = await Restaurant.findOne({ _id: restaurantId });
-  console.log("exist : ", restaurantExists);
+  // console.log("exist : ", restaurantExists);
   if (!restaurantExists) {
     throw new Error("Restaurant not found");
   }
@@ -31,8 +31,6 @@ const getEventsOfRestaurant = async (restaurantId, onlyLive = false) => {
 
   return await Event.find(query).sort({ created_at: -1 }); // Newest first
 };
-
-
 
 // Toggle an event's live status
 const toggleEventStatus = async (eventId) => {
