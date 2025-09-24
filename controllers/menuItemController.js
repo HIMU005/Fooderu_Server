@@ -19,9 +19,9 @@ const createMenuItemController = async (req, res, next) => {
   try {
     const { name, price, description, image_url, is_boosted, boosted_until } =
       req.body;
-    console.log(req.body);
+    // console.log(req.body);
     const { restaurantId } = req.params;
-    console.log("restaurant id : ", restaurantId);
+    // console.log("restaurant id : ", restaurantId);
 
     if (!name || !price) {
       throw new AppError("Name and Price are required", 400);
@@ -113,7 +113,7 @@ const PostARating = async (req, res) => {
       averageRating: agg[0]?.averageRating || 0,
       totalRatings: agg[0]?.totalRatings || 0,
     });
-    console.log(menu);
+    // console.log(menu);
 
     // if all is successfull then return success response
     return res.json({
@@ -185,8 +185,6 @@ const getAllMenuItems = async (req, res) => {
   try {
     const { item, place, price, rating } = req.query;
 
-    console.log("from get all menu item controller", req.query);
-
     const queryParams = {};
 
     if (item) {
@@ -201,6 +199,7 @@ const getAllMenuItems = async (req, res) => {
 
     let menuItems = await MenuItem.find(queryParams)
       .populate("restaurant_id", "name displayPicture address")
+      .sort({ averageRating: -1 }) // sort by highest rating
       .lean();
 
     if (place) {
@@ -251,7 +250,7 @@ const getMenuItemsByFollowedRestaurants = async (req, res) => {
       .populate("restaurant_id", "name displayPicture address")
       .lean();
 
-    console.log(menuItems);
+    // console.log(menuItems);
 
     return res.json({
       status: 200,

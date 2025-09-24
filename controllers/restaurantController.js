@@ -216,7 +216,7 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
 
 // update my restaurant
 const updateMyRestaurant = async (req, res, next) => {
-  console.log("hit");
+  // console.log("hit");
   try {
     const restaurantId = req.params.restaurantId;
     const restaurant = await Restaurant.findById(restaurantId);
@@ -232,7 +232,7 @@ const updateMyRestaurant = async (req, res, next) => {
       );
     }
     const update = req.body;
-    console.log(update);
+    // console.log(update);
     await Restaurant.findByIdAndUpdate(restaurantId, update, {
       new: true,
       runValidators: true,

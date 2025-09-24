@@ -3,7 +3,7 @@ const Event = require("../models/Event");
 
 // Cron job: Every 5 minutes check for expired events
 cron.schedule("*/5 * * * *", async () => {
-  console.log("⏳ Checking for expired events...");
+  // console.log("⏳ Checking for expired events...");
 
   try {
     const result = await Event.updateMany(
@@ -17,7 +17,7 @@ cron.schedule("*/5 * * * *", async () => {
     );
 
     if (result.modifiedCount > 0) {
-      console.log(`${result.modifiedCount} event(s) marked as expired.`);
+      // console.log(`${result.modifiedCount} event(s) marked as expired.`);
     }
   } catch (error) {
     console.error("Error updating event statuses:", error.message);
