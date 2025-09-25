@@ -8,6 +8,7 @@ const {
 const AppError = require("../utils/AppError");
 const MenuItem = require("../models/MenuItem");
 const RestaurantFollow = require("../models/RestaurantFollow");
+const Post = require("../models/Post");
 
 /**
  * @desc    Create a new menu item under a restaurant
@@ -56,6 +57,29 @@ const getAllItemsUnderARestaurant = async (req, res) => {
     return res
       .status(500)
       .json({ status: 500, message: `Server error: ${error.message}` });
+  }
+};
+
+// get all posts under a restaurant
+const getAllPostsUnderARestaurant = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const posts = await Post.find({ restaurant_id: restaurantId });
+
+    if (!posts.length) {
+      return res.json({
+        status: 404,
+        message: "No posts found for this restaurant",
+        data: [],
+      });
+    }
+    return res.json({
+      status: 200,
+      message: "Posts fetched successfully",
+      data: posts,
+    });
+  } catch (error) {
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
   }
 };
 
@@ -344,4 +368,5 @@ module.exports = {
   getMenuItemsByFollowedRestaurants,
   updateMenuItem,
   deleteMenuItem,
+  getAllPostsUnderARestaurant,
 };
