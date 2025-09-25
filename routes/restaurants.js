@@ -10,6 +10,7 @@ const {
 const {
   createMenuItemController,
   getAllItemsUnderARestaurant,
+  getAllPostsUnderARestaurant,
 } = require("../controllers/menuItemController");
 
 const { protect } = require("../middlewares/authMiddleware");
@@ -17,6 +18,8 @@ const { protect } = require("../middlewares/authMiddleware");
 const router = require("express").Router({ mergeParams: true });
 
 router.get("/follow-status", protect, getRestaurantsWithFollowStatus);
+
+router.get("/:restaurantId/posts", getAllPostsUnderARestaurant);
 
 // get all restaurant items
 router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
