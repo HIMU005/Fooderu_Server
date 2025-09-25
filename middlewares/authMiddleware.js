@@ -38,7 +38,7 @@ exports.protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log("Authentication error:", error);
-    throw new AppError("Authentication error:", 401);
-  }
+    console.error("Authentication error:", error);
+    throw new AppError("Authentication error:", 401);
+  }
 };
