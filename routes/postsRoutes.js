@@ -22,6 +22,6 @@ router.get("/:id", getASinglePost);
 router.put("/:id", protect, updatePostDetails);
 
 // delete a post by id
-router.delete("/:id", deletePost);
+router.delete("/:id", protect, deletePost);
 
 module.exports = router;
