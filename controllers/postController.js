@@ -97,8 +97,9 @@ const updatePostDetails = async (req, res) => {
 const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
-    // const userId = req.user._id;
-    const userId = "68b9b5178e9b3b4eaa03a438";
+    const userId = req.user._id;
+    console.log("userId:", userId,id);
+    // const userId = "68b9b5178e9b3b4eaa03a438";
     const singlePost = await Post.findById(id).populate(
       "restaurant_id",
       "owner_id"
