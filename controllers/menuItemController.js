@@ -270,6 +270,7 @@ const getMenuItemsByFollowedRestaurants = async (req, res) => {
       user_id: userId,
     })
       .select("restaurant_id")
+      .sort({ createdAt: -1 })
       .lean();
     // if no restaurants is followed then return an empty array
     if (!followedRestaurants.length) {
