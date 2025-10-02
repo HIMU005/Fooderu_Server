@@ -24,7 +24,7 @@ const postByUser = async (req, res) => {
 // get all posts
 const getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find();
+    const posts = await Post.find().sort({ createdAt: -1 });
     res.json({
       status: 200,
       data: posts,
