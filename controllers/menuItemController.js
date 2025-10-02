@@ -52,7 +52,6 @@ const createMenuItemController = async (req, res, next) => {
         postType,
         restaurant_id: restaurantId,
       });
-      console.log(post);
     }
 
     res.status(201).json({
