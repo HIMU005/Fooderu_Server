@@ -21,6 +21,15 @@ const postSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    postType: {
+      type: String,
+      enum: ["normal", "menuItem", "event"],
+      default: "normal",
+    },
+    details: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: true,
