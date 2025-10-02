@@ -10,13 +10,41 @@ const MenuItemRating = require("../models/MenuItemRating"); // ADD THIS LINE
 const getTrendingRestaurants = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { item, place, limit } = req.query;
 
     // Last 7 days
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 7);
 
-    // 1. Get followers in last 7 days
-    const followers = await RestaurantFollow.aggregate([
+    // Build base query for restaurants
+    const restaurantQuery = { status: "active" };
+
+    // Apply search filters if provided
+    if (item) {
+      restaurantQuery.name = { $regex: item, $options: "i" };
+    }
+
+    if (place) {
+      restaurantQuery["address.mapAddress"] = { $regex: place, $options: "i" };
+    }
+
+    // 1. Get ALL followers count (not just recent ones)
+    const allFollowersCount = await RestaurantFollow.aggregate([
+      {
+        $group: {
+          _id: "$restaurant_id",
+          followersCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const followersCountMap = new Map();
+    allFollowersCount.forEach((item) => {
+      followersCountMap.set(item._id.toString(), item.followersCount);
+    });
+
+    // 2. Get followers in last 7 days (for trending scoring)
+    const recentFollowers = await RestaurantFollow.aggregate([
       {
         $match: {
           followed_at: { $gte: sinceDate },
@@ -30,7 +58,7 @@ const getTrendingRestaurants = async (req, res) => {
       },
     ]);
 
-    // 2. Get comments and replies from last 7 days
+    // 3. Get comments and replies from last 7 days
     const comments = await Comment.aggregate([
       {
         $match: {
@@ -63,7 +91,7 @@ const getTrendingRestaurants = async (req, res) => {
       },
     ]);
 
-    // 3. Get ratings from last 7 days
+    // 4. Get ratings from last 7 days
     const ratings = await MenuItemRating.aggregate([
       {
         $match: {
@@ -105,14 +133,9 @@ const getTrendingRestaurants = async (req, res) => {
     }
 
     // Weighted scoring system
-    addScore(followers, (i) => i.newFollowers * 3); // Followers are most valuable
-    addScore(comments, (i) => i.totalComments * 2); // Comments show good engagement
-    addScore(
-      ratings,
-      (i) =>
-        i.totalRatings * 1 + // Each rating contributes
-        i.avgRating * 0.5 // Higher average ratings get bonus
-    );
+    addScore(recentFollowers, (i) => i.newFollowers * 3);
+    addScore(comments, (i) => i.totalComments * 2);
+    addScore(ratings, (i) => i.totalRatings * 1 + i.avgRating * 0.5);
 
     // Sort restaurants by score
     const sortedRestaurants = [...scoreMap.entries()]
@@ -123,23 +146,25 @@ const getTrendingRestaurants = async (req, res) => {
       return res.json({
         success: true,
         data: [],
+        count: 0,
       });
     }
 
-    // Fetch full restaurant docs
+    // Fetch full restaurant docs with filters - THIS IS WHERE FILTERS APPLY
     const restaurantDocs = await Restaurant.find({
       _id: { $in: sortedRestaurants.map((r) => r.restaurant_id) },
-      status: "active",
+      ...restaurantQuery,
     }).lean();
 
     if (restaurantDocs.length === 0) {
       return res.json({
         success: true,
         data: [],
+        count: 0,
       });
     }
 
-    // Attach score + follow status
+    // Attach score + follow status + followersCount
     const userFollows = await RestaurantFollow.find({ user_id: userId });
     const followedIds = new Set(
       userFollows.map((f) => f.restaurant_id.toString())
@@ -149,16 +174,23 @@ const getTrendingRestaurants = async (req, res) => {
       restaurantDocs.map((d) => [d._id.toString(), d])
     );
 
-    const result = sortedRestaurants
+    let result = sortedRestaurants
       .filter((r) => restaurantMap.has(r.restaurant_id))
       .map((r) => ({
         ...(restaurantMap.get(r.restaurant_id) || {}),
-        score: Math.round(r.score), // Round to whole number
+        score: Math.round(r.score),
         isFollowing: followedIds.has(r.restaurant_id),
+        followersCount: followersCountMap.get(r.restaurant_id) || 0,
       }));
+
+    // Apply limit if provided
+    if (limit && !isNaN(parseInt(limit))) {
+      result = result.slice(0, parseInt(limit));
+    }
 
     res.json({
       success: true,
+      count: result.length,
       data: result,
     });
   } catch (error) {
