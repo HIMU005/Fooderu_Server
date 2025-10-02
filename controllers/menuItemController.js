@@ -18,8 +18,15 @@ const Post = require("../models/Post");
 
 const createMenuItemController = async (req, res, next) => {
   try {
-    const { name, price, description, image_url, is_boosted, boosted_until } =
-      req.body;
+    const {
+      name,
+      price,
+      description,
+      image_url,
+      is_boosted,
+      boosted_until,
+      isPost,
+    } = req.body;
     // console.log(req.body);
     const { restaurantId } = req.params;
     // console.log("restaurant id : ", restaurantId);
@@ -37,6 +44,16 @@ const createMenuItemController = async (req, res, next) => {
       boosted_until,
       restaurant_id: restaurantId,
     });
+    if (isPost) {
+      const details = { name, price, description, image_url };
+      const postType = "menuItem";
+      const post = await Post.create({
+        details,
+        postType,
+        restaurant_id: restaurantId,
+      });
+      console.log(post);
+    }
 
     res.status(201).json({
       status: "success",
