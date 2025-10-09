@@ -207,134 +207,133 @@ const getTrendingRestaurants = async (req, res) => {
 const getTrendingMenuItems = async (req, res) => {
   try {
     const userId = req.user._id;
+    const limit =
+      req.query.limit && !isNaN(parseInt(req.query.limit))
+        ? parseInt(req.query.limit)
+        : 50;
 
-    // Last 7 days
-    const sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - 7);
+    // ObjectId instance for comparisons in aggregation
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    // 1. Get ALL menu items first
-    const allMenuItems = await MenuItem.find()
-      .populate("restaurant_id", "name displayPicture address")
-      .lean();
-
-    console.log("Total menu items in database:", allMenuItems.length);
-
-    // 2. Get ratings for menu items (most important factor)
-    const ratings = await MenuItemRating.aggregate([
+    // Aggregate ALL posts, compute likes/comments, score and return a simple, consistent shape
+    const pipeline = [
       {
-        $match: {
-          createdAt: { $gte: sinceDate },
-        },
+        $project: {
+          content: 1,
+          title: 1,
+          user: 1,
+          restaurant_id: 1,
+          menuItem: 1,
+          likes: 1,
+          createdAt: 1,
+          likesCount: {
+            $cond: [
+              { $isArray: "$likes" },
+              { $size: "$likes" },
+              { $ifNull: ["$likesCount", 0] }
+            ]
+          }
+        }
       },
-      {
-        $group: {
-          _id: "$menuItem",
-          totalRatings: { $sum: 1 },
-          avgRating: { $avg: "$rating" },
-        },
-      },
-    ]);
 
-    console.log("Menu items with recent ratings:", ratings.length);
-
-    // 3. Get menu items that appear in posts (through comments)
-    const commentedMenuItems = await Comment.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sinceDate },
-          text: { $regex: /menu|item|food|dish|tasty|delicious/i },
-        },
-      },
+      // count comments + replies per post
       {
         $lookup: {
-          from: "posts",
-          localField: "postId",
-          foreignField: "_id",
-          as: "post",
-        },
+          from: "comments",
+          let: { postId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$postId", "$$postId"] } } },
+            { $project: { repliesCount: { $size: { $ifNull: ["$replies", []] } } } },
+            { $group: { _id: null, count: { $sum: { $add: [1, "$repliesCount"] } } } }
+          ],
+          as: "commentsAgg"
+        }
       },
       {
-        $unwind: "$post",
+        $addFields: {
+          commentsCount: { $ifNull: [{ $arrayElemAt: ["$commentsAgg.count", 0] }, 0] }
+        }
       },
+
+      // bring back minimal user info
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+
+      // bring minimal restaurant info
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant_id",
+          foreignField: "_id",
+          as: "restaurant"
+        }
+      },
+      { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
+
+      // bring minimal menu item info
       {
         $lookup: {
           from: "menuitems",
-          localField: "post.restaurant_id",
-          foreignField: "restaurant_id",
-          as: "menuItems",
-        },
+          localField: "menuItem",
+          foreignField: "_id",
+          as: "menuItem"
+        }
       },
+      { $unwind: { path: "$menuItem", preserveNullAndEmptyArrays: true } },
+
+      // compute score and whether current user liked the post
       {
-        $unwind: "$menuItems",
+        $addFields: {
+          score: {
+            $add: [
+              { $multiply: ["$likesCount", 1] },
+              { $multiply: ["$commentsCount", 3] }
+            ]
+          },
+          isLikedByUser: { $in: [userObjectId, { $ifNull: ["$likes", []] }] }
+        }
       },
+
+      // sort & limit
+      { $sort: { score: -1, createdAt: -1 } },
+      { $limit: limit },
+
+      // final clean projection: a simple, stable response shape
       {
-        $group: {
-          _id: "$menuItems._id",
-          mentionCount: { $sum: 1 },
-        },
-      },
-    ]);
+        $project: {
+          _id: 1,
+          content: 1,
+          createdAt: 1,
+          score: 1,
+          likesCount: 1,
+          commentsCount: 1,
+          isLikedByUser: 1,
+          user: { _id: "$user._id", name: "$user.name", displayPicture: "$user.displayPicture" },
+          restaurant: { _id: "$restaurant._id", name: "$restaurant.name", displayPicture: "$restaurant.displayPicture" },
+          menuItem: { _id: "$menuItem._id", name: "$menuItem.name", price: "$menuItem.price" }
+        }
+      }
+    ];
 
-    console.log("Menu items mentioned in comments:", commentedMenuItems.length);
-
-    const scoreMap = new Map();
-
-    function addScore(list, weightFunc) {
-      list.forEach((item) => {
-        const id = item._id.toString();
-        const prev = scoreMap.get(id) || { score: 0 };
-        scoreMap.set(id, {
-          ...prev,
-          ...item,
-          score: prev.score + weightFunc(item),
-        });
-      });
-    }
-
-    // Weighted scoring for menu items
-    addScore(
-      ratings,
-      (i) =>
-        i.totalRatings * 3 + // Number of ratings
-        i.avgRating * 2 // Quality of ratings
-    );
-
-    addScore(commentedMenuItems, (i) => i.mentionCount * 2); // Mentions in comments
-
-    // Get user's rated items for personalization
-    const userRatings = await MenuItemRating.find({ user: userId });
-    const userRatedIds = new Set(userRatings.map((r) => r.menuItem.toString()));
-
-    // Create result with ALL menu items, assigning zero scores to items with no engagement
-    const result = allMenuItems
-      .map((menuItem) => {
-        const itemId = menuItem._id.toString();
-        const scoreData = scoreMap.get(itemId) || { score: 0 };
-
-        return {
-          ...menuItem,
-          score: Math.round(scoreData.score),
-          isRatedByUser: userRatedIds.has(itemId),
-          // trendingRank will be assigned after sorting
-        };
-      })
-      .sort((a, b) => b.score - a.score) // Sort by score descending
-      .map((item, index) => ({
-        ...item,
-        trendingRank: index + 1, // Assign rank after sorting
-      }));
-
-    console.log("Final result count:", result.length);
+    const posts = await Post.aggregate(pipeline);
 
     res.json({
       success: true,
-      data: result,
+      count: posts.length,
+      data: posts
     });
   } catch (error) {
-    console.error("Trending menu items error:", error);
+    console.error("Trending posts error:", error);
     res.status(500).json({
       success: false,
-      error: "Server error",
+      error: "Server error"
     });
   }
 };
