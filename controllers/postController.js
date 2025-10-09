@@ -24,10 +24,22 @@ const postByUser = async (req, res) => {
 // get all posts
 const getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 });
+    const limit = parseInt(req.query.limit) || 5; // Default limit to 5 if not provided
+    const skip = parseInt(req.query.skip) || 0; // Default skip to 0 if not provided
+
+    const totalPosts = await Post.countDocuments();
+
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
     res.json({
       status: 200,
       data: posts,
+      total: totalPosts,
+      skip,
+      limit,
       message: "Posts fetched successfully",
     });
   } catch (error) {
