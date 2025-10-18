@@ -118,6 +118,9 @@ const getTrendingRestaurants = async (req, res) => {
       },
     ]);
 
+    // Include ALL active restaurants (even with no score)
+    const allRestaurants = await Restaurant.find(restaurantQuery).lean();
+
     const scoreMap = new Map();
 
     function addScore(list, weightFunc) {
@@ -136,6 +139,14 @@ const getTrendingRestaurants = async (req, res) => {
     addScore(recentFollowers, (i) => i.newFollowers * 3);
     addScore(comments, (i) => i.totalComments * 2);
     addScore(ratings, (i) => i.totalRatings * 1 + i.avgRating * 0.5);
+
+    // Add restaurants with score 0 if missing
+    allRestaurants.forEach((r) => {
+      const id = r._id.toString();
+      if (!scoreMap.has(id)) {
+        scoreMap.set(id, { _id: id, score: 0 });
+      }
+    });
 
     // Sort restaurants by score
     const sortedRestaurants = [...scoreMap.entries()]
@@ -230,10 +241,10 @@ const getTrendingMenuItems = async (req, res) => {
             $cond: [
               { $isArray: "$likes" },
               { $size: "$likes" },
-              { $ifNull: ["$likesCount", 0] }
-            ]
-          }
-        }
+              { $ifNull: ["$likesCount", 0] },
+            ],
+          },
+        },
       },
 
       // count comments + replies per post
@@ -243,16 +254,27 @@ const getTrendingMenuItems = async (req, res) => {
           let: { postId: "$_id" },
           pipeline: [
             { $match: { $expr: { $eq: ["$postId", "$$postId"] } } },
-            { $project: { repliesCount: { $size: { $ifNull: ["$replies", []] } } } },
-            { $group: { _id: null, count: { $sum: { $add: [1, "$repliesCount"] } } } }
+            {
+              $project: {
+                repliesCount: { $size: { $ifNull: ["$replies", []] } },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                count: { $sum: { $add: [1, "$repliesCount"] } },
+              },
+            },
           ],
-          as: "commentsAgg"
-        }
+          as: "commentsAgg",
+        },
       },
       {
         $addFields: {
-          commentsCount: { $ifNull: [{ $arrayElemAt: ["$commentsAgg.count", 0] }, 0] }
-        }
+          commentsCount: {
+            $ifNull: [{ $arrayElemAt: ["$commentsAgg.count", 0] }, 0],
+          },
+        },
       },
 
       // bring back minimal user info
@@ -261,8 +283,8 @@ const getTrendingMenuItems = async (req, res) => {
           from: "users",
           localField: "user",
           foreignField: "_id",
-          as: "user"
-        }
+          as: "user",
+        },
       },
       { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
 
@@ -272,8 +294,8 @@ const getTrendingMenuItems = async (req, res) => {
           from: "restaurants",
           localField: "restaurant_id",
           foreignField: "_id",
-          as: "restaurant"
-        }
+          as: "restaurant",
+        },
       },
       { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
 
@@ -283,8 +305,8 @@ const getTrendingMenuItems = async (req, res) => {
           from: "menuitems",
           localField: "menuItem",
           foreignField: "_id",
-          as: "menuItem"
-        }
+          as: "menuItem",
+        },
       },
       { $unwind: { path: "$menuItem", preserveNullAndEmptyArrays: true } },
 
@@ -294,11 +316,11 @@ const getTrendingMenuItems = async (req, res) => {
           score: {
             $add: [
               { $multiply: ["$likesCount", 1] },
-              { $multiply: ["$commentsCount", 3] }
-            ]
+              { $multiply: ["$commentsCount", 3] },
+            ],
           },
-          isLikedByUser: { $in: [userObjectId, { $ifNull: ["$likes", []] }] }
-        }
+          isLikedByUser: { $in: [userObjectId, { $ifNull: ["$likes", []] }] },
+        },
       },
 
       // sort & limit
@@ -315,11 +337,23 @@ const getTrendingMenuItems = async (req, res) => {
           likesCount: 1,
           commentsCount: 1,
           isLikedByUser: 1,
-          user: { _id: "$user._id", name: "$user.name", displayPicture: "$user.displayPicture" },
-          restaurant: { _id: "$restaurant._id", name: "$restaurant.name", displayPicture: "$restaurant.displayPicture" },
-          menuItem: { _id: "$menuItem._id", name: "$menuItem.name", price: "$menuItem.price" }
-        }
-      }
+          user: {
+            _id: "$user._id",
+            name: "$user.name",
+            displayPicture: "$user.displayPicture",
+          },
+          restaurant: {
+            _id: "$restaurant._id",
+            name: "$restaurant.name",
+            displayPicture: "$restaurant.displayPicture",
+          },
+          menuItem: {
+            _id: "$menuItem._id",
+            name: "$menuItem.name",
+            price: "$menuItem.price",
+          },
+        },
+      },
     ];
 
     const posts = await Post.aggregate(pipeline);
@@ -327,13 +361,13 @@ const getTrendingMenuItems = async (req, res) => {
     res.json({
       success: true,
       count: posts.length,
-      data: posts
+      data: posts,
     });
   } catch (error) {
     console.error("Trending posts error:", error);
     res.status(500).json({
       success: false,
-      error: "Server error"
+      error: "Server error",
     });
   }
 };
