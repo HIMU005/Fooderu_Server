@@ -89,6 +89,8 @@ const createRestaurant = async (req, res, next) => {
         .json({ status: 500, message: "Failed to create restaurant" });
     }
     if (data.errors) {
+      // console.log(data.errors);
+
       return res.status(400).json({ status: 400, message: data.errors });
     }
 
