@@ -16,26 +16,28 @@ const getTrendingRestaurants = async (req, res) => {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 7);
 
-    // Build base query for restaurants - APPLY FILTERS ONLY ONCE
-    const restaurantQuery = { status: "active" };
-
-    // Apply search filters if provided
+    // Build base query for restaurants
+    const restaurantQuery = {};
     if (item) {
       restaurantQuery.name = { $regex: item, $options: "i" };
     }
-
     if (place) {
       restaurantQuery["address.mapAddress"] = { $regex: place, $options: "i" };
     }
 
-    // 1. Get ALL followers count (not just recent ones)
+    // 1. Fetch ALL restaurants matching filters ONCE
+    const allRestaurants = await Restaurant.find(restaurantQuery).lean();
+
+    if (allRestaurants.length === 0) {
+      return res.json({ success: true, data: [], count: 0 });
+    }
+
+    const restaurantIds = allRestaurants.map((r) => r._id);
+
+    // 2. Total followers count (all time)
     const allFollowersCount = await RestaurantFollow.aggregate([
-      {
-        $group: {
-          _id: "$restaurant_id",
-          followersCount: { $sum: 1 },
-        },
-      },
+      { $match: { restaurant_id: { $in: restaurantIds } } },
+      { $group: { _id: "$restaurant_id", followersCount: { $sum: 1 } } },
     ]);
 
     const followersCountMap = new Map();
@@ -43,28 +45,20 @@ const getTrendingRestaurants = async (req, res) => {
       followersCountMap.set(item._id.toString(), item.followersCount);
     });
 
-    // 2. Get followers in last 7 days (for trending scoring)
+    // 3. Recent followers (last 7 days)
     const recentFollowers = await RestaurantFollow.aggregate([
       {
         $match: {
+          restaurant_id: { $in: restaurantIds },
           followed_at: { $gte: sinceDate },
         },
       },
-      {
-        $group: {
-          _id: "$restaurant_id",
-          newFollowers: { $sum: 1 },
-        },
-      },
+      { $group: { _id: "$restaurant_id", newFollowers: { $sum: 1 } } },
     ]);
 
-    // 3. Get comments and replies from last 7 days
+    // 4. Comments + replies in last 7 days
     const comments = await Comment.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sinceDate },
-        },
-      },
+      { $match: { createdAt: { $gte: sinceDate } } },
       {
         $lookup: {
           from: "posts",
@@ -73,31 +67,23 @@ const getTrendingRestaurants = async (req, res) => {
           as: "post",
         },
       },
+      { $unwind: "$post" },
       {
-        $unwind: "$post",
+        $match: { "post.restaurant_id": { $in: restaurantIds } },
       },
       {
         $group: {
           _id: "$post.restaurant_id",
           totalComments: {
-            $sum: {
-              $add: [
-                1, // Count the main comment
-                { $size: "$replies" }, // Count all replies
-              ],
-            },
+            $sum: { $add: [1, { $size: { $ifNull: ["$replies", []] } }] },
           },
         },
       },
     ]);
 
-    // 4. Get ratings from last 7 days
+    // 5. Ratings in last 7 days
     const ratings = await MenuItemRating.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sinceDate },
-        },
-      },
+      { $match: { createdAt: { $gte: sinceDate } } },
       {
         $lookup: {
           from: "menuitems",
@@ -106,8 +92,9 @@ const getTrendingRestaurants = async (req, res) => {
           as: "menuItem",
         },
       },
+      { $unwind: "$menuItem" },
       {
-        $unwind: "$menuItem",
+        $match: { "menuItem.restaurant_id": { $in: restaurantIds } },
       },
       {
         $group: {
@@ -118,29 +105,26 @@ const getTrendingRestaurants = async (req, res) => {
       },
     ]);
 
-    // Get ALL restaurants that match the filter criteria
-    const allRestaurants = await Restaurant.find(restaurantQuery).lean();
-
+    // Build score map
     const scoreMap = new Map();
 
-    function addScore(list, weightFunc) {
+    const addScore = (list, weightFunc) => {
       list.forEach((item) => {
         const id = item._id.toString();
-        const prev = scoreMap.get(id) || { score: 0 };
+        const current = scoreMap.get(id) || { score: 0 };
         scoreMap.set(id, {
-          ...prev,
+          ...current,
           ...item,
-          score: prev.score + weightFunc(item),
+          score: current.score + weightFunc(item),
         });
       });
-    }
+    };
 
-    // Weighted scoring system
     addScore(recentFollowers, (i) => i.newFollowers * 3);
     addScore(comments, (i) => i.totalComments * 2);
-    addScore(ratings, (i) => i.totalRatings * 1 + i.avgRating * 0.5);
+    addScore(ratings, (i) => i.totalRatings * 1 + (i.avgRating || 0) * 0.5);
 
-    // Add restaurants with score 0 if missing - THIS IS CRITICAL
+    // Ensure EVERY restaurant has an entry (even score 0)
     allRestaurants.forEach((r) => {
       const id = r._id.toString();
       if (!scoreMap.has(id)) {
@@ -148,68 +132,49 @@ const getTrendingRestaurants = async (req, res) => {
       }
     });
 
-    // Sort restaurants by score
-    const sortedRestaurants = [...scoreMap.entries()]
+    // Sort by score descending
+    const sorted = [...scoreMap.entries()]
       .sort((a, b) => b[1].score - a[1].score)
       .map(([id, data]) => ({ restaurant_id: id, ...data }));
 
-    if (sortedRestaurants.length === 0) {
-      return res.json({
-        success: true,
-        data: [],
-        count: 0,
-      });
-    }
-
-    // REMOVE THE SECOND FILTER - just get the restaurant details
-    const restaurantDocs = await Restaurant.find({
-      _id: { $in: sortedRestaurants.map((r) => r.restaurant_id) },
-      // REMOVED: ...restaurantQuery (this was the problem!)
-    }).lean();
-
-    if (restaurantDocs.length === 0) {
-      return res.json({
-        success: true,
-        data: [],
-        count: 0,
-      });
-    }
-
-    // Attach score + follow status + followersCount
-    const userFollows = await RestaurantFollow.find({ user_id: userId });
+    // User follow status
+    const userFollows = await RestaurantFollow.find({
+      user_id: userId,
+      restaurant_id: { $in: restaurantIds },
+    });
     const followedIds = new Set(
       userFollows.map((f) => f.restaurant_id.toString())
     );
 
+    // Build final result using original allRestaurants (preserves all fields)
     const restaurantMap = new Map(
-      restaurantDocs.map((d) => [d._id.toString(), d])
+      allRestaurants.map((r) => [r._id.toString(), r])
     );
 
-    let result = sortedRestaurants
-      .filter((r) => restaurantMap.has(r.restaurant_id))
-      .map((r) => ({
-        ...(restaurantMap.get(r.restaurant_id) || {}),
-        score: Math.round(r.score),
-        isFollowing: followedIds.has(r.restaurant_id),
-        followersCount: followersCountMap.get(r.restaurant_id) || 0,
-      }));
+    const result = sorted.map((entry) => {
+      const restaurant = restaurantMap.get(entry.restaurant_id);
+      return {
+        ...restaurant,
+        score: Math.round(entry.score),
+        isFollowing: followedIds.has(entry.restaurant_id),
+        followersCount: followersCountMap.get(entry.restaurant_id) || 0,
+      };
+    });
 
-    // Apply limit if provided
-    if (limit && !isNaN(parseInt(limit))) {
-      result = result.slice(0, parseInt(limit));
-    }
+    // Apply limit
+    const finalResult =
+      limit && !isNaN(parseInt(limit))
+        ? result.slice(0, parseInt(limit))
+        : result;
 
     res.json({
       success: true,
-      count: result.length,
-      data: result,
+      count: finalResult.length,
+      data: finalResult,
     });
   } catch (error) {
     console.error("Trending error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-    });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
