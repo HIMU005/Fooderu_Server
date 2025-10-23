@@ -16,7 +16,7 @@ const getTrendingRestaurants = async (req, res) => {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 7);
 
-    // Build base query for restaurants
+    // Build base query for restaurants - APPLY FILTERS ONLY ONCE
     const restaurantQuery = { status: "active" };
 
     // Apply search filters if provided
@@ -118,7 +118,7 @@ const getTrendingRestaurants = async (req, res) => {
       },
     ]);
 
-    // Include ALL active restaurants (even with no score)
+    // Get ALL restaurants that match the filter criteria
     const allRestaurants = await Restaurant.find(restaurantQuery).lean();
 
     const scoreMap = new Map();
@@ -140,7 +140,7 @@ const getTrendingRestaurants = async (req, res) => {
     addScore(comments, (i) => i.totalComments * 2);
     addScore(ratings, (i) => i.totalRatings * 1 + i.avgRating * 0.5);
 
-    // Add restaurants with score 0 if missing
+    // Add restaurants with score 0 if missing - THIS IS CRITICAL
     allRestaurants.forEach((r) => {
       const id = r._id.toString();
       if (!scoreMap.has(id)) {
@@ -161,10 +161,10 @@ const getTrendingRestaurants = async (req, res) => {
       });
     }
 
-    // Fetch full restaurant docs with filters - THIS IS WHERE FILTERS APPLY
+    // REMOVE THE SECOND FILTER - just get the restaurant details
     const restaurantDocs = await Restaurant.find({
       _id: { $in: sortedRestaurants.map((r) => r.restaurant_id) },
-      ...restaurantQuery,
+      // REMOVED: ...restaurantQuery (this was the problem!)
     }).lean();
 
     if (restaurantDocs.length === 0) {
