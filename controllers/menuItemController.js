@@ -207,6 +207,7 @@ const GetMyRating = async (req, res) => {
       return res.json({
         status: 404,
         message: "Rating not found for this menu item by this user",
+        data: { rating: 0 },
       });
     }
     // rturn the rating

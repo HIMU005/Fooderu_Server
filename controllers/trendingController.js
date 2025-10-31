@@ -17,25 +17,27 @@ const getTrendingRestaurants = async (req, res) => {
     sinceDate.setDate(sinceDate.getDate() - 7);
 
     // Build base query for restaurants
-    const restaurantQuery = { status: "active" };
-
-    // Apply search filters if provided
+    const restaurantQuery = {};
     if (item) {
       restaurantQuery.name = { $regex: item, $options: "i" };
     }
-
     if (place) {
       restaurantQuery["address.mapAddress"] = { $regex: place, $options: "i" };
     }
 
-    // 1. Get ALL followers count (not just recent ones)
+    // 1. Fetch ALL restaurants matching filters ONCE
+    const allRestaurants = await Restaurant.find(restaurantQuery).lean();
+
+    if (allRestaurants.length === 0) {
+      return res.json({ success: true, data: [], count: 0 });
+    }
+
+    const restaurantIds = allRestaurants.map((r) => r._id);
+
+    // 2. Total followers count (all time)
     const allFollowersCount = await RestaurantFollow.aggregate([
-      {
-        $group: {
-          _id: "$restaurant_id",
-          followersCount: { $sum: 1 },
-        },
-      },
+      { $match: { restaurant_id: { $in: restaurantIds } } },
+      { $group: { _id: "$restaurant_id", followersCount: { $sum: 1 } } },
     ]);
 
     const followersCountMap = new Map();
@@ -43,28 +45,20 @@ const getTrendingRestaurants = async (req, res) => {
       followersCountMap.set(item._id.toString(), item.followersCount);
     });
 
-    // 2. Get followers in last 7 days (for trending scoring)
+    // 3. Recent followers (last 7 days)
     const recentFollowers = await RestaurantFollow.aggregate([
       {
         $match: {
+          restaurant_id: { $in: restaurantIds },
           followed_at: { $gte: sinceDate },
         },
       },
-      {
-        $group: {
-          _id: "$restaurant_id",
-          newFollowers: { $sum: 1 },
-        },
-      },
+      { $group: { _id: "$restaurant_id", newFollowers: { $sum: 1 } } },
     ]);
 
-    // 3. Get comments and replies from last 7 days
+    // 4. Comments + replies in last 7 days
     const comments = await Comment.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sinceDate },
-        },
-      },
+      { $match: { createdAt: { $gte: sinceDate } } },
       {
         $lookup: {
           from: "posts",
@@ -73,31 +67,23 @@ const getTrendingRestaurants = async (req, res) => {
           as: "post",
         },
       },
+      { $unwind: "$post" },
       {
-        $unwind: "$post",
+        $match: { "post.restaurant_id": { $in: restaurantIds } },
       },
       {
         $group: {
           _id: "$post.restaurant_id",
           totalComments: {
-            $sum: {
-              $add: [
-                1, // Count the main comment
-                { $size: "$replies" }, // Count all replies
-              ],
-            },
+            $sum: { $add: [1, { $size: { $ifNull: ["$replies", []] } }] },
           },
         },
       },
     ]);
 
-    // 4. Get ratings from last 7 days
+    // 5. Ratings in last 7 days
     const ratings = await MenuItemRating.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sinceDate },
-        },
-      },
+      { $match: { createdAt: { $gte: sinceDate } } },
       {
         $lookup: {
           from: "menuitems",
@@ -106,8 +92,9 @@ const getTrendingRestaurants = async (req, res) => {
           as: "menuItem",
         },
       },
+      { $unwind: "$menuItem" },
       {
-        $unwind: "$menuItem",
+        $match: { "menuItem.restaurant_id": { $in: restaurantIds } },
       },
       {
         $group: {
@@ -118,87 +105,76 @@ const getTrendingRestaurants = async (req, res) => {
       },
     ]);
 
+    // Build score map
     const scoreMap = new Map();
 
-    function addScore(list, weightFunc) {
+    const addScore = (list, weightFunc) => {
       list.forEach((item) => {
         const id = item._id.toString();
-        const prev = scoreMap.get(id) || { score: 0 };
+        const current = scoreMap.get(id) || { score: 0 };
         scoreMap.set(id, {
-          ...prev,
+          ...current,
           ...item,
-          score: prev.score + weightFunc(item),
+          score: current.score + weightFunc(item),
         });
       });
-    }
+    };
 
-    // Weighted scoring system
     addScore(recentFollowers, (i) => i.newFollowers * 3);
     addScore(comments, (i) => i.totalComments * 2);
-    addScore(ratings, (i) => i.totalRatings * 1 + i.avgRating * 0.5);
+    addScore(ratings, (i) => i.totalRatings * 1 + (i.avgRating || 0) * 0.5);
 
-    // Sort restaurants by score
-    const sortedRestaurants = [...scoreMap.entries()]
+    // Ensure EVERY restaurant has an entry (even score 0)
+    allRestaurants.forEach((r) => {
+      const id = r._id.toString();
+      if (!scoreMap.has(id)) {
+        scoreMap.set(id, { _id: id, score: 0 });
+      }
+    });
+
+    // Sort by score descending
+    const sorted = [...scoreMap.entries()]
       .sort((a, b) => b[1].score - a[1].score)
       .map(([id, data]) => ({ restaurant_id: id, ...data }));
 
-    if (sortedRestaurants.length === 0) {
-      return res.json({
-        success: true,
-        data: [],
-        count: 0,
-      });
-    }
-
-    // Fetch full restaurant docs with filters - THIS IS WHERE FILTERS APPLY
-    const restaurantDocs = await Restaurant.find({
-      _id: { $in: sortedRestaurants.map((r) => r.restaurant_id) },
-      ...restaurantQuery,
-    }).lean();
-
-    if (restaurantDocs.length === 0) {
-      return res.json({
-        success: true,
-        data: [],
-        count: 0,
-      });
-    }
-
-    // Attach score + follow status + followersCount
-    const userFollows = await RestaurantFollow.find({ user_id: userId });
+    // User follow status
+    const userFollows = await RestaurantFollow.find({
+      user_id: userId,
+      restaurant_id: { $in: restaurantIds },
+    });
     const followedIds = new Set(
       userFollows.map((f) => f.restaurant_id.toString())
     );
 
+    // Build final result using original allRestaurants (preserves all fields)
     const restaurantMap = new Map(
-      restaurantDocs.map((d) => [d._id.toString(), d])
+      allRestaurants.map((r) => [r._id.toString(), r])
     );
 
-    let result = sortedRestaurants
-      .filter((r) => restaurantMap.has(r.restaurant_id))
-      .map((r) => ({
-        ...(restaurantMap.get(r.restaurant_id) || {}),
-        score: Math.round(r.score),
-        isFollowing: followedIds.has(r.restaurant_id),
-        followersCount: followersCountMap.get(r.restaurant_id) || 0,
-      }));
+    const result = sorted.map((entry) => {
+      const restaurant = restaurantMap.get(entry.restaurant_id);
+      return {
+        ...restaurant,
+        score: Math.round(entry.score),
+        isFollowing: followedIds.has(entry.restaurant_id),
+        followersCount: followersCountMap.get(entry.restaurant_id) || 0,
+      };
+    });
 
-    // Apply limit if provided
-    if (limit && !isNaN(parseInt(limit))) {
-      result = result.slice(0, parseInt(limit));
-    }
+    // Apply limit
+    const finalResult =
+      limit && !isNaN(parseInt(limit))
+        ? result.slice(0, parseInt(limit))
+        : result;
 
     res.json({
       success: true,
-      count: result.length,
-      data: result,
+      count: finalResult.length,
+      data: finalResult,
     });
   } catch (error) {
     console.error("Trending error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-    });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
@@ -207,131 +183,153 @@ const getTrendingRestaurants = async (req, res) => {
 const getTrendingMenuItems = async (req, res) => {
   try {
     const userId = req.user._id;
+    const limit =
+      req.query.limit && !isNaN(parseInt(req.query.limit))
+        ? parseInt(req.query.limit)
+        : 50;
 
-    // Last 7 days
-    const sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - 7);
+    // ObjectId instance for comparisons in aggregation
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    // 1. Get ALL menu items first
-    const allMenuItems = await MenuItem.find()
-      .populate("restaurant_id", "name displayPicture address")
-      .lean();
-
-    console.log("Total menu items in database:", allMenuItems.length);
-
-    // 2. Get ratings for menu items (most important factor)
-    const ratings = await MenuItemRating.aggregate([
+    // Aggregate ALL posts, compute likes/comments, score and return a simple, consistent shape
+    const pipeline = [
       {
-        $match: {
-          createdAt: { $gte: sinceDate },
+        $project: {
+          content: 1,
+          title: 1,
+          user: 1,
+          restaurant_id: 1,
+          menuItem: 1,
+          likes: 1,
+          createdAt: 1,
+          likesCount: {
+            $cond: [
+              { $isArray: "$likes" },
+              { $size: "$likes" },
+              { $ifNull: ["$likesCount", 0] },
+            ],
+          },
         },
       },
-      {
-        $group: {
-          _id: "$menuItem",
-          totalRatings: { $sum: 1 },
-          avgRating: { $avg: "$rating" },
-        },
-      },
-    ]);
 
-    console.log("Menu items with recent ratings:", ratings.length);
-
-    // 3. Get menu items that appear in posts (through comments)
-    const commentedMenuItems = await Comment.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sinceDate },
-          text: { $regex: /menu|item|food|dish|tasty|delicious/i },
-        },
-      },
+      // count comments + replies per post
       {
         $lookup: {
-          from: "posts",
-          localField: "postId",
-          foreignField: "_id",
-          as: "post",
+          from: "comments",
+          let: { postId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$postId", "$$postId"] } } },
+            {
+              $project: {
+                repliesCount: { $size: { $ifNull: ["$replies", []] } },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                count: { $sum: { $add: [1, "$repliesCount"] } },
+              },
+            },
+          ],
+          as: "commentsAgg",
         },
       },
       {
-        $unwind: "$post",
+        $addFields: {
+          commentsCount: {
+            $ifNull: [{ $arrayElemAt: ["$commentsAgg.count", 0] }, 0],
+          },
+        },
       },
+
+      // bring back minimal user info
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+
+      // bring minimal restaurant info
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant_id",
+          foreignField: "_id",
+          as: "restaurant",
+        },
+      },
+      { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
+
+      // bring minimal menu item info
       {
         $lookup: {
           from: "menuitems",
-          localField: "post.restaurant_id",
-          foreignField: "restaurant_id",
-          as: "menuItems",
+          localField: "menuItem",
+          foreignField: "_id",
+          as: "menuItem",
         },
       },
+      { $unwind: { path: "$menuItem", preserveNullAndEmptyArrays: true } },
+
+      // compute score and whether current user liked the post
       {
-        $unwind: "$menuItems",
-      },
-      {
-        $group: {
-          _id: "$menuItems._id",
-          mentionCount: { $sum: 1 },
+        $addFields: {
+          score: {
+            $add: [
+              { $multiply: ["$likesCount", 1] },
+              { $multiply: ["$commentsCount", 3] },
+            ],
+          },
+          isLikedByUser: { $in: [userObjectId, { $ifNull: ["$likes", []] }] },
         },
       },
-    ]);
 
-    console.log("Menu items mentioned in comments:", commentedMenuItems.length);
+      // sort & limit
+      { $sort: { score: -1, createdAt: -1 } },
+      { $limit: limit },
 
-    const scoreMap = new Map();
+      // final clean projection: a simple, stable response shape
+      {
+        $project: {
+          _id: 1,
+          content: 1,
+          createdAt: 1,
+          score: 1,
+          likesCount: 1,
+          commentsCount: 1,
+          isLikedByUser: 1,
+          user: {
+            _id: "$user._id",
+            name: "$user.name",
+            displayPicture: "$user.displayPicture",
+          },
+          restaurant: {
+            _id: "$restaurant._id",
+            name: "$restaurant.name",
+            displayPicture: "$restaurant.displayPicture",
+          },
+          menuItem: {
+            _id: "$menuItem._id",
+            name: "$menuItem.name",
+            price: "$menuItem.price",
+          },
+        },
+      },
+    ];
 
-    function addScore(list, weightFunc) {
-      list.forEach((item) => {
-        const id = item._id.toString();
-        const prev = scoreMap.get(id) || { score: 0 };
-        scoreMap.set(id, {
-          ...prev,
-          ...item,
-          score: prev.score + weightFunc(item),
-        });
-      });
-    }
-
-    // Weighted scoring for menu items
-    addScore(
-      ratings,
-      (i) =>
-        i.totalRatings * 3 + // Number of ratings
-        i.avgRating * 2 // Quality of ratings
-    );
-
-    addScore(commentedMenuItems, (i) => i.mentionCount * 2); // Mentions in comments
-
-    // Get user's rated items for personalization
-    const userRatings = await MenuItemRating.find({ user: userId });
-    const userRatedIds = new Set(userRatings.map((r) => r.menuItem.toString()));
-
-    // Create result with ALL menu items, assigning zero scores to items with no engagement
-    const result = allMenuItems
-      .map((menuItem) => {
-        const itemId = menuItem._id.toString();
-        const scoreData = scoreMap.get(itemId) || { score: 0 };
-
-        return {
-          ...menuItem,
-          score: Math.round(scoreData.score),
-          isRatedByUser: userRatedIds.has(itemId),
-          // trendingRank will be assigned after sorting
-        };
-      })
-      .sort((a, b) => b.score - a.score) // Sort by score descending
-      .map((item, index) => ({
-        ...item,
-        trendingRank: index + 1, // Assign rank after sorting
-      }));
-
-    console.log("Final result count:", result.length);
+    const posts = await Post.aggregate(pipeline);
 
     res.json({
       success: true,
-      data: result,
+      count: posts.length,
+      data: posts,
     });
   } catch (error) {
-    console.error("Trending menu items error:", error);
+    console.error("Trending posts error:", error);
     res.status(500).json({
       success: false,
       error: "Server error",
