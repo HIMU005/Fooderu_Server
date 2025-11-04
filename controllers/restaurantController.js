@@ -11,10 +11,11 @@ const AppError = require("../utils/AppError");
 // Public access
 const getRestaurant = async (req, res, next) => {
   try {
-    const restaurant = await getRestaurantById(req.params.id);
+    const id = req.params.restaurantId || req.params.id;
+    const restaurant = await Restaurant.findById({ _id: id });
     res.status(200).json({
       status: "success",
-      data: { restaurant },
+      data: restaurant,
     });
   } catch (error) {
     next(error);
