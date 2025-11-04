@@ -150,9 +150,46 @@ const logInWithClerkcontroller = async (req, res, next) => {
   }
 };
 
+const loginWithFirebaseController = async (req, res, next) => {
+  const payload = req.body;
+  console.log(155, payload);
+  const exitsingUser = await findUserByProperty("email", payload?.email);
+
+  console.log(158, exitsingUser);
+  if (exitsingUser) {
+    console.log("i am here ");
+    const token = assignToken(exitsingUser._id, payload.email);
+    const user = { ...exitsingUser.toObject(), jwtToken: token };
+    return res.json({ status: 200, message: "already logged in", data: user });
+  }
+
+  if (!exitsingUser) {
+    console.log("new user ");
+    const newUser = await User.create({
+      ...payload,
+      // email: payload.email,
+      // name: payload.name,
+      // profile_picture: payload.picture,
+      // oauth_provider: payload?.oauth_provider,
+    });
+
+    const token = assignToken(newUser._id, payload.email);
+    const userObj = newUser.toObject();
+    userObj.jwtToken = token;
+    return res.json({
+      status: 200,
+      memssage: "new user created",
+      data: userObj,
+    });
+  }
+
+  return res.json({ status: 200, message: "connected", data: payload });
+};
+
 module.exports = {
   registerController,
   logInController,
   logInWithSocialController,
   logInWithClerkcontroller,
+  loginWithFirebaseController,
 };
