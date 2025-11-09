@@ -32,7 +32,8 @@ const getAllPosts = async (req, res) => {
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate("restaurant_id");
 
     res.json({
       status: 200,
