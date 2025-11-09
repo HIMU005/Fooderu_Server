@@ -1,7 +1,7 @@
 const router = require("express").Router({ mergeParams: true });
 const {
   getTrendingRestaurants,
-  getTrendingMenuItems,
+  getTrendingPosts,
 } = require("../controllers/trendingController");
 const { protect } = require("../middlewares/authMiddleware");
 
@@ -9,6 +9,6 @@ const { protect } = require("../middlewares/authMiddleware");
 // /trendings
 router.get("/", protect, getTrendingRestaurants);
 // Get trending menu items
-router.get("/menu-items", protect, getTrendingMenuItems);
+router.get("/posts", protect, getTrendingPosts);
 
 module.exports = router;

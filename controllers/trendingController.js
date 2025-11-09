@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const Restaurant = require("../models/Restaurant");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const Post = require("../models/Post");
-const MenuItem = require("../models/MenuItem");
+
 const Comment = require("../models/Comment");
 const MenuItemRating = require("../models/MenuItemRating"); // ADD THIS LINE
 
@@ -178,82 +178,55 @@ const getTrendingRestaurants = async (req, res) => {
   }
 };
 
-// controllers/trendingController.js - ADD THIS FUNCTION
-
-const getTrendingMenuItems = async (req, res) => {
+const getTrendingPosts = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const limit =
-      req.query.limit && !isNaN(parseInt(req.query.limit))
-        ? parseInt(req.query.limit)
-        : 50;
+    const { limit = 20, timeWindow = 168 } = req.query;
 
-    // ObjectId instance for comparisons in aggregation
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+    console.log("Query parameters:", { limit, timeWindow });
 
-    // Aggregate ALL posts, compute likes/comments, score and return a simple, consistent shape
+    const sinceDate = new Date();
+    sinceDate.setHours(sinceDate.getHours() - parseInt(timeWindow));
+    console.log("Since date:", sinceDate);
+
+    // Debug each stage step by step
     const pipeline = [
+      // Stage 1: Check initial post match
       {
-        $project: {
-          content: 1,
-          title: 1,
-          user: 1,
-          restaurant_id: 1,
-          menuItem: 1,
-          likes: 1,
-          createdAt: 1,
-          likesCount: {
-            $cond: [
-              { $isArray: "$likes" },
-              { $size: "$likes" },
-              { $ifNull: ["$likesCount", 0] },
-            ],
-          },
+        $match: {
+          createdAt: { $gte: sinceDate },
+          postType: { $in: ["normal", "menuItem"] },
         },
       },
+    ];
 
-      // count comments + replies per post
-      {
-        $lookup: {
-          from: "comments",
-          let: { postId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$postId", "$$postId"] } } },
-            {
-              $project: {
-                repliesCount: { $size: { $ifNull: ["$replies", []] } },
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                count: { $sum: { $add: [1, "$repliesCount"] } },
-              },
-            },
-          ],
-          as: "commentsAgg",
-        },
-      },
-      {
-        $addFields: {
-          commentsCount: {
-            $ifNull: [{ $arrayElemAt: ["$commentsAgg.count", 0] }, 0],
-          },
-        },
-      },
+    // Check how many posts match the initial criteria
+    const initialPosts = await Post.aggregate([
+      ...pipeline,
+      { $count: "total" },
+    ]);
+    console.log("Posts matching date and type:", initialPosts);
 
-      // bring back minimal user info
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+    if (initialPosts.length === 0 || initialPosts[0].total === 0) {
+      console.log(
+        "No posts found in the specified time window. Checking all posts..."
+      );
 
-      // bring minimal restaurant info
+      // Check if there are any posts at all
+      const allPostsCount = await Post.countDocuments();
+      console.log("Total posts in database:", allPostsCount);
+
+      const samplePosts = await Post.find().limit(2);
+      console.log("Sample posts:", samplePosts);
+
+      // Try without time filter
+      pipeline[0].$match = {
+        postType: { $in: ["normal", "menuItem"] },
+      };
+    }
+
+    // Continue with the full pipeline
+    pipeline.push(
+      // Lookup restaurant data
       {
         $lookup: {
           from: "restaurants",
@@ -264,77 +237,159 @@ const getTrendingMenuItems = async (req, res) => {
       },
       { $unwind: { path: "$restaurant", preserveNullAndEmptyArrays: true } },
 
-      // bring minimal menu item info
+      // Lookup ALL comments (not just recent ones) for debugging
       {
         $lookup: {
-          from: "menuitems",
-          localField: "menuItem",
-          foreignField: "_id",
-          as: "menuItem",
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "allComments",
         },
       },
-      { $unwind: { path: "$menuItem", preserveNullAndEmptyArrays: true } },
 
-      // compute score and whether current user liked the post
+      // Lookup restaurant followers
+      {
+        $lookup: {
+          from: "restaurantfollows",
+          localField: "restaurant_id",
+          foreignField: "restaurant_id",
+          as: "restaurantFollowers",
+        },
+      },
+
+      // Calculate metrics with debug info
       {
         $addFields: {
-          score: {
-            $add: [
-              { $multiply: ["$likesCount", 1] },
-              { $multiply: ["$commentsCount", 3] },
+          hoursSincePost: {
+            $divide: [
+              { $subtract: [new Date(), "$createdAt"] },
+              1000 * 60 * 60,
             ],
           },
-          isLikedByUser: { $in: [userObjectId, { $ifNull: ["$likes", []] }] },
+          // Use both recent and all comments for comparison
+          recentCommentsCount: { $size: "$allComments" }, // Simplified for now
+          restaurantFollowersCount: { $size: "$restaurantFollowers" },
+          likesCount: { $ifNull: ["$likes", 0] },
+
+          // Debug: Check what values we have
+          debug: {
+            hasLikesField: { $ifNull: ["$likes", "FIELD_MISSING"] },
+            commentsCount: { $size: "$allComments" },
+            followersCount: { $size: "$restaurantFollowers" },
+            postAgeHours: {
+              $divide: [
+                { $subtract: [new Date(), "$createdAt"] },
+                1000 * 60 * 60,
+              ],
+            },
+          },
         },
       },
 
-      // sort & limit
-      { $sort: { score: -1, createdAt: -1 } },
-      { $limit: limit },
+      // Enhanced scoring algorithm (simplified)
+      {
+        $addFields: {
+          baseScore: {
+            $add: [
+              { $multiply: ["$likesCount", 0.3] },
+              { $multiply: ["$recentCommentsCount", 0.8] },
+              { $multiply: ["$restaurantFollowersCount", 0.15] },
+              {
+                $cond: [{ $eq: ["$postType", "menuItem"] }, 2.0, 1.0],
+              },
+            ],
+          },
+          timeDecay: {
+            $exp: {
+              $multiply: [-0.1, "$hoursSincePost"],
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          trendingScore: {
+            $multiply: ["$baseScore", "$timeDecay"],
+          },
+        },
+      },
 
-      // final clean projection: a simple, stable response shape
+      // Debug: See scores before filtering
+      {
+        $addFields: {
+          debugScore: {
+            baseScore: { $round: ["$baseScore", 2] },
+            timeDecay: { $round: ["$timeDecay", 3] },
+            finalScore: { $round: ["$trendingScore", 2] },
+            passesFilter: { $gt: ["$trendingScore", 0.1] },
+          },
+        },
+      },
+
+      // Project only the fields you need in your desired format
       {
         $project: {
-          _id: 1,
-          content: 1,
+          // Post basic info
+          postType: 1,
+          details: 1,
           createdAt: 1,
-          score: 1,
-          likesCount: 1,
-          commentsCount: 1,
-          isLikedByUser: 1,
-          user: {
-            _id: "$user._id",
-            name: "$user.name",
-            displayPicture: "$user.displayPicture",
+          updatedAt: 1,
+          // Restaurant info in the format you want
+          restaurantInfo: {
+            restaurant_id: "$restaurant_id",
+            restaurantImage: "$restaurant.displayPicture",
           },
-          restaurant: {
-            _id: "$restaurant._id",
-            name: "$restaurant.name",
-            displayPicture: "$restaurant.displayPicture",
+          // Trending data
+          trendingScore: { $round: ["$trendingScore", 2] },
+          engagementMetrics: {
+            likes: "$likesCount",
+            comments: "$recentCommentsCount",
+            restaurantFollowers: "$restaurantFollowersCount",
+            hoursSincePost: { $round: ["$hoursSincePost", 1] },
           },
-          menuItem: {
-            _id: "$menuItem._id",
-            name: "$menuItem.name",
-            price: "$menuItem.price",
-          },
+          // Keep debug for console logging only
+          debugScore: 1,
         },
-      },
-    ];
+      }
+    );
 
-    const posts = await Post.aggregate(pipeline);
+    const allPostsWithScores = await Post.aggregate(pipeline);
+    console.log("All posts with scores:", allPostsWithScores);
 
+    // Now apply the filter
+    const filteredPosts = allPostsWithScores.filter(
+      (post) => post.trendingScore > 0.1
+    );
+    console.log("Posts after filtering:", filteredPosts);
+
+    // Sort and limit
+    const trendingPosts = filteredPosts
+      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .slice(0, parseInt(limit));
+
+    console.log("Final trending posts:", trendingPosts);
+
+    // Remove debug data before sending to frontend
+    const finalData = trendingPosts.map((post) => {
+      const { debugScore, ...cleanPost } = post;
+      return cleanPost;
+    });
+
+    // Clean response without debug data
     res.json({
       success: true,
-      count: posts.length,
-      data: posts,
+      count: finalData.length,
+      timeWindow: `${timeWindow} hours`,
+      data: finalData,
     });
   } catch (error) {
-    console.error("Trending posts error:", error);
+    console.error("Error in enhanced trending:", error);
     res.status(500).json({
       success: false,
-      error: "Server error",
+      error: "Server error in enhanced trending algorithm",
+      details: error.message,
     });
   }
 };
 
-module.exports = { getTrendingRestaurants, getTrendingMenuItems };
+module.exports = { getTrendingRestaurants, getTrendingPosts };
