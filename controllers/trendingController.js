@@ -301,7 +301,7 @@ const getTrendingPosts = async (req, res) => {
           },
           timeDecay: {
             $exp: {
-              $multiply: [-0.1, "$hoursSincePost"],
+              $multiply: [-0.01, "$hoursSincePost"],
             },
           },
         },
@@ -358,7 +358,7 @@ const getTrendingPosts = async (req, res) => {
 
     // Now apply the filter
     const filteredPosts = allPostsWithScores.filter(
-      (post) => post.trendingScore > 0.1
+      (post) => post.trendingScore > 0
     );
     console.log("Posts after filtering:", filteredPosts);
 
