@@ -182,11 +182,11 @@ const getTrendingPosts = async (req, res) => {
   try {
     const { limit = 20, timeWindow = 168 } = req.query;
 
-    console.log("Query parameters:", { limit, timeWindow });
+    //("Query parameters:", { limit, timeWindow });
 
     const sinceDate = new Date();
     sinceDate.setHours(sinceDate.getHours() - parseInt(timeWindow));
-    console.log("Since date:", sinceDate);
+    //("Since date:", sinceDate);
 
     // Debug each stage step by step
     const pipeline = [
@@ -204,19 +204,17 @@ const getTrendingPosts = async (req, res) => {
       ...pipeline,
       { $count: "total" },
     ]);
-    console.log("Posts matching date and type:", initialPosts);
+    //("Posts matching date and type:", initialPosts);
 
     if (initialPosts.length === 0 || initialPosts[0].total === 0) {
-      console.log(
-        "No posts found in the specified time window. Checking all posts..."
-      );
+      //("No posts found in the specified time window. Checking all posts...");
 
       // Check if there are any posts at all
       const allPostsCount = await Post.countDocuments();
-      console.log("Total posts in database:", allPostsCount);
+      //("Total posts in database:", allPostsCount);
 
       const samplePosts = await Post.find().limit(2);
-      console.log("Sample posts:", samplePosts);
+      //("Sample posts:", samplePosts);
 
       // Try without time filter
       pipeline[0].$match = {
@@ -301,7 +299,7 @@ const getTrendingPosts = async (req, res) => {
           },
           timeDecay: {
             $exp: {
-              $multiply: [-0.1, "$hoursSincePost"],
+              $multiply: [-0.01, "$hoursSincePost"],
             },
           },
         },
@@ -354,20 +352,20 @@ const getTrendingPosts = async (req, res) => {
     );
 
     const allPostsWithScores = await Post.aggregate(pipeline);
-    console.log("All posts with scores:", allPostsWithScores);
+    //("All posts with scores:", allPostsWithScores);
 
     // Now apply the filter
     const filteredPosts = allPostsWithScores.filter(
-      (post) => post.trendingScore > 0.1
+      (post) => post.trendingScore > 0
     );
-    console.log("Posts after filtering:", filteredPosts);
+    //("Posts after filtering:", filteredPosts);
 
     // Sort and limit
     const trendingPosts = filteredPosts
       .sort((a, b) => b.trendingScore - a.trendingScore)
       .slice(0, parseInt(limit));
 
-    console.log("Final trending posts:", trendingPosts);
+    //("Final trending posts:", trendingPosts);
 
     // Remove debug data before sending to frontend
     const finalData = trendingPosts.map((post) => {

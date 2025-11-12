@@ -9,6 +9,6 @@ const { protect } = require("../middlewares/authMiddleware");
 // /trendings
 router.get("/", protect, getTrendingRestaurants);
 // Get trending menu items
-router.get("/posts", protect, getTrendingPosts);
+router.get("/posts", getTrendingPosts);
 
 module.exports = router;
