@@ -335,7 +335,7 @@ const updateMenuItem = async (req, res) => {
         new: true,
         runValidators: true,
       }
-    );
+    ).populate("restaurant_id");
 
     return res.json({
       status: 200,
