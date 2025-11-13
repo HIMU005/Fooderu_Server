@@ -48,7 +48,9 @@ const getAllItemsUnderARestaurantService = async (restaurantId) => {
   }
 
   try {
-    const response = await MenuItem.find({ restaurant_id: restaurantId });
+    const response = await MenuItem.find({
+      restaurant_id: restaurantId,
+    }).populate("restaurant_id");
     return response;
   } catch (error) {
     throw new AppError(`Failed to get menu Items: ${error.message}`, 400);
