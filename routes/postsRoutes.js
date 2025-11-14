@@ -5,9 +5,13 @@ const {
   getASinglePost,
   updatePostDetails,
   deletePost,
+  getPostsByFollowedRestaurants,
 } = require("../controllers/postController");
 const { protect } = require("../middlewares/authMiddleware");
 const router = express.Router();
+
+// GET Posts by followed restaurants
+router.get("/followedRestaurantsPosts", protect, getPostsByFollowedRestaurants);
 
 // POST  a post by user
 router.post("/", postByUser);
