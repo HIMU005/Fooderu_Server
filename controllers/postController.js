@@ -1,4 +1,5 @@
 const Post = require("../models/Post");
+const RestaurantFollow = require("../models/RestaurantFollow");
 const AppError = require("../utils/AppError");
 
 const postByUser = async (req, res) => {
@@ -47,6 +48,44 @@ const getAllPosts = async (req, res) => {
     console.error(error);
 
     throw new AppError(`server error ${error} `, 500);
+  }
+};
+
+const getPostsByFollowedRestaurants = async (req, res) => {
+  const userId = req.user._id;
+
+  const followedRestaurants = await RestaurantFollow.find({ user_id: userId })
+    .select("restaurant_id")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (followedRestaurants.length === 0) {
+    return res.json({
+      status: 200,
+      data: [],
+      message: "No followed restaurants found",
+    });
+  }
+
+  const followedRestaurantIds = followedRestaurants.map(
+    (fr) => fr.restaurant_id
+  );
+
+  try {
+    const posts = await Post.find({
+      restaurant_id: { $in: followedRestaurantIds },
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json({
+      status: 200,
+      data: posts,
+      message: "Posts from followed restaurants fetched successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.json({ status: 500, message: `Server error: ${error.message}` });
   }
 };
 
@@ -142,4 +181,5 @@ module.exports = {
   getASinglePost,
   updatePostDetails,
   deletePost,
+  getPostsByFollowedRestaurants,
 };
