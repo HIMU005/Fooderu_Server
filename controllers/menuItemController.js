@@ -80,9 +80,7 @@ const getAllItemsUnderARestaurant = async (req, res) => {
 const getAllPostsUnderARestaurant = async (req, res) => {
   try {
     const { restaurantId } = req.params;
-    const posts = await Post.find({ restaurant_id: restaurantId }).populate(
-      "restaurant_id"
-    );
+    const posts = await Post.find({ restaurant_id: restaurantId });
 
     if (!posts.length) {
       return res.json({
