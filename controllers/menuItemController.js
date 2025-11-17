@@ -80,7 +80,9 @@ const getAllItemsUnderARestaurant = async (req, res) => {
 const getAllPostsUnderARestaurant = async (req, res) => {
   try {
     const { restaurantId } = req.params;
-    const posts = await Post.find({ restaurant_id: restaurantId });
+    const posts = await Post.find({ restaurant_id: restaurantId }).sort({
+      createdAt: -1,
+    });
 
     if (!posts.length) {
       return res.json({
@@ -89,6 +91,7 @@ const getAllPostsUnderARestaurant = async (req, res) => {
         data: [],
       });
     }
+
     return res.json({
       status: 200,
       message: "Posts fetched successfully",
