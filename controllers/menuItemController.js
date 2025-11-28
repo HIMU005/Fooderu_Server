@@ -17,6 +17,7 @@ const Post = require("../models/Post");
  */
 
 const createMenuItemController = async (req, res, next) => {
+  console.log("hit");
   try {
     const {
       name,
@@ -33,6 +34,12 @@ const createMenuItemController = async (req, res, next) => {
 
     if (!name || !price) {
       throw new AppError("Name and Price are required", 400);
+    }
+    if (name.length > 100) {
+      return res.json({
+        status: 400,
+        message: "Name cannot exceed 100 characters",
+      });
     }
 
     const newItem = await createMenuItem({
@@ -59,6 +66,7 @@ const createMenuItemController = async (req, res, next) => {
       data: newItem,
     });
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
