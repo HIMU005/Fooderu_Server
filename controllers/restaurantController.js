@@ -25,7 +25,7 @@ const getRestaurant = async (req, res, next) => {
 // get all restaurants
 const getAllRestaurant = async (req, res, next) => {
   try {
-    const restaurants = await Restaurant.find();
+    const restaurants = await Restaurant.find().sort({ createdAt: -1 });
 
     res.status(200).json({
       status: "success",
@@ -120,7 +120,7 @@ const createRestaurant = async (req, res, next) => {
 // get a single restaurantInfo
 const getAllRestaurants = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find();
+    const restaurants = await Restaurant.find().sort({ createdAt: -1 });
     return res.json({
       status: 200,
       data: restaurants,

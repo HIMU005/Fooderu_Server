@@ -41,7 +41,9 @@ const createMenuItem = async (itemData) => {
 };
 
 const getAllItemsUnderARestaurantService = async (restaurantId) => {
-  const restaurant = await Restaurant.findById(restaurantId);
+  const restaurant = await Restaurant.findById(restaurantId).sort({
+    createdAt: -1,
+  });
 
   if (!restaurant) {
     throw new AppError("Restaurant not found", 404);
