@@ -329,6 +329,10 @@ const getTrendingPosts = async (req, res) => {
         $project: {
           // Post basic info
           postType: 1,
+          //using for now :::: after changing the schema of post no longer need it ::: remove it then
+          image_url: 1,
+          description: 1,
+          //--------------------------------------------------------------------------------------------
           details: 1,
           createdAt: 1,
           updatedAt: 1,
