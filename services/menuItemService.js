@@ -41,9 +41,7 @@ const createMenuItem = async (itemData) => {
 };
 
 const getAllItemsUnderARestaurantService = async (restaurantId) => {
-  const restaurant = await Restaurant.findById(restaurantId).sort({
-    createdAt: -1,
-  });
+  const restaurant = await Restaurant.findById(restaurantId);
 
   if (!restaurant) {
     throw new AppError("Restaurant not found", 404);
@@ -52,7 +50,10 @@ const getAllItemsUnderARestaurantService = async (restaurantId) => {
   try {
     const response = await MenuItem.find({
       restaurant_id: restaurantId,
-    }).populate("restaurant_id");
+    })
+      .sort({ createdAt: -1 })
+      .populate("restaurant_id");
+
     return response;
   } catch (error) {
     throw new AppError(`Failed to get menu Items: ${error.message}`, 400);
