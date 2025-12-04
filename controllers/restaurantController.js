@@ -219,7 +219,6 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
 
 // update my restaurant
 const updateMyRestaurant = async (req, res, next) => {
-  // console.log("hit");
   try {
     const restaurantId = req.params.restaurantId;
     const restaurant = await Restaurant.findById(restaurantId);
