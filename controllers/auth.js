@@ -5,6 +5,10 @@ const bcrypt = require("bcryptjs");
 const { assignToken } = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
 const { Clerk } = require("@clerk/clerk-sdk-node");
+const {
+  sendVerificationEamil,
+  sendWelcomeEmail,
+} = require("../middlewares/Email");
 
 // controller for register
 const registerController = async (req, res, next) => {
@@ -22,9 +26,40 @@ const registerController = async (req, res, next) => {
     });
     user.password = undefined;
 
+    await sendVerificationEamil(email, user.verification_token);
+
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
     throw new AppError(error, 500);
+  }
+};
+
+const verifyEmailController = async (req, res, next) => {
+  const { code } = req.body;
+
+  try {
+    const user = await User.findOne({
+      verification_token: code,
+      verification_token_expires_in: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired verification code" });
+    }
+
+    user.verified = true;
+    user.verification_token = undefined;
+    user.verification_token_expires_in = undefined;
+    await user.save();
+    await sendWelcomeEmail(user.email);
+    return res.status(200).json({ message: "Email verified successfully" });
+  } catch (error) {
+    // console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "internal server error" });
   }
 };
 
@@ -152,19 +187,19 @@ const logInWithClerkcontroller = async (req, res, next) => {
 
 const loginWithFirebaseController = async (req, res, next) => {
   const payload = req.body;
-  console.log(155, payload);
+  // console.log(155, payload);
   const exitsingUser = await findUserByProperty("email", payload?.email);
 
-  console.log(158, exitsingUser);
+  // console.log(158, exitsingUser);
   if (exitsingUser) {
-    console.log("i am here ");
+    // console.log("i am here ");
     const token = assignToken(exitsingUser._id, payload.email);
     const user = { ...exitsingUser.toObject(), jwtToken: token };
     return res.json({ status: 200, message: "already logged in", data: user });
   }
 
   if (!exitsingUser) {
-    console.log("new user ");
+    // console.log("new user ");
     const newUser = await User.create({
       ...payload,
       // email: payload.email,
@@ -192,4 +227,5 @@ module.exports = {
   logInWithSocialController,
   logInWithClerkcontroller,
   loginWithFirebaseController,
+  verifyEmailController,
 };

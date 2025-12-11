@@ -33,7 +33,7 @@ const getAllRestaurant = async (req, res, next) => {
       data: restaurants,
     });
   } catch (error) {
-    console.error("Error getting restaurants: ", error);
+    // console.error("Error getting restaurants: ", error);
     res.status(500).json({
       status: "fail",
       message: "Server error",
