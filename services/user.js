@@ -12,10 +12,17 @@ const findUserByProperty = (key, value) => {
   return User.findOne({ [key]: value });
 };
 
-const createNewUser = ({ email, password }) => {
+const createNewUser = ({
+  email,
+  password,
+  verification_token,
+  verification_token_expires_in,
+}) => {
   const user = new User({
     email,
     password,
+    verification_token,
+    verification_token_expires_in,
   });
 
   return user.save();

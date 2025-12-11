@@ -21,7 +21,7 @@ const verifyToken = (token) => {
   try {
     return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
   } catch (error) {
-    console.error("Token verification error:", error);
+    // console.error("Token verification error:", error);
     return null;
   }
 };

@@ -27,7 +27,7 @@ router.post("/", upload.single("image"), (req, res) => {
       url: `http://localhost:5000/images/${req.file.filename}`,
     });
   } catch (err) {
-    console.error("Upload error:", err); // 👈 log backend error
+    // console.error("Upload error:", err); // 👈 log backend error
     res
       .status(500)
       .json({ success: false, message: "Upload failed", error: err.message });
