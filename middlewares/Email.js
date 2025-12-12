@@ -1,10 +1,10 @@
-import { transporter } from "./EmailConfig.js";
-import {
+const { transporter } = require("./EmailConfig");
+const {
   Verification_Email_Template,
   Welcome_Email_Template,
-} from "./EmailTemplate.js";
+} = require("./EmailTemplate");
 
-export const sendVerificationEamil = async (email, verificationCode) => {
+const sendVerificationEamil = async (email, verificationCode) => {
   try {
     const response = await transporter.sendMail({
       from: '"Fooderu" <devfoodaru@gmail.com>',
@@ -26,7 +26,7 @@ export const sendVerificationEamil = async (email, verificationCode) => {
   }
 };
 
-export const sendWelcomeEmail = async (email) => {
+const sendWelcomeEmail = async (email) => {
   try {
     const response = await transporter.sendMail({
       from: '"Fooderu" <devfoodaru@gmail.com>',
@@ -44,3 +44,5 @@ export const sendWelcomeEmail = async (email) => {
     // });
   }
 };
+
+module.exports = { sendVerificationEamil, sendWelcomeEmail };
