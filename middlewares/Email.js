@@ -1,10 +1,10 @@
-import { transporter } from "./EmailConfig.js";
-import {
+const { transporter } = require("./EmailConfig");
+const {
   Verification_Email_Template,
   Welcome_Email_Template,
-} from "./EmailTemplate.js";
+} = require("./EmailTemplate");
 
-export const sendVerificationEamil = async (email, verificationCode) => {
+const sendVerificationEamil = async (email, verificationCode) => {
   try {
     const response = await transporter.sendMail({
       from: '"Fooderu" <devfoodaru@gmail.com>',
@@ -19,14 +19,14 @@ export const sendVerificationEamil = async (email, verificationCode) => {
     });
     // console.log("Email send Successfully", response);
   } catch (error) {
-    console.error("Email error", error);
+    // console.error("Email error", error);
     // return res.status(500).json({
     //   message: "Internal Server Error, while sending verification email",
     // });
   }
 };
 
-export const sendWelcomeEmail = async (email) => {
+const sendWelcomeEmail = async (email) => {
   try {
     const response = await transporter.sendMail({
       from: '"Fooderu" <devfoodaru@gmail.com>',
@@ -38,10 +38,11 @@ export const sendWelcomeEmail = async (email) => {
     });
     // console.log("Email send Successfully", response);
   } catch (error) {
-    console.error("Email error", error);
-
+    // console.error("Email error", error);
     // return res.status(500).json({
     //   message: "Internal Server Error, while sending welcome email",
     // });
   }
 };
+
+module.exports = { sendVerificationEamil, sendWelcomeEmail };

@@ -1,4 +1,4 @@
-export const Verification_Email_Template = `
+const Verification_Email_Template = `
   <!DOCTYPE html>
   <html lang="en">
   <head>
@@ -75,7 +75,7 @@ export const Verification_Email_Template = `
   </html>
 `;
 
-export const Welcome_Email_Template = `
+const Welcome_Email_Template = `
   <!DOCTYPE html>
   <html lang="en">
   <head>
@@ -164,3 +164,5 @@ export const Welcome_Email_Template = `
   </body>
   </html>
 `;
+
+module.exports = { Verification_Email_Template, Welcome_Email_Template };
