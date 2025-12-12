@@ -30,6 +30,7 @@ const registerController = async (req, res, next) => {
 
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
+    console.error(error);
     throw new AppError(error, 500);
   }
 };

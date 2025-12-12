@@ -19,10 +19,10 @@ export const sendVerificationEamil = async (email, verificationCode) => {
     });
     // console.log("Email send Successfully", response);
   } catch (error) {
-    // console.error("Email error", error);
-    return res.status(500).json({
-      message: "Internal Server Error, while sending verification email",
-    });
+    console.error("Email error", error);
+    // return res.status(500).json({
+    //   message: "Internal Server Error, while sending verification email",
+    // });
   }
 };
 
@@ -38,10 +38,10 @@ export const sendWelcomeEmail = async (email) => {
     });
     // console.log("Email send Successfully", response);
   } catch (error) {
-    // console.error("Email error", error);
+    console.error("Email error", error);
 
-    return res.status(500).json({
-      message: "Internal Server Error, while sending welcome email",
-    });
+    // return res.status(500).json({
+    //   message: "Internal Server Error, while sending welcome email",
+    // });
   }
 };
