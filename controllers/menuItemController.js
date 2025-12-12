@@ -17,7 +17,6 @@ const Post = require("../models/Post");
  */
 
 const createMenuItemController = async (req, res, next) => {
-  console.log("hit");
   try {
     const {
       name,

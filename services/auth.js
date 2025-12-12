@@ -13,10 +13,15 @@ const registerService = async ({ email, password }) => {
   //   hash the password before saving it to the database
   const salt = await bcrypt.genSalt(10);
   const hash = await bcrypt.hash(password, salt);
+  const verification_token = Math.floor(
+    100000 + Math.random() * 900000
+  ).toString();
 
   return createNewUser({
     email,
     password: hash,
+    verification_token,
+    verification_token_expires_in: Date.now() + 3600000, // 1 hour from now
   });
 };
 

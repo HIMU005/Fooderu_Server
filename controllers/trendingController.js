@@ -173,7 +173,7 @@ const getTrendingRestaurants = async (req, res) => {
       data: finalResult,
     });
   } catch (error) {
-    console.error("Trending error:", error);
+    // console.error("Trending error:", error);
     res.status(500).json({ success: false, error: "Server error" });
   }
 };

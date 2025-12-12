@@ -16,7 +16,7 @@ const postByUser = async (req, res) => {
     });
     return res.json({ status: 201, message: "A post is created..." });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
 
     throw new AppError(`server error ${error} `, 500);
   }
@@ -44,7 +44,7 @@ const getAllPosts = async (req, res) => {
       message: "Posts fetched successfully",
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
 
     throw new AppError(`server error ${error} `, 500);
   }
@@ -83,7 +83,7 @@ const getPostsByFollowedRestaurants = async (req, res) => {
       message: "Posts from followed restaurants fetched successfully",
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     return res.json({ status: 500, message: `Server error: ${error.message}` });
   }
 };
