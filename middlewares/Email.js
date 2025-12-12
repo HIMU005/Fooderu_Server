@@ -20,13 +20,16 @@ export const sendVerificationEamil = async (email, verificationCode) => {
     // console.log("Email send Successfully", response);
   } catch (error) {
     // console.error("Email error", error);
+    return res.status(500).json({
+      message: "Internal Server Error, while sending verification email",
+    });
   }
 };
 
 export const sendWelcomeEmail = async (email) => {
   try {
     const response = await transporter.sendMail({
-      from: '"Fooderu" <jobaer6767@gmail.com>',
+      from: '"Fooderu" <devfoodaru@gmail.com>',
 
       to: email, // list of receivers
       subject: "Welcome Email", // Subject line
@@ -36,5 +39,9 @@ export const sendWelcomeEmail = async (email) => {
     // console.log("Email send Successfully", response);
   } catch (error) {
     // console.error("Email error", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error, while sending welcome email",
+    });
   }
 };
