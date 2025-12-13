@@ -1,9 +1,11 @@
 const bcrypt = require("bcryptjs");
+const User = require("../models/User");
 const { findUserByProperty, createNewUser } = require("./user");
 const jwt = require("jsonwebtoken");
 const {
   assignToken,
   generateVerificationToken,
+  verifyVerificationToken,
 } = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
 const { sendVerificationEmail } = require("../utils/emailService");
@@ -25,12 +27,8 @@ const registerService = async ({ email, password }) => {
 
   const verificationToken = generateVerificationToken(newUser._id, email);
 
-  const verificationLink = `${
-    process.env.BASE_URL || "http://localhost:5000"
-  }/auth/verify_email?token=${verificationToken}`;
-
   try {
-    await sendVerificationEmail(email, verificationLink);
+    await sendVerificationEmail(email, verificationToken);
   } catch (error) {
     console.error("Failed to send verification email:", error);
   }
@@ -68,4 +66,37 @@ const loginService = async (email, password) => {
   return userObj;
 };
 
-module.exports = { loginService, registerService };
+// Verify Email Service
+const verifyEmailService = async (token) => {
+  if (!token) {
+    throw new AppError("Verification token is required", 400);
+  }
+
+  const decoded = verifyVerificationToken(token);
+
+  if (!decoded) {
+    throw new AppError("Invalid or expired verification token", 400);
+  }
+
+  // console.log(decoded);
+
+  const user = await User.findById(decoded.id);
+  // console.log(user);
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  // Check if already verified
+  if (user.verified) {
+    throw new AppError("Email is already verified", 400);
+  }
+
+  //Mark user as verified
+  user.verified = true;
+  await user.save();
+
+  return { message: "Email verified successfully. You can now log in." };
+};
+
+module.exports = { loginService, registerService, verifyEmailService };

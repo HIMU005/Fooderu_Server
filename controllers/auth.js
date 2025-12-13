@@ -1,5 +1,9 @@
 const User = require("../models/User");
-const { registerService, loginService } = require("../services/auth");
+const {
+  registerService,
+  loginService,
+  verifyEmailService,
+} = require("../services/auth");
 const { findUserByProperty } = require("../services/user");
 const bcrypt = require("bcryptjs");
 const { assignToken } = require("../utils/jwtFunction");
@@ -15,6 +19,12 @@ const registerController = async (req, res, next) => {
     throw new AppError("Email and Password are required", 400);
   }
 
+  // if user already exists
+  const existingUser = await findUserByProperty("email", email);
+  if (existingUser) {
+    throw new AppError("User already exists with this email", 409);
+  }
+
   try {
     const user = await registerService({
       email,
@@ -27,6 +37,34 @@ const registerController = async (req, res, next) => {
     console.error(error);
 
     throw new AppError("Error while registering the user", 500);
+  }
+};
+
+const verifyEmailController = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res
+        .status(400)
+        .json({ message: "Verification token is required" });
+    }
+
+    const result = await verifyEmailService(token);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      redirectUrl: `${process.env.FRONTEND_URL_LOCAL}/verification-success`,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Email verification failed",
+      redirectUrl: `${process.env.FRONTEND_URL}/verification-failed`,
+    });
   }
 };
 
@@ -194,4 +232,5 @@ module.exports = {
   logInWithSocialController,
   logInWithClerkcontroller,
   loginWithFirebaseController,
+  verifyEmailController,
 };
