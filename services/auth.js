@@ -1,8 +1,12 @@
 const bcrypt = require("bcryptjs");
 const { findUserByProperty, createNewUser } = require("./user");
 const jwt = require("jsonwebtoken");
-const { assignToken } = require("../utils/jwtFunction");
+const {
+  assignToken,
+  generateVerificationToken,
+} = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
+const { sendVerificationEmail } = require("../utils/emailService");
 
 // register service
 const registerService = async ({ email, password }) => {
@@ -13,16 +17,25 @@ const registerService = async ({ email, password }) => {
   //   hash the password before saving it to the database
   const salt = await bcrypt.genSalt(10);
   const hash = await bcrypt.hash(password, salt);
-  const verification_token = Math.floor(
-    100000 + Math.random() * 900000
-  ).toString();
 
-  return createNewUser({
+  const newUser = await createNewUser({
     email,
     password: hash,
-    verification_token,
-    verification_token_expires_in: Date.now() + 3600000, // 1 hour from now
   });
+
+  const verificationToken = generateVerificationToken(newUser._id, email);
+
+  const verificationLink = `${
+    process.env.BASE_URL || "http://localhost:5000"
+  }/auth/verify_email?token=${verificationToken}`;
+
+  try {
+    await sendVerificationEmail(email, verificationLink);
+  } catch (error) {
+    console.error("Failed to send verification email:", error);
+  }
+
+  return newUser;
 };
 
 // login service

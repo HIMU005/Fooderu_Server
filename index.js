@@ -36,7 +36,7 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-connectDB(process.env.DB_URL)
+connectDB(process.env.LOCAL_DB_URL)
   .then(() => {
     console.log("Database Connected!");
 
