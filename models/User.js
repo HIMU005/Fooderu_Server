@@ -22,12 +22,6 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    verification_token: {
-      type: String,
-    },
-    verification_token_expires_in: {
-      type: Date,
-    },
     oauth_provider: {
       type: String, // e.g., 'google', 'facebook'
     },

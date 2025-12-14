@@ -33,6 +33,10 @@ exports.protect = async (req, res, next) => {
     // 3. Find user by email
     const currentUser = await User.findOne({ email: decodedEmail });
 
+    if (!currentUser) {
+      throw new AppError("User not found", 404);
+    }
+
     // 4. Grant access
     req.user = currentUser;
 

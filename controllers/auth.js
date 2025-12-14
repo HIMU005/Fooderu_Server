@@ -1,14 +1,14 @@
 const User = require("../models/User");
-const { registerService, loginService } = require("../services/auth");
+const {
+  registerService,
+  loginService,
+  verifyEmailService,
+} = require("../services/auth");
 const { findUserByProperty } = require("../services/user");
 const bcrypt = require("bcryptjs");
 const { assignToken } = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
 const { Clerk } = require("@clerk/clerk-sdk-node");
-const {
-  sendVerificationEamil,
-  sendWelcomeEmail,
-} = require("../middlewares/Email");
 
 // controller for register
 const registerController = async (req, res, next) => {
@@ -19,6 +19,12 @@ const registerController = async (req, res, next) => {
     throw new AppError("Email and Password are required", 400);
   }
 
+  // if user already exists
+  const existingUser = await findUserByProperty("email", email);
+  if (existingUser) {
+    throw new AppError("User already exists with this email", 409);
+  }
+
   try {
     const user = await registerService({
       email,
@@ -26,40 +32,39 @@ const registerController = async (req, res, next) => {
     });
     user.password = undefined;
 
-    await sendVerificationEamil(email, user.verification_token);
-
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
-    throw new AppError(error, 500);
+    // console.error(error);
+
+    throw new AppError("Error while registering the user", 500);
   }
 };
 
 const verifyEmailController = async (req, res, next) => {
-  const { code } = req.body;
-
   try {
-    const user = await User.findOne({
-      verification_token: code,
-      verification_token_expires_in: { $gt: Date.now() },
-    });
+    const { token } = req.query;
 
-    if (!user) {
+    if (!token) {
       return res
         .status(400)
-        .json({ message: "Invalid or expired verification code" });
+        .json({ message: "Verification token is required" });
     }
 
-    user.verified = true;
-    user.verification_token = undefined;
-    user.verification_token_expires_in = undefined;
-    await user.save();
-    await sendWelcomeEmail(user.email);
-    return res.status(200).json({ message: "Email verified successfully" });
+    const result = await verifyEmailService(token);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      redirectUrl: `${process.env.FRONTEND_URL_LOCAL}/verification-success`,
+    });
   } catch (error) {
     // console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "internal server error" });
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Email verification failed",
+      redirectUrl: `${process.env.FRONTEND_URL}/verification-failed`,
+    });
   }
 };
 
@@ -67,8 +72,14 @@ const verifyEmailController = async (req, res, next) => {
 const logInController = async (req, res, next) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    throw new AppError("Email and Password are required", 400);
+  }
+
   try {
     const user = await loginService(email, password);
+    console.log(user);
+
     return res.send({ status: 200, data: user });
   } catch (error) {
     return res.json({ status: 500, message: `server error ${error} ` });
