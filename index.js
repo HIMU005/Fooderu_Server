@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 app.use(express.json());
 const corsOptions = {
-  origin: [process.env.FRONTEND_URL],
+  origin: [process.env.FRONTEND_URL_PRODUCTION, process.env.FRONTEND_URL_LOCAL],
   // credentials: true,
   optionSuccessStatus: 200,
 };
@@ -36,7 +36,7 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-connectDB(process.env.DB_URL)
+connectDB(process.env.LOCAL_DB_URL)
   .then(() => {
     console.log("Database Connected!");
 

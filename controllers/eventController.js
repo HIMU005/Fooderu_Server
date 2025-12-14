@@ -68,7 +68,7 @@ const getAllEventsFromAllRestaurants = async (req, res) => {
       data: events,
     });
   } catch (error) {
-    console.error("Error getting all events:", error);
+    // console.error("Error getting all events:", error);
     res.status(500).json({
       success: false,
       error: "Server error while fetching events",
