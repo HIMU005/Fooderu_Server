@@ -34,7 +34,7 @@ const registerController = async (req, res, next) => {
 
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
 
     throw new AppError("Error while registering the user", 500);
   }
@@ -58,7 +58,7 @@ const verifyEmailController = async (req, res, next) => {
       redirectUrl: `${process.env.FRONTEND_URL_LOCAL}/verification-success`,
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
 
     return res.status(400).json({
       success: false,

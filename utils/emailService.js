@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
 const AppError = require("./AppError");
+const { getFrontendUrl } = require("./envUtil");
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -11,9 +12,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// console.log(getFrontendUrl());
+
 const sendVerificationEmail = async (email, verificationToken) => {
   try {
-    const verificationLink = `http://localhost:5173/verifyEmail?token=${verificationToken}`;
+    // const verificationLink = `http://localhost:5173/verifyEmail?token=${verificationToken}`;
+
+    const verificationLink = `${getFrontendUrl()}/verifyEmail?token=${verificationToken}`;
 
     const mailOptions = {
       from: `"Fooderu" <${process.env.EMAIL_USER}>`,
@@ -39,10 +44,10 @@ const sendVerificationEmail = async (email, verificationToken) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Verification email sent to ${email}`);
+    // console.log(`Verification email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error("Error sending verification email:", error);
+    // console.error("Error sending verification email:", error);
     return new AppError("Failed to send verification email", 500);
   }
 };

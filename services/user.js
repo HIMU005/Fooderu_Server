@@ -5,8 +5,8 @@ const findUsers = () => {
 };
 
 const findUserByProperty = async (key, value) => {
-  console.log("key", key);
-  console.log("value", value);
+  // console.log("key", key);
+  // console.log("value", value);
 
   let user = null;
   if (key === "_id") {

@@ -61,7 +61,7 @@ const verifyVerificationToken = (token) => {
 
     return decoded;
   } catch (error) {
-    console.error("Verification token error:", error.message);
+    // console.error("Verification token error:", error.message);
     throw new AppError("Invalid or expired verification token", 400);
     return null;
   }

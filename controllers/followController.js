@@ -50,7 +50,7 @@ const toggleFollow = async (req, res) => {
       followersCount,
     });
   } catch (error) {
-    console.error("Follow toggle error:", error);
+    // console.error("Follow toggle error:", error);
     res.status(500).json({
       success: false,
       error: "Failed to update follow status",
