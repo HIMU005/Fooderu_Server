@@ -39,27 +39,33 @@ const registerService = async ({ email, password }) => {
 // login service
 const loginService = async (email, password) => {
   const user = await findUserByProperty("email", email);
-  console.log(user);
 
   // if the user is not in the database
   if (!user) {
-    const err = new Error("No user found with that email");
-    err.status = 404;
-    throw err;
+    throw new AppError("User not found", 404);
   }
 
   const isMatched = await bcrypt.compare(password, user.password);
 
   // if password not matched with the database
   if (!isMatched) {
-    const err = new Error("Password not matched");
-    err.status = 401;
-    throw err;
+    throw new AppError("Password not matched", 401);
+  }
+
+  // Check if email is verified
+  if (!user.verified) {
+    throw new AppError(
+      "Email not verified. Please verify your email before logging in.",
+      403
+    );
   }
 
   user.password = undefined;
+
   // jwt code is here
   const token = assignToken(user._id, email);
+
+  // Convert user to object and add token
   const userObj = user.toObject();
   userObj.jwtToken = token;
   // user.jwtToken = token;

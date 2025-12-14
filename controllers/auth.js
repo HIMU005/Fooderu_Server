@@ -72,8 +72,14 @@ const verifyEmailController = async (req, res, next) => {
 const logInController = async (req, res, next) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    throw new AppError("Email and Password are required", 400);
+  }
+
   try {
     const user = await loginService(email, password);
+    console.log(user);
+
     return res.send({ status: 200, data: user });
   } catch (error) {
     return res.json({ status: 500, message: `server error ${error} ` });
