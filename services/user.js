@@ -5,13 +5,17 @@ const findUsers = () => {
 };
 
 const findUserByProperty = async (key, value) => {
+  console.log("key", key);
+  console.log("value", value);
+
   let user = null;
   if (key === "_id") {
-    user = await User.findById(value);
+    user = await User.findById(value).select("+password");
     return user;
   }
 
-  user = await User.findOne({ [key]: value });
+  user = await User.findOne({ [key]: value }).select("+password");
+
   return user;
 };
 

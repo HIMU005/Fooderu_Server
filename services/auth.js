@@ -38,7 +38,8 @@ const registerService = async ({ email, password }) => {
 
 // login service
 const loginService = async (email, password) => {
-  const user = await findUserByProperty("email", email).select("+password");
+  const user = await findUserByProperty("email", email);
+  console.log(user);
 
   // if the user is not in the database
   if (!user) {
