@@ -18,7 +18,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
   try {
     // const verificationLink = `http://localhost:5173/verifyEmail?token=${verificationToken}`;
 
-    const verificationLink = `${getFrontendUrl()}/verifyEmail?token=${verificationToken}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/verifyEmail?token=${verificationToken}`;
 
     const mailOptions = {
       from: `"Fooderu" <${process.env.EMAIL_USER}>`,
