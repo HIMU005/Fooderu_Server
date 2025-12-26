@@ -7,6 +7,9 @@ const postByUser = async (req, res) => {
   if (!restaurant_id) {
     return res.json({ status: 404, message: "restaurant_id is required" });
   }
+  if (typeof isEvent !== "boolean") {
+    return res.json({ status: 422, message: "Unprocessable Entity" });
+  }
   try {
     const response = await Post.create({
       restaurant_id,
