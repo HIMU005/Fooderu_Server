@@ -171,7 +171,7 @@ const deletePost = async (req, res) => {
     // delete the post
     await Post.findByIdAndDelete(id);
 
-    return res.json({ status: 200, message: "MenuItem deleted successfully" });
+    return res.json({ status: 200, message: "Post deleted successfully" });
   } catch (error) {
     return res.json({ status: 500, message: `Server error: ${error.message}` });
   }
