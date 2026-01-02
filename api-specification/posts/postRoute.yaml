@@ -1,0 +1,413 @@
+openapi: 3.0.0
+info:
+  title: Post API
+  version: 1.0.0
+  description: This api documentation reflect the Behavior of post related api
+  termsOfService: http://example.com/terms/
+  contact:
+    name: Hashanuz Zaman
+    email: hashanuzzaman99@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local server
+  - url: https://fooderu-server.vercel.app
+    description: Production server
+
+paths:
+  /posts:
+    get:
+      tags:
+        - Posts
+      summary: Get all posts
+      description: Retrieve a list of all posts.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of posts to return.
+          schema:
+            type: integer
+            default: 5
+            example: 5
+
+        - name: skip
+          in: query
+          required: false
+          description: Number of posts to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            example: 0
+      responses:
+        "200":
+          description: Posts fetched successfully
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/GetPostsResponse"
+        "500":
+          $ref: "#/components/responses/500"
+
+    post:
+      tags:
+        - Posts
+      summary: Create a new post
+      description: Create a new post with the provided details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostRequest"
+      responses:
+        "201":
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: A Post is created
+
+        "404":
+          description: restaurant_id is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/404"
+
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/422"
+
+        "500":
+          $ref: "#/components/responses/500"
+
+  /posts/{id}:
+    get:
+      tags:
+        - Posts
+      summary: Get a post by ID
+      description: Retrieve a single post by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the post to retrieve.
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: Post fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: "#/components/schemas/Post"
+                  message:
+                    type: string
+                    example: Single post fetched
+
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/404"
+
+        "500":
+          $ref: "#/components/responses/500"
+
+    put:
+      tags:
+        - Posts
+      summary: Update a post
+      description: Update a post by its ID. Only the owner of the restaurant can update the post.
+      security:
+        - BearerAuth: []
+
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the post to update.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Post"
+      responses:
+        "200":
+          description: Post updaed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Post updated successfully
+
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/401"
+
+        "403":
+          description: Only the owner of the restaurant can update the post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/403"
+
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/404"
+
+        "500":
+          $ref: "#/components/responses/500"
+
+    delete:
+      tags:
+        - Posts
+      summary: Delete a post
+      description: Delete a post by its ID. Only the owner of the restaurant can delete the post.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the post to delete.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Post deleted successfully
+
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/401"
+
+        "403":
+          description: Only the owner of the restaurant can delete the post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/403"
+
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/404"
+
+        "500":
+          $ref: "#/components/responses/500"
+
+  /posts/followedRestaurantsPosts:
+    get:
+      tags:
+        - Posts
+      summary: Get posts from followed restaurants
+      description: Retrieve posts from restaurants that the authenticated user follows.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Posts fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Post"
+                  message:
+                    type: string
+                    example: Followed restaurants posts fetched successfully
+
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/401"
+
+        "500":
+          $ref: "#/components/responses/500"
+
+components:
+  schemas:
+    Post:
+      type: object
+      properties:
+        restaurant_id:
+          type: string
+          example: 123123123
+        description:
+          type: string
+          example: "description"
+        image_url:
+          type: string
+          example: "imagelink"
+        isEvent:
+          type: boolean
+          example: true
+        postType:
+          type: string
+          enum:
+            - normal
+            - menuItem
+            - isEvent:
+        details:
+          type: object
+          additionalProperties: true
+
+    CreatePostRequest:
+      allOf:
+        - $ref: "#/components/schemas/Post"
+        - type: object
+          required:
+            - restaurant_id
+            - isEvent
+
+    Posts:
+      type: array
+      items:
+        $ref: "#/components/schemas/Post"
+
+    GetPostsResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          $ref: "#/components/schemas/Posts"
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 5
+        skip:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "Posts fetched successfully"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    401:
+      description: Unauthorized - Invalid or missing authentication token.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Unauthorized access. Please provide a valid token."
+
+    403:
+      description: Forbidden - You do not have permission to access this resource.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Access forbidden. You do not have the necessary permissions."
+
+    404:
+      description: Not Found - The requested resource could not be found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Resource not found. Please check the URL and try again."
+
+    422:
+      description: Unprocessable Entity - The request was well-formed but contains semantic errors.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: integer
+                example: 422
+              message:
+                type: string
+                example: "Unprocessable Entity"
+
+    500:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Server error."
