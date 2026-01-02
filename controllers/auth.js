@@ -3,6 +3,7 @@ const {
   registerService,
   loginService,
   verifyEmailService,
+  resendEmailVerificationService,
 } = require("../services/auth");
 const { findUserByProperty } = require("../services/user");
 const bcrypt = require("bcryptjs");
@@ -68,6 +69,23 @@ const verifyEmailController = async (req, res, next) => {
   }
 };
 
+const ressendVerificationEmailController = async (req, res, next) => {
+  try {
+    const { email } = req.query;
+    console.log(email);
+
+    // Use the service
+    const result = await resendEmailVerificationService(email);
+
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // controller for user login
 const logInController = async (req, res, next) => {
   const { email, password } = req.body;
@@ -78,7 +96,7 @@ const logInController = async (req, res, next) => {
 
   try {
     const user = await loginService(email, password);
-    console.log(user);
+    // console.log(user);
 
     return res.send({ status: 200, data: user });
   } catch (error) {
@@ -239,4 +257,5 @@ module.exports = {
   logInWithClerkcontroller,
   loginWithFirebaseController,
   verifyEmailController,
+  ressendVerificationEmailController,
 };
