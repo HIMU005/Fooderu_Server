@@ -31,6 +31,10 @@ const registerService = async ({ email, password }) => {
     await sendVerificationEmail(email, verificationToken);
   } catch (error) {
     console.error("Failed to send verification email:", error);
+    throw new AppError(
+      "Failed to send verification email. Please try again later.",
+      500
+    );
   }
 
   return newUser;
@@ -106,4 +110,51 @@ const verifyEmailService = async (token) => {
   return { message: "Email verified successfully. You can now log in." };
 };
 
-module.exports = { loginService, registerService, verifyEmailService };
+const resendEmailVerificationService = async (email) => {
+  if (!email) {
+    throw new AppError("Email is required", 400);
+  }
+
+  // console.log("email from service", email);
+
+  // Find the user by email
+  const user = await findUserByProperty("email", email);
+  // console.log("user from service", user);
+
+  // If user doesn't exist, return a generic response for security
+  if (!user) {
+    // Don't reveal that the user doesn't exist
+    return {
+      message:
+        "If an account exists with this email, a verification link has been sent.",
+    };
+  }
+
+  // Check if user is already verified
+  if (user.verified) {
+    throw new AppError("Email is already verified", 400);
+  }
+
+  // Generate a new verification token
+  const verificationToken = generateVerificationToken(user._id, email);
+
+  try {
+    await sendVerificationEmail(user.email, verificationToken, user.name);
+  } catch (error) {
+    throw new AppError(
+      "Failed to send verification email. Please try again later.",
+      500
+    );
+  }
+
+  return {
+    message: "Verification email sent successfully. Please check your inbox.",
+  };
+};
+
+module.exports = {
+  loginService,
+  registerService,
+  verifyEmailService,
+  resendEmailVerificationService,
+};
