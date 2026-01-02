@@ -1,362 +1,190 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   title: Restaurant Menu API
   version: 1.0.0
   description: |
-    # API for Menu Management
-
-    This API provides endpoints for retrieving and filtering menu items from restaurants.
-
-    ## Features
-    - Filter menu items by name, price, rating, and location
-    - Sort results by highest rating
-    - Retrieve detailed restaurant information for each menu item
-    - Infinite scrolling support with cursor-based pagination
-
-    ## Authentication
-    - Public endpoint, no authentication required
-  # contact:
-  #   name: API Support
-  #   email: api-support@example.com
-  #   url: https://api.example.com/support
-  # license:
-  #   name: MIT
-  #   url: https://opensource.org/licenses/MIT
-  # termsOfService: https://api.example.com/terms
-  # x-logo:
-  #   url: https://api.example.com/logo.png
-  #   altText: Restaurant Menu API Logo
-
-externalDocs:
-  description: API Documentation Guide
-  url: https://docs.example.com/api/guide
+    This API documentation reflects the behavior of menu item related APIs
+  contact:
+    name: Jobaer Hossain
+    email: jobaer6767@gmail.com
 
 servers:
-  - url: https://api.example.com/v1
+  - url: http://localhost:5000
+    description: Local server
+  - url: https://fooderu-server.vercel.app
     description: Production server
-  - url: https://staging-api.example.com/v1
-    description: Staging server
-  - url: http://localhost:3000/v1
-    description: Local development server
 
 paths:
   /menuItems:
     get:
-      summary: Search and filter menu items with infinite scrolling
+      summary: Get all menu items with filtering
       description: |
-        Retrieve menu items with advanced filtering options and cursor-based pagination for infinite scrolling.
+        Retrieve all menu items with optional filtering by name, price, rating, and location.
 
         ## Filtering Options
-        - **item**: Search by menu item name (case-insensitive partial match)
-        - **price**: Filter by maximum price (less than or equal)
-        - **rating**: Filter by maximum average rating (less than or equal)
-        - **place**: Filter by restaurant location (case-insensitive partial match on address)
-
-        ## Infinite Scrolling (Cursor-based Pagination)
-        This endpoint uses cursor-based pagination optimized for infinite scrolling:
-        1. **First request**: Don't include `cursor` parameter
-        2. **Subsequent requests**: Use `nextCursor` from previous response
-        3. **Continue until** `hasMore` is `false`
+        - **item**: Filter by menu item name (case-insensitive partial match)
+        - **price**: Filter by maximum price (items with price ≤ specified value)
+        - **rating**: Filter by maximum rating (items with average rating ≤ specified value)
+        - **place**: Filter by restaurant location (case-insensitive partial match on mapAddress)
 
         ## Sorting
         Results are automatically sorted by highest average rating first.
 
-        ## Performance Notes
-        - Cursor-based pagination is more efficient than offset-based for large datasets
-        - Stable ordering even when new items are added
-        - No duplicate or missing items during pagination
+        ## Notes
+        - The `place` filter is applied after database query (client-side filtering)
+        - All string comparisons are case-insensitive
+        - No pagination is implemented - returns all matching items
       operationId: getAllMenuItems
       tags:
         - Menu Items
       parameters:
-        - $ref: "#/components/parameters/ItemQueryParam"
-        - $ref: "#/components/parameters/PriceQueryParam"
-        - $ref: "#/components/parameters/RatingQueryParam"
-        - $ref: "#/components/parameters/PlaceQueryParam"
-        - $ref: "#/components/parameters/LimitQueryParam"
-        - $ref: "#/components/parameters/CursorQueryParam"
+        - name: item
+          in: query
+          description: |
+            Filter menu items by name.
+            Supports partial matching and is case-insensitive.
+          required: false
+          schema:
+            type: string
+            example: "pizza"
+
+        - name: price
+          in: query
+          description: |
+            Maximum price filter.
+            Returns items with price less than or equal to this value.
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            example: 15.99
+
+        - name: rating
+          in: query
+          description: |
+            Maximum average rating filter.
+            Returns items with average rating less than or equal to this value.
+            Must be between 0 and 5.
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 5
+            example: 4.5
+
+        - name: place
+          in: query
+          description: |
+            Filter by restaurant location.
+            Searches in the restaurant's `mapAddress` field.
+            Case-insensitive partial match.
+            **Note:** This filter is applied after database query
+          required: false
+          schema:
+            type: string
+            example: "New York"
+
       responses:
         "200":
           description: Successfully retrieved menu items
-          headers:
-            X-RateLimit-Limit:
-              description: Request limit per minute
-              schema:
-                type: integer
-                example: 100
-            X-RateLimit-Remaining:
-              description: Remaining requests
-              schema:
-                type: integer
-                example: 95
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MenuItemsCursorResponse"
+                $ref: "#/components/schemas/MenuItemsResponse"
               examples:
-                firstPage:
-                  summary: First page of results (no cursor provided)
+                successExample:
+                  summary: Example successful response
                   value:
                     status: 200
                     data:
-                      items:
-                        - _id: "507f1f77bcf86cd799439011"
-                          name: "Margherita Pizza"
-                          price: 12.99
-                          description: "Classic pizza with tomato sauce and mozzarella"
-                          averageRating: 4.8
-                          createdAt: "2024-01-15T10:30:00Z"
-                          restaurant_id:
-                            _id: "507f1f77bcf86cd799439012"
-                            name: "Mario's Pizzeria"
-                            displayPicture: "https://example.com/images/restaurant.jpg"
-                            address:
-                              mapAddress: "123 Main Street, New York, NY 10001"
-                        - _id: "507f1f77bcf86cd799439013"
-                          name: "Pepperoni Pizza"
-                          price: 14.99
-                          description: "Pizza with pepperoni and cheese"
-                          averageRating: 4.7
-                          createdAt: "2024-01-14T09:20:00Z"
-                          restaurant_id:
-                            _id: "507f1f77bcf86cd799439014"
-                            name: "Tony's Pizza"
-                            displayPicture: "https://example.com/images/tonys.jpg"
-                            address:
-                              mapAddress: "456 Broadway, New York, NY 10002"
-                      pagination:
-                        hasMore: true
-                        nextCursor: "eyJfcGlkIjoiNTA3ZjFmNzdiY2Y4NmNkNzk5NDM5MDEzIiwiY3JlYXRlZEF0IjoiMjAyNC0wMS0xNFQwOToyMDowMC4wMDBaIn0="
-                        limit: 10
-                subsequentPage:
-                  summary: Subsequent page using cursor
-                  value:
-                    status: 200
-                    data:
-                      items:
-                        - _id: "507f1f77bcf86cd799439015"
-                          name: "Veggie Pizza"
-                          price: 13.99
-                          description: "Vegetarian pizza with fresh vegetables"
-                          averageRating: 4.5
-                          createdAt: "2024-01-13T11:15:00Z"
-                          restaurant_id:
-                            _id: "507f1f77bcf86cd799439016"
-                            name: "Green Garden"
-                            displayPicture: "https://example.com/images/greengarden.jpg"
-                            address:
-                              mapAddress: "789 Park Ave, New York, NY 10003"
-                      pagination:
-                        hasMore: false
-                        nextCursor: null
-                        limit: 10
-                    message: "Menu items retrieved successfully"
+                      - _id: "507f1f77bcf86cd799439011"
+                        name: "Margherita Pizza"
+                        price: 12.99
+                        description: "Classic pizza with tomato sauce and mozzarella"
+                        averageRating: 4.8
+                        restaurant_id:
+                          _id: "507f1f77bcf86cd799439012"
+                          name: "Mario's Pizzeria"
+                          displayPicture: "https://example.com/images/restaurant.jpg"
+                          address:
+                            mapAddress: "123 Main Street, New York, NY 10001"
+                      - _id: "507f1f77bcf86cd799439013"
+                        name: "Pepperoni Pizza"
+                        price: 14.99
+                        description: "Pizza with pepperoni and cheese"
+                        averageRating: 4.7
+                        restaurant_id:
+                          _id: "507f1f77bcf86cd799439014"
+                          name: "Tony's Pizza"
+                          displayPicture: "https://example.com/images/tonys.jpg"
+                          address:
+                            mapAddress: "456 Broadway, New York, NY 10002"
+                    message: "All menu items fetched successfully"
         "400":
           description: Bad request - invalid query parameters
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ValidationErrorResponse"
               examples:
-                invalidCursor:
-                  summary: Invalid cursor parameter
+                invalidItem:
+                  summary: Invalid item parameter
                   value:
                     status: 400
-                    error: "INVALID_CURSOR"
-                    message: "Cursor is malformed or expired"
-                    details:
-                      parameter: "cursor"
-                    requestId: "req_123456789"
-                    timestamp: "2024-01-15T10:30:00Z"
-                invalidLimit:
-                  summary: Invalid limit parameter
+                    message: "Item name must be a non-empty string"
+                invalidPrice:
+                  summary: Invalid price parameter
                   value:
                     status: 400
-                    error: "VALIDATION_ERROR"
-                    message: "Limit must be between 1 and 50"
-                    details:
-                      parameter: "limit"
-                      value: "100"
-                      constraint: "Maximum value is 50"
-                    requestId: "req_123456790"
-                    timestamp: "2024-01-15T10:31:00Z"
-        "429":
-          description: Too many requests
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                    message: "Price must be a valid positive number"
+                invalidRating:
+                  summary: Invalid rating parameter
+                  value:
+                    status: 400
+                    message: "Rating must be a valid number between 0 and 5"
+                invalidPlace:
+                  summary: Invalid place parameter
+                  value:
+                    status: 400
+                    message: "Place must be a non-empty string"
         "500":
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-      x-code-samples:
-        - lang: curl
-          label: cURL - First Request
-          source: |
-            curl -X GET "https://api.example.com/v1/menuItems?item=pizza&price=20&rating=4&limit=10"
-        - lang: curl
-          label: cURL - Subsequent Request
-          source: |
-            curl -X GET "https://api.example.com/v1/menuItems?item=pizza&price=20&rating=4&limit=10&cursor=eyJfcGlkIjoiNTA3ZjFmNzdiY2Y4NmNkNzk5NDM5MDEzIiwiY3JlYXRlZEF0IjoiMjAyNC0wMS0xNFQwOToyMDowMC4wMDBaIn0="
-        - lang: javascript
-          label: JavaScript/TypeScript Client
-          source: |
-            class MenuItemsClient {
-              constructor(baseUrl = 'https://api.example.com/v1') {
-                this.baseUrl = baseUrl;
-                this.cursor = null;
-                this.hasMore = true;
-              }
-
-              async fetchMenuItems(filters = {}, limit = 10) {
-                if (!this.hasMore) return [];
-
-                const params = new URLSearchParams({
-                  limit: limit.toString(),
-                  ...filters
-                });
-
-                if (this.cursor) {
-                  params.append('cursor', this.cursor);
-                }
-
-                const response = await fetch(`${this.baseUrl}/menuItems?${params}`);
-                const data = await response.json();
-
-                if (response.ok) {
-                  this.cursor = data.data.pagination.nextCursor;
-                  this.hasMore = data.data.pagination.hasMore;
-                  return data.data.items;
-                } else {
-                  throw new Error(data.message);
-                }
-              }
-
-              async fetchAll(filters = {}, batchSize = 10) {
-                const allItems = [];
-                
-                while (this.hasMore) {
-                  const items = await this.fetchMenuItems(filters, batchSize);
-                  allItems.push(...items);
-                  
-                  // Optional: Add small delay to avoid rate limiting
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-                return allItems;
-              }
-
-              reset() {
-                this.cursor = null;
-                this.hasMore = true;
-              }
-            }
-      security: []
-    x-codeowners:
-      - "/menuItems": "@menu-team"
 
 components:
-  parameters:
-    ItemQueryParam:
-      name: item
-      in: query
-      description: |
-        Filter menu items by name. 
-        Supports partial matching and is case-insensitive.
-      required: false
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 100
-        example: "pizza"
-      x-example: "pizza"
-
-    PriceQueryParam:
-      name: price
-      in: query
-      description: |
-        Maximum price filter. 
-        Returns items with price less than or equal to this value.
-      required: false
-      schema:
-        type: number
-        format: float
-        minimum: 0
-
-        example: 15.99
-      x-example: 15.99
-
-    RatingQueryParam:
-      name: rating
-      in: query
-      description: |
-        Maximum average rating filter.
-        Returns items with average rating less than or equal to this value.
-        Must be between 0 and 5.
-      required: false
-      schema:
-        type: number
-        format: float
-        minimum: 0
-        maximum: 5
-        example: 4.5
-      x-example: 4.5
-
-    PlaceQueryParam:
-      name: place
-      in: query
-      description: |
-        Filter by restaurant location. 
-        Searches in the restaurant's `mapAddress` field.
-        Case-insensitive partial match.
-      required: false
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 200
-        example: "New York"
-      x-example: "New York"
-
-    LimitQueryParam:
-      name: limit
-      in: query
-      description: |
-        Number of items to return per request.
-
-        **Note:** For optimal infinite scrolling performance, keep this value consistent across requests.
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 50
-        default: 20
-        example: 20
-      x-example: 20
-
-    CursorQueryParam:
-      name: cursor
-      in: query
-      description: |
-        Cursor for pagination. Use the `nextCursor` value from the previous response.
-        Omit for the first request.
-
-        **Important:** Cursors are opaque strings - do not modify or decode them.
-      required: false
-      schema:
-        type: string
-        format: byte
-        example: "eyJfcGlkIjoiNTA3ZjFmNzdiY2Y4NmNkNzk5NDM5MDEzIiwiY3JlYXRlZEF0IjoiMjAyNC0wMS0xNFQwOToyMDowMC4wMDBaIn0="
-      x-example: "eyJfcGlkIjoiNTA3ZjFmNzdiY2Y4NmNkNzk5NDM5MDEzIiwiY3JlYXRlZEF0IjoiMjAyNC0wMS0xNFQwOToyMDowMC4wMDBaIn0="
-
   schemas:
-    MenuItemsCursorResponse:
+    ValidationErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Validation error"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              msg:
+                type: string
+              param:
+                type: string
+              location:
+                type: string
+
+    MenuItemsResponse:
       type: object
       required:
         - status
         - data
+        - message
       properties:
         status:
           type: integer
@@ -364,76 +192,22 @@ components:
           description: HTTP status code
           example: 200
         data:
-          type: object
-          required:
-            - items
-            - pagination
-          properties:
-            items:
-              type: array
-              items:
-                $ref: "#/components/schemas/MenuItem"
-              description: Array of menu items for the current page
-            pagination:
-              $ref: "#/components/schemas/CursorPagination"
-          description: Response data containing items and pagination info
+          type: array
+          items:
+            $ref: "#/components/schemas/MenuItem"
+          description: Array of menu items matching the filters
         message:
           type: string
           description: Human-readable response message
-          example: "Menu items retrieved successfully"
-
-    CursorPagination:
-      type: object
-      required:
-        - hasMore
-        - nextCursor
-        - limit
-      properties:
-        hasMore:
-          type: boolean
-          description: |
-            Indicates whether more items are available.
-
-            **Client Behavior:**
-            - `true`: Continue fetching with `nextCursor`
-            - `false`: Stop infinite scrolling, no more items
-          example: true
-        nextCursor:
-          type: string
-
-          description: |
-            Cursor for fetching the next page of results.
-
-            **Usage:**
-            - Include in subsequent requests as `cursor` parameter
-            - `null` when `hasMore` is `false`
-          example: "eyJfcGlkIjoiNTA3ZjFmNzdiY2Y4NmNkNzk5NDM5MDEzIiwiY3JlYXRlZEF0IjoiMjAyNC0wMS0xNFQwOToyMDowMC4wMDBaIn0="
-        limit:
-          type: integer
-          description: Number of items returned in this request
-          example: 20
-        totalEstimated:
-          type: integer
-
-          description: |
-            Estimated total number of matching items (if available).
-            Useful for progress indicators.
-          example: 150
+          example: "All menu items fetched successfully"
 
     MenuItem:
       type: object
-      required:
-        - _id
-        - name
-        - price
-        - restaurant_id
-        - averageRating
-        - createdAt
       properties:
         _id:
           type: string
           format: objectid
-          description: Unique identifier for the menu item (used in cursor)
+          description: Unique identifier for the menu item
           example: "507f1f77bcf86cd799439011"
         name:
           type: string
@@ -445,21 +219,17 @@ components:
           format: float
           description: Price of the menu item
           minimum: 0
-
           example: 12.99
         description:
           type: string
           maxLength: 500
           description: Detailed description of the menu item
           example: "Classic pizza with tomato sauce and mozzarella"
-
         image_url:
           type: string
           format: uri
           description: URL to the menu item image
-          pattern: "^https?://"
           example: "https://example.com/images/pizza.jpg"
-
         is_boosted:
           type: boolean
           description: Whether the item is currently boosted/promoted
@@ -469,7 +239,6 @@ components:
           type: string
           format: date-time
           description: Timestamp until when the item is boosted
-
         averageRating:
           type: number
           format: float
@@ -489,10 +258,7 @@ components:
         createdAt:
           type: string
           format: date-time
-          description: |
-            Creation timestamp.
-
-            **Important:** Used for cursor pagination to ensure stable ordering.
+          description: Creation timestamp
           readOnly: true
           example: "2024-01-15T10:30:00Z"
         updatedAt:
@@ -501,14 +267,9 @@ components:
           description: Last update timestamp
           readOnly: true
           example: "2024-01-15T10:30:00Z"
-      additionalProperties: false
 
     RestaurantReference:
       type: object
-      required:
-        - _id
-        - name
-        - address
       properties:
         _id:
           type: string
@@ -523,19 +284,12 @@ components:
           type: string
           format: uri
           description: URL to the restaurant's display picture
-          pattern: "^https?://"
           example: "https://example.com/images/restaurant.jpg"
-
         address:
           $ref: "#/components/schemas/RestaurantAddress"
-      additionalProperties: false
 
     RestaurantAddress:
       type: object
-      required:
-        - country
-        - city
-        - mapAddress
       properties:
         country:
           type: string
@@ -549,64 +303,23 @@ components:
           type: string
           description: Manual address entry
           example: "123 Main St, Manhattan"
-
         mapAddress:
           type: string
           description: Address from map service
           example: "123 Main Street, New York, NY 10001, USA"
-      additionalProperties: false
 
     ErrorResponse:
       type: object
-      required:
-        - status
-        - error
-        - message
-        - timestamp
       properties:
         status:
           type: integer
           description: HTTP status code
-          example: 400
-        error:
-          type: string
-          description: Error type/code
-          example: "INVALID_CURSOR"
+          example: 500
         message:
           type: string
           description: Human-readable error message
-          example: "Cursor is malformed or expired"
-        details:
-          type: object
-          description: Additional error details
-
-        timestamp:
-          type: string
-          format: date-time
-          description: When the error occurred
-          example: "2024-01-15T10:30:00Z"
-        requestId:
-          type: string
-          description: Unique identifier for this request
-          example: "req_123456789"
-        documentation_url:
-          type: string
-          format: uri
-          description: Link to relevant documentation
-          example: "https://docs.example.com/errors/invalid-cursor"
-
-      additionalProperties: false
-
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-      description: API key for authenticated endpoints
+          example: "Server error: Database connection failed"
 
 tags:
   - name: Menu Items
     description: Operations related to menu items
-    externalDocs:
-      description: Learn more about menu items and infinite scrolling
-      url: https://docs.example.com/concepts/menu-items#infinite-scrolling
