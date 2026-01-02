@@ -238,14 +238,47 @@ const getAllMenuItems = async (req, res) => {
 
     const queryParams = {};
 
+    // Validate and process 'item' parameter
     if (item) {
-      queryParams.name = { $regex: item, $options: "i" }; // now not case sensitive
+      if (typeof item !== "string" || item.trim().length === 0) {
+        return res.status(400).json({
+          status: 400,
+          message: "Item name must be a non-empty string",
+        });
+      }
+      queryParams.name = { $regex: item.trim(), $options: "i" };
     }
+
+    // Validate and process 'price' parameter
     if (price) {
-      queryParams.price = { $lte: Number(price) };
+      const priceNum = parseFloat(price);
+      if (isNaN(priceNum) || priceNum < 0) {
+        return res.status(400).json({
+          status: 400,
+          message: "Price must be a valid positive number",
+        });
+      }
+      queryParams.price = { $lte: priceNum };
     }
+
+    // Validate and process 'rating' parameter
     if (rating) {
-      queryParams.averageRating = { $lte: Number(rating) };
+      const ratingNum = parseFloat(rating);
+      if (isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5) {
+        return res.status(400).json({
+          status: 400,
+          message: "Rating must be a valid number between 0 and 5",
+        });
+      }
+      queryParams.averageRating = { $lte: ratingNum };
+    }
+
+    // Validate 'place' parameter
+    if (place && (typeof place !== "string" || place.trim().length === 0)) {
+      return res.status(400).json({
+        status: 400,
+        message: "Place must be a non-empty string",
+      });
     }
 
     let menuItems = await MenuItem.find(queryParams)
