@@ -4,11 +4,14 @@ const { getFrontendUrl } = require("./envUtil");
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT || 587,
-  secure: false, // true for 465, false for other ports
+  port: process.env.EMAIL_PORT || 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 
@@ -18,7 +21,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
   try {
     // const verificationLink = `http://localhost:5173/verifyEmail?token=${verificationToken}`;
 
-    const verificationLink = `${getFrontendUrl()}/verifyEmail?token=${verificationToken}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/verifyEmail?token=${verificationToken}`;
 
     const mailOptions = {
       from: `"Fooderu" <${process.env.EMAIL_USER}>`,
