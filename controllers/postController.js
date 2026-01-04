@@ -3,19 +3,19 @@ const RestaurantFollow = require("../models/RestaurantFollow");
 const AppError = require("../utils/AppError");
 
 const postByUser = async (req, res) => {
-  const { restaurant_id, description, image_url, isEvent } = req.body;
+  const { restaurant_id, description, image_url } = req.body;
   if (!restaurant_id) {
     return res.json({ status: 404, message: "restaurant_id is required" });
   }
-  if (typeof isEvent !== "boolean") {
-    return res.json({ status: 422, message: "Unprocessable Entity" });
-  }
+  // if (typeof isEvent !== "boolean") {
+  //   return res.json({ status: 422, message: "Unprocessable Entity" });
+  // }
   try {
     const response = await Post.create({
       restaurant_id,
       description,
       image_url,
-      isEvent,
+      // isEvent,
     });
     return res.json({ status: 201, message: "A post is created..." });
   } catch (error) {
