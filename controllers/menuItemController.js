@@ -65,7 +65,7 @@ const createMenuItemController = async (req, res, next) => {
       data: newItem,
     });
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     next(error);
   }
 };
@@ -234,9 +234,20 @@ const GetMyRating = async (req, res) => {
 // get all the menuItems
 const getAllMenuItems = async (req, res) => {
   try {
-    const { item, place, price, rating } = req.query;
+    const { item, place, price, rating, fields = "*" } = req.query;
 
     const queryParams = {};
+
+    // Validate 'fields' parameter
+    if (fields && fields !== "*") {
+      if (typeof fields !== "string") {
+        return res.status(400).json({
+          status: 400,
+          message:
+            "Invalid fields parameter format. Use comma-separated field names or '*'",
+        });
+      }
+    }
 
     // Validate and process 'item' parameter
     if (item) {
@@ -281,17 +292,91 @@ const getAllMenuItems = async (req, res) => {
       });
     }
 
-    let menuItems = await MenuItem.find(queryParams)
-      .populate("restaurant_id", "name displayPicture address")
-      .sort({ averageRating: -1 }) // sort by highest rating
-      .lean();
+    // Parse requested fields
+    const requestedFields =
+      fields === "*" ? [] : fields.split(",").map((f) => f.trim());
+    // console.log("Requested fields:", requestedFields);
 
-    if (place) {
+    // Check if restaurant data is requested
+    const needsRestaurantData = requestedFields.some(
+      (field) =>
+        field.includes("restaurant_id") || field.startsWith("restaurant_id.")
+    );
+    // console.log("needsRestaurantData", needsRestaurantData);
+
+    // Start building query
+    let query = MenuItem.find(queryParams);
+    // console.log("query: ", query);
+
+    // Only populate restaurant if needed
+    if (needsRestaurantData) {
+      let restaurantPopulateFields = "name displayPicture address";
+
+      // If specific restaurant fields are requested, populate only those
+      const restaurantRequestedFields = requestedFields
+        .filter((f) => f.startsWith("restaurant_id."))
+        .map((f) => f.replace("restaurant_id.", ""));
+
+      // console.log("Restaurant field requests:", restaurantRequestedFields);
+
+      if (restaurantRequestedFields.length > 0) {
+        // Extract simple field names (handle nested address fields)
+        const simpleFields = restaurantRequestedFields.filter(
+          (f) => !f.includes(".")
+        );
+
+        if (simpleFields.length > 0) {
+          restaurantPopulateFields = simpleFields.join(" ");
+        }
+
+        // console.log("Restaurant populate fields:", restaurantPopulateFields);
+        query = query.populate("restaurant_id", restaurantPopulateFields);
+      }
+    }
+
+    // Apply sorting
+    query = query.sort({ averageRating: -1 });
+
+    // Build field selection for query (top-level fields only)
+    let fieldSelection = null;
+    if (fields && fields !== "*") {
+      // Filter out nested fields for mongoose select
+      const topLevelFields = requestedFields.filter((f) => !f.includes("."));
+      // console.log("TopLevelFields: ", topLevelFields);
+
+      if (topLevelFields.length > 0) {
+        fieldSelection = topLevelFields.join(" ");
+
+        // Always include _id if not explicitly excluded
+        if (!topLevelFields.includes("_id")) {
+          fieldSelection += " _id";
+        }
+
+        // Include restaurant_id only if we need restaurant data
+        if (needsRestaurantData && !topLevelFields.includes("restaurant_id")) {
+          fieldSelection += " restaurant_id";
+        }
+
+        // console.log("fieldSelection: ", fieldSelection);
+      }
+    }
+
+    // Apply field selection BEFORE execution
+    if (fieldSelection) {
+      query = query.select(fieldSelection);
+    }
+
+    // Execute the query
+    let menuItems = await query.lean();
+
+    // Apply place filter (only if we have restaurant data)
+    if (place && needsRestaurantData) {
+      const placeSearch = place.trim().toLowerCase();
       menuItems = menuItems.filter((item) =>
         item.restaurant_id?.address?.mapAddress
           ?.trim()
           .toLowerCase()
-          .includes(place.trim().toLowerCase())
+          .includes(placeSearch)
       );
     }
 
