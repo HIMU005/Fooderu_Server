@@ -152,15 +152,8 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 ---
 
-## 11. Root Endpoint
-
-| Method | Endpoint | Description | Status Codes | Authentication |
-|--------|----------|-------------|--------------|----------------|
-| GET | `/` | Home route | 200 | None |
-
----
-
 ## Notes
  - Every resource endpoint other than `/auth` and `/` should now returns 401 if accessed without valid authentiction.
  - Critical resource modifications (PUT, POST, DELETE) should be protected with 403 checks for ownership.
+
 
