@@ -38,53 +38,11 @@ paths:
       tags:
         - Menu Items
       parameters:
-        - name: item
-          in: query
-          description: |
-            Filter menu items by name.
-            Supports partial matching and is case-insensitive.
-          required: false
-          schema:
-            type: string
-            example: "pizza"
-
-        - name: price
-          in: query
-          description: |
-            Maximum price filter.
-            Returns items with price less than or equal to this value.
-          required: false
-          schema:
-            type: number
-            format: float
-            minimum: 0
-            example: 15.99
-
-        - name: rating
-          in: query
-          description: |
-            Maximum average rating filter.
-            Returns items with average rating less than or equal to this value.
-            Must be between 0 and 5.
-          required: false
-          schema:
-            type: number
-            format: float
-            minimum: 0
-            maximum: 5
-            example: 4.5
-
-        - name: place
-          in: query
-          description: |
-            Filter by restaurant location.
-            Searches in the restaurant's `mapAddress` field.
-            Case-insensitive partial match.
-            **Note:** This filter is applied after database query
-          required: false
-          schema:
-            type: string
-            example: "New York"
+        - $ref: "#/components/parameters/ItemQueryParam"
+        - $ref: "#/components/parameters/PriceQueryParam"
+        - $ref: "#/components/parameters/RatingQueryParam"
+        - $ref: "#/components/parameters/PlaceQueryParam"
+        - $ref: "#/components/parameters/FieldsQueryParam"
 
       responses:
         "200":
@@ -94,8 +52,95 @@ paths:
               schema:
                 $ref: "#/components/schemas/MenuItemsResponse"
               examples:
-                successExample:
-                  summary: Example successful response
+                allFields:
+                  summary: GET /menuItems
+                  description: Default response with all fields when no filters are applied
+                  value:
+                    status: 200
+                    data:
+                      - _id: "507f1f77bcf86cd799439011"
+                        name: "Margherita Pizza"
+                        price: 12.99
+                        description: "Classic pizza with tomato sauce and mozzarella"
+                        image_url: "https://example.com/images/pizza.jpg"
+                        is_boosted: false
+                        boosted_until: null
+                        averageRating: 4.8
+                        totalRatings: 150
+                        restaurant_id:
+                          _id: "507f1f77bcf86cd799439012"
+                          name: "Mario's Pizzeria"
+                          displayPicture: "https://example.com/images/restaurant.jpg"
+                          address:
+                            country: "United States"
+                            city: "New York"
+                            manualAddress: "123 Main St, Manhattan"
+                            mapAddress: "123 Main Street, New York, NY 10001, USA"
+                        createdAt: "2024-01-15T10:30:00Z"
+                        updatedAt: "2024-01-15T10:30:00Z"
+                    message: "All menu items fetched successfully"
+
+                itemFilterWithFields:
+                  summary: GET /menuItems?item=pizza&fields=name,price,description,restaurant_id.name
+                  description: Response when filtering by item name and selecting specific fields
+                  value:
+                    status: 200
+                    data:
+                      - name: "Margherita Pizza"
+                        price: 12.99
+                        description: "Classic pizza with tomato sauce and mozzarella"
+                        restaurant_id:
+                          name: "Mario's Pizzeria"
+                      - name: "Pepperoni Pizza"
+                        price: 14.99
+                        description: "Pizza with pepperoni and cheese"
+                        restaurant_id:
+                          name: "Tony's Pizza"
+                    message: "All menu items fetched successfully"
+
+                priceFilter:
+                  summary: GET /menuItems?price=15
+                  description: Response when filtering by maximum price (all fields included)
+                  value:
+                    status: 200
+                    data:
+                      - _id: "507f1f77bcf86cd799439011"
+                        name: "Margherita Pizza"
+                        price: 12.99
+                        description: "Classic pizza with tomato sauce and mozzarella"
+                        image_url: "https://example.com/images/pizza.jpg"
+                        is_boosted: false
+                        averageRating: 4.8
+                        totalRatings: 150
+                        restaurant_id:
+                          _id: "507f1f77bcf86cd799439012"
+                          name: "Mario's Pizzeria"
+                          displayPicture: "https://example.com/images/restaurant.jpg"
+                          address:
+                            mapAddress: "123 Main Street, New York, NY 10001, USA"
+                        createdAt: "2024-01-15T10:30:00Z"
+                        updatedAt: "2024-01-15T10:30:00Z"
+                    message: "All menu items fetched successfully"
+
+                ratingFilterMinimal:
+                  summary: GET /menuItems?rating=4.5&fields=_id,name,price,averageRating
+                  description: Response when filtering by rating and selecting only essential fields
+                  value:
+                    status: 200
+                    data:
+                      - _id: "507f1f77bcf86cd799439011"
+                        name: "Margherita Pizza"
+                        price: 12.99
+                        averageRating: 4.8
+                      - _id: "507f1f77bcf86cd799439013"
+                        name: "Pepperoni Pizza"
+                        price: 14.99
+                        averageRating: 4.7
+                    message: "All menu items fetched successfully"
+
+                placeFilter:
+                  summary: GET /menuItems?place=New%20York&fields=name,price,description,averageRating,restaurant_id.name,restaurant_id.address.mapAddress
+                  description: Response when filtering by location (place parameter)
                   value:
                     status: 200
                     data:
@@ -105,23 +150,70 @@ paths:
                         description: "Classic pizza with tomato sauce and mozzarella"
                         averageRating: 4.8
                         restaurant_id:
-                          _id: "507f1f77bcf86cd799439012"
+                          name: "Mario's Pizzeria"
+                          address:
+                            mapAddress: "123 Main Street, New York, NY 10001, USA"
+                    message: "All menu items fetched successfully"
+
+                combinedFilters:
+                  summary: GET /menuItems?item=pizza&price=20&rating=4
+                  description: Response when using item, price, and rating filters together
+                  value:
+                    status: 200
+                    data:
+                      - _id: "507f1f77bcf86cd799439011"
+                        name: "Margherita Pizza"
+                        price: 12.99
+                        description: "Classic pizza with tomato sauce and mozzarella"
+                        averageRating: 4.8
+                        restaurant_id:
+                          name: "Mario's Pizzeria"
+                    message: "All menu items fetched successfully"
+
+                nestedFields:
+                  summary: GET /menuItems?fields=name,restaurant_id.name,restaurant_id.displayPicture,restaurant_id.address.city,restaurant_id.address.mapAddress
+                  description: Response with nested restaurant fields only
+                  value:
+                    status: 200
+                    data:
+                      - name: "Margherita Pizza"
+                        restaurant_id:
                           name: "Mario's Pizzeria"
                           displayPicture: "https://example.com/images/restaurant.jpg"
                           address:
-                            mapAddress: "123 Main Street, New York, NY 10001"
-                      - _id: "507f1f77bcf86cd799439013"
-                        name: "Pepperoni Pizza"
-                        price: 14.99
-                        description: "Pizza with pepperoni and cheese"
-                        averageRating: 4.7
+                            city: "New York"
+                            mapAddress: "123 Main Street, New York, NY 10001, USA"
+                      - name: "Pepperoni Pizza"
                         restaurant_id:
-                          _id: "507f1f77bcf86cd799439014"
                           name: "Tony's Pizza"
                           displayPicture: "https://example.com/images/tonys.jpg"
                           address:
-                            mapAddress: "456 Broadway, New York, NY 10002"
+                            city: "New York"
+                            mapAddress: "456 Broadway, New York, NY 10002, USA"
                     message: "All menu items fetched successfully"
+
+                noResults:
+                  summary: GET /menuItems?item=sushi&price=5
+                  description: Response when no items match the filters
+                  value:
+                    status: 200
+                    data: []
+                    message: "All menu items fetched successfully"
+
+                fieldSelectionOnly:
+                  summary: GET /menuItems?fields=name,price,description
+                  description: Response with only selected fields (no filters)
+                  value:
+                    status: 200
+                    data:
+                      - name: "Margherita Pizza"
+                        price: 12.99
+                        description: "Classic pizza with tomato sauce and mozzarella"
+                      - name: "Pepperoni Pizza"
+                        price: 14.99
+                        description: "Pizza with pepperoni and cheese"
+                    message: "All menu items fetched successfully"
+
         "400":
           description: Bad request - invalid query parameters
           content:
@@ -129,34 +221,146 @@ paths:
               schema:
                 $ref: "#/components/schemas/ValidationErrorResponse"
               examples:
-                invalidItem:
-                  summary: Invalid item parameter
+                invalidItemNumber:
+                  summary: GET /menuItems?item=123
+                  description: Invalid item parameter (number instead of string)
                   value:
                     status: 400
                     message: "Item name must be a non-empty string"
-                invalidPrice:
-                  summary: Invalid price parameter
+
+                invalidPriceString:
+                  summary: GET /menuItems?price=abc
+                  description: Invalid price parameter (non-numeric string)
                   value:
                     status: 400
                     message: "Price must be a valid positive number"
-                invalidRating:
-                  summary: Invalid rating parameter
+
+                invalidRatingRange:
+                  summary: GET /menuItems?rating=10
+                  description: Invalid rating parameter (out of range 0-5)
                   value:
                     status: 400
                     message: "Rating must be a valid number between 0 and 5"
-                invalidPlace:
-                  summary: Invalid place parameter
+
+                invalidFieldsFormat:
+                  summary: GET /menuItems?fields=name;price
+                  description: Invalid fields parameter format (using semicolon instead of comma)
+                  value:
+                    status: 400
+                    message: "Invalid fields parameter format. Use comma-separated field names or '*'"
+                    errors:
+                      - field: "fields"
+                        message: "Fields must be comma-separated field names or '*'"
+
+                emptyPlace:
+                  summary: GET /menuItems?place=
+                  description: Empty place parameter
                   value:
                     status: 400
                     message: "Place must be a non-empty string"
+
+                invalidFieldName:
+                  summary: GET /menuItems?fields=invalidField
+                  description: Invalid field name in fields parameter
+                  value:
+                    status: 400
+                    message: "Invalid field names detected in fields parameter"
+
         "500":
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                serverError:
+                  summary: GET /menuItems?item=pizza
+                  description: General server error during filtering
+                  value:
+                    status: 500
+                    message: "Server error: Internal server error"
 
 components:
+  parameters:
+    ItemQueryParam:
+      name: item
+      in: query
+      description: |
+        Filter menu items by name.
+        Supports partial matching and is case-insensitive.
+      required: false
+      schema:
+        type: string
+        example: "pizza"
+
+    PriceQueryParam:
+      name: price
+      in: query
+      description: |
+        Maximum price filter.
+        Returns items with price less than or equal to this value.
+      required: false
+      schema:
+        type: number
+        format: float
+        minimum: 0
+        example: 15.99
+
+    RatingQueryParam:
+      name: rating
+      in: query
+      description: |
+        Maximum average rating filter.
+        Returns items with average rating less than or equal to this value.
+        Must be between 0 and 5.
+      required: false
+      schema:
+        type: number
+        format: float
+        minimum: 0
+        maximum: 5
+        example: 4.5
+
+    PlaceQueryParam:
+      name: place
+      in: query
+      description: |
+        Filter by restaurant location.
+        Searches in the restaurant's `mapAddress` field.
+        Case-insensitive partial match.
+        **Note:** This filter is applied after database query
+      required: false
+      schema:
+        type: string
+        example: "New York"
+
+    FieldsQueryParam:
+      name: fields
+      in: query
+      description: |
+        Comma-separated list of fields to include in the response for each menu item.
+        Example: `name,price,averageRating`
+
+        ## Available Fields:
+          - **Menu Item fields**: _id, name, price, description, image_url, is_boosted, boosted_until, averageRating, totalRatings, createdAt, updatedAt
+          - **Restaurant fields**: restaurant_id._id, restaurant_id.name, restaurant_id.displayPicture, restaurant_id.address
+          
+          ## Examples:
+          - `fields=name,price` → Returns only name and price
+          - `fields=name,description,restaurant_id.name` → Includes nested restaurant name
+          - `fields=*` → Returns all fields (default)
+          
+          ## Notes:
+          - Field names are case-sensitive
+          - Use dot notation for nested fields (e.g., `restaurant_id.name`)
+          - Invalid field names are ignored
+      required: false
+      schema:
+        type: string
+        pattern: '^([a-zA-Z0-9_.]+(,[a-zA-Z0-9_.]+)*|\*)$'
+        example: "name,price,description,restaurant_id.name"
+        default: "*"
+
   schemas:
     ValidationErrorResponse:
       type: object
@@ -170,14 +374,17 @@ components:
         errors:
           type: array
           items:
-            type: object
-            properties:
-              msg:
-                type: string
-              param:
-                type: string
-              location:
-                type: string
+            $ref: "#/components/schemas/ErrorDetail"
+
+    ErrorDetail:
+      type: object
+      properties:
+        msg:
+          type: string
+        param:
+          type: string
+        location:
+          type: string
 
     MenuItemsResponse:
       type: object
@@ -222,8 +429,8 @@ components:
           example: 12.99
         description:
           type: string
-          maxLength: 500
           description: Detailed description of the menu item
+          maxLength: 500
           example: "Classic pizza with tomato sauce and mozzarella"
         image_url:
           type: string
@@ -239,18 +446,19 @@ components:
           type: string
           format: date-time
           description: Timestamp until when the item is boosted
+          example: "2024-12-31T23:59:59Z"
         averageRating:
           type: number
           format: float
+          description: Average rating (0-5)
           minimum: 0
           maximum: 5
-          description: Average rating (0-5)
           default: 0
           example: 4.8
         totalRatings:
           type: integer
-          minimum: 0
           description: Total number of ratings received
+          minimum: 0
           default: 0
           example: 150
         restaurant_id:
@@ -318,7 +526,7 @@ components:
         message:
           type: string
           description: Human-readable error message
-          example: "Server error: Database connection failed"
+          example: "Server error: Internal server error"
 
 tags:
   - name: Menu Items
