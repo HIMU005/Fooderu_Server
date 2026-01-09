@@ -81,32 +81,16 @@ paths:
                     example: A Post is created
 
         "400":
-          description: Bad request - Invalid restaurant ID or Required items is not provided.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/400"
+          $ref: "#/components/responses/400"
 
         "401":
-          description: Unauthorized - Invalid or missing authentication token.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/401"
+          $ref: "#/components/responses/401"
 
         "403":
-          description: Forbidden - Only the owner of the restaurant can create a post.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/403"
+          $ref: "#/components/responses/403"
 
         "404":
-          description: restaurant_id is required
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/404"
+          $ref: "#/components/responses/404"
 
         "500":
           $ref: "#/components/responses/500"
@@ -143,25 +127,13 @@ paths:
                     example: Single post fetched
 
         "400":
-          description: Invalid Post ID
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/400"
+          $ref: "#/components/responses/400"
 
         "401":
-          description: Unauthorized Invalid or missing authentication token.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/401"
+          $ref: "#/components/responses/401"
 
         "404":
-          description: Post not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/404"
+          $ref: "#/components/responses/404"
 
         "500":
           $ref: "#/components/responses/500"
@@ -203,32 +175,16 @@ paths:
                     example: Post updated successfully
 
         "400":
-          description: Invalid Post ID
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/400"
+          $ref: "#/components/responses/400"
 
         "401":
-          description: Unauthorized Invalid or missing authentication token.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/401"
+          $ref: "#/components/responses/401"
 
         "403":
-          description: Only the owner of the restaurant can update the post
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/403"
+          $ref: "#/components/responses/403"
 
         "404":
-          description: Post not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/404"
+          $ref: "#/components/responses/404"
 
         "500":
           $ref: "#/components/responses/500"
@@ -263,32 +219,16 @@ paths:
                     example: Post deleted successfully
 
         "400":
-          description: Invalid Post ID
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/400"
+          $ref: "#/components/responses/400"
 
         "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/401"
+          $ref: "#/components/responses/401"
 
         "403":
-          description: Only the owner of the restaurant can delete the post
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/403"
+          $ref: "#/components/responses/403"
 
         "404":
-          description: Post not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/404"
+          $ref: "#/components/responses/404"
 
         "500":
           $ref: "#/components/responses/500"
@@ -321,11 +261,7 @@ paths:
                     example: Followed restaurants posts fetched successfully
 
         "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/401"
+          $ref: "#/components/responses/401"
 
         "500":
           $ref: "#/components/responses/500"
@@ -344,26 +280,32 @@ components:
         image_url:
           type: string
           example: "imagelink"
-        isEvent:
-          type: boolean
-          example: true
+
         postType:
           type: string
           enum:
             - normal
             - menuItem
-            - isEvent:
+            - event
+          example: normal
+
         details:
           type: object
           additionalProperties: true
-
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-10-01T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-10-01T12:00:00Z"
     CreatePostRequest:
       allOf:
         - $ref: "#/components/schemas/Post"
         - type: object
           required:
             - restaurant_id
-            - isEvent
 
     Posts:
       type: array
@@ -405,6 +347,9 @@ components:
           schema:
             type: object
             properties:
+              status:
+                type: integer
+                example: 400
               message:
                 type: string
                 example: "Bad request. Please check your input."
@@ -416,9 +361,13 @@ components:
           schema:
             type: object
             properties:
+              status:
+                type: integer
               message:
                 type: string
-                example: "Unauthorized access. Please provide a valid token."
+            example:
+              status: 401
+              message: "Unauthorized. Please provide a valid authentication token."
 
     403:
       description: Forbidden - Only the owner of the restaurant can perform this action.
@@ -427,9 +376,15 @@ components:
           schema:
             type: object
             properties:
+              status:
+                type: integer
+                example: 403
               message:
                 type: string
                 example: "Access forbidden. You do not have the necessary permissions."
+            example:
+              status: 403
+              message: "Access forbidden. Only the owner of the restaurant can perform this action."
 
     404:
       description: Not Found - The requested resource could not be found.
@@ -438,9 +393,15 @@ components:
           schema:
             type: object
             properties:
+              status:
+                type: integer
+                example: 404
               message:
                 type: string
                 example: "Resource not found. Please check the URL and try again."
+            example:
+              status: 404
+              message: "Resource not found. Please check the URL and try again."
 
     422:
       description: Unprocessable Entity - The request was well-formed but contains semantic errors.
@@ -455,6 +416,9 @@ components:
               message:
                 type: string
                 example: "Unprocessable Entity"
+            example:
+              status: 422
+              message: "Unprocessable Entity"
 
     500:
       description: Internal Server Error - An unexpected error occurred on the server.
@@ -463,6 +427,10 @@ components:
           schema:
             type: object
             properties:
+              status:
+                type: integer
               message:
                 type: string
-                example: "Server error."
+            example:
+              status: 500
+              message: "An unexpected error occurred on the server...."
