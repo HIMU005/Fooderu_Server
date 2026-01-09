@@ -20,7 +20,7 @@ router.post("/", postByUser);
 router.get("/", getAllPosts);
 
 // get a single post
-router.get("/:id", getASinglePost);
+router.get("/:id", protect, getASinglePost);
 
 // update a post by id
 router.put("/:id", protect, updatePostDetails);
