@@ -17,14 +17,16 @@ exports.protect = async (req, res, next) => {
     }
 
     if (!token) {
-      throw new AppError("Not authorized, no token", 401);
+      // // throw new AppError("Not authorized, no token", 401);   change by himu
+      return next(new AppError("Not authorized, no token", 401));
     }
 
     // 2. Verify token
 
     const decoded = verifyToken(token);
     if (!decoded) {
-      throw new AppError("Not authorized, invalid token", 401);
+      // // throw new AppError("Not authorized, invalid token", 401); change by himu
+      return next(new AppError("Not authorized, invalid token", 401));
     }
 
     const decodedEmail = decoded.email;
@@ -34,7 +36,8 @@ exports.protect = async (req, res, next) => {
     const currentUser = await User.findOne({ email: decodedEmail });
 
     if (!currentUser) {
-      throw new AppError("User not found", 404);
+      // // throw new AppError("User not found", 404); change by himu
+      return next(new AppError("User not found", 404));
     }
 
     // 4. Grant access
@@ -42,7 +45,8 @@ exports.protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
-    throw new AppError("Authentication error:", 401);
+    // // console.error("Authentication error:", error);
+    // // throw new AppError("Authentication error:", 401); change by himu
+    return next(new AppError("Authentication error:", 401));
   }
 };
