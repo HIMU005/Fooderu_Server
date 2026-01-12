@@ -4,6 +4,19 @@ info:
   version: 1.0.0
   description: |
     This API documentation reflects the behavior of menu item related APIs
+
+     ## Authentication
+    This API uses JWT Bearer Token authentication. Include the token in the Authorization header.
+
+    ### How to Authenticate:
+    1. Obtain a token from the `/auth/login` or `/auth/register` endpoints
+    2. Include it in the Authorization header: `Bearer <your_token>`
+    3. Token expires in 4 hours
+
+    ### Token Format:
+    ```
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    ```
   contact:
     name: Jobaer Hossain
     email: jobaer6767@gmail.com
@@ -37,6 +50,8 @@ paths:
       operationId: getAllMenuItems
       tags:
         - Menu Items
+      security:
+        - BearerAuth: []
       parameters:
         - $ref: "#/components/parameters/ItemQueryParam"
         - $ref: "#/components/parameters/PriceQueryParam"
@@ -268,6 +283,48 @@ paths:
                     status: 400
                     message: "Invalid field names detected in fields parameter"
 
+        "401":
+          description: |
+            Unauthorized - Authentication failed.
+
+            ## Common Causes:
+            - No Authorization header provided
+            - Missing or invalid Bearer token
+            - Expired JWT token (tokens expire after 4 hours)
+            - User account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedError"
+              examples:
+                noToken:
+                  summary: No token provided
+                  description: Request made without Authorization header or token
+                  value:
+                    status: 401
+                    message: "Not authorized, no token"
+
+                invalidToken:
+                  summary: Invalid or expired token
+                  description: Token is expired, malformed, or has invalid signature
+                  value:
+                    status: 401
+                    message: "Invalid or expired token"
+
+                userNotFound:
+                  summary: User not found
+                  description: Token is valid but user account doesn't exist in database
+                  value:
+                    status: 401
+                    message: "User not found"
+
+                authenticationError:
+                  summary: General authentication error
+                  description: Catch-all for other authentication failures
+                  value:
+                    status: 401
+                    message: "Authentication error"
+
         "500":
           description: Internal server error
           content:
@@ -283,6 +340,29 @@ paths:
                     message: "Server error: Internal server error"
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        ## JWT Bearer Token Authentication
+
+        ### Format:
+        ```
+        Authorization: Bearer <your_jwt_token>
+        ```
+
+        ### Token Details:
+        - Tokens expire after **4 hours**
+        - Obtain tokens from `/auth/login` or `/auth/register` endpoints
+        - Tokens contain user ID, email, and user_type
+
+        ### Example Header:
+        ```
+        Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzMW... 
+        ```
+
   parameters:
     ItemQueryParam:
       name: item
@@ -364,6 +444,21 @@ components:
         default: "*"
 
   schemas:
+    UnauthorizedError:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: HTTP status code (always 401)
+          example: 401
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Not authorized, no token"
+      required:
+        - status
+        - message
+
     ValidationErrorResponse:
       type: object
       properties:
