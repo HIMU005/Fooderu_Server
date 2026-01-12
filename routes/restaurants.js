@@ -26,7 +26,7 @@ router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
 router.get("/:restaurantId", protect, getRestaurant);
 router.put("/:restaurantId", protect, updateMyRestaurant);
 
-router.get("/byUserId/:ownerId", getARestaurantByTheOwerId);
+router.get("/byUserId/:ownerId", protect, getARestaurantByTheOwerId);
 
 // get all restaurant
 router.get("/", protect, getAllRestaurants);
