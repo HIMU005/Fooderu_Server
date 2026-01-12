@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const Restaurant = require("../models/Restaurant");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const User = require("../models/User");
@@ -12,11 +13,23 @@ const AppError = require("../utils/AppError");
 const getRestaurant = async (req, res, next) => {
   try {
     const id = req.params.restaurantId || req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new AppError("Invalid restaurant ID", 400));
+    }
     const restaurant = await Restaurant.findById({ _id: id });
-    res.status(200).json({
-      status: "success",
+
+    if (!restaurant) {
+      return next(new AppError("No Restaurant againts that Id", 404));
+    }
+    return res.json({
+      status: 200,
       data: restaurant,
+      message: "single restaurant fetched successfully",
     });
+    // res.status(200).json({
+    //   status: "success",
+    //   data: restaurant,
+    // });
   } catch (error) {
     next(error);
   }
@@ -70,9 +83,7 @@ const createRestaurant = async (req, res, next) => {
     !restaurantInfo.description ||
     !restaurantInfo.location
   ) {
-    return res
-      .status(400)
-      .json({ status: 400, message: "All fields are required" });
+    return res.json({ status: 400, message: "All fields are required" });
   }
 
   try {
@@ -221,6 +232,11 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
 const updateMyRestaurant = async (req, res, next) => {
   try {
     const restaurantId = req.params.restaurantId;
+
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return next(new AppError("Invalid restaurant ID", 400));
+    }
+
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
       return next(new AppError("No restaurant found with that Id", 404));
@@ -228,17 +244,21 @@ const updateMyRestaurant = async (req, res, next) => {
     if (restaurant.owner_id.toString() !== req.user._id.toString()) {
       return next(
         new AppError(
-          "You do not have permission to update this restaurant",
+          "You are not the owner. Only the owner has permission ",
           403
         )
       );
     }
     const update = req.body;
     // console.log(update);
-    await Restaurant.findByIdAndUpdate(restaurantId, update, {
+
+    const updated = await Restaurant.findByIdAndUpdate(restaurantId, update, {
       new: true,
       runValidators: true,
     });
+    if (!updated) {
+      return next(new AppError("No Restaurant againts that Id", 404));
+    }
     return res.json({ status: 200, message: "Restaurant updated" });
   } catch (error) {
     next(error);
