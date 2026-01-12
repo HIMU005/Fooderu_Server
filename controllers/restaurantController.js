@@ -144,12 +144,17 @@ const getAllRestaurants = async (req, res) => {
   }
 };
 
-const getARestaurantByTheOwerId = async (req, res) => {
+const getARestaurantByTheOwerId = async (req, res, next) => {
   const { ownerId } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+      return next(new AppError("Invalid Owner ID", 400));
+    }
+
     const restaurantInfo = await Restaurant.findOne({ owner_id: ownerId });
     if (!restaurantInfo) {
-      return res.json({ status: 404, message: "User have no restaurant" });
+      // return res.json({ status: 404, message: "User have no restaurant" });
+      return next(new AppError("User have no Restaurant ", 404));
     }
     return res.json({
       status: 200,
@@ -157,7 +162,8 @@ const getARestaurantByTheOwerId = async (req, res) => {
       data: restaurantInfo,
     });
   } catch (error) {
-    return res.json({ status: 500, message: `server errro!! ${error}` });
+    // return res.json({ status: 500, message: `server errro!! ${error}` });
+    next(error);
   }
 };
 
@@ -214,8 +220,8 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
       followersCount: followersCountMap.get(restaurant._id.toString()) || 0,
     }));
 
-    res.status(200).json({
-      success: true,
+    return res.json({
+      status: 200,
       count: restaurantsWithStatus.length,
       data: restaurantsWithStatus,
     });
