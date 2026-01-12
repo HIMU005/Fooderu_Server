@@ -63,7 +63,7 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 | Method | Endpoint                                       | Description         | Missing Status Codes | Authentication     | Purpose             | Implemented |
 | ------ | ---------------------------------------------- | ------------------- | -------------------- | ------------------ | ------------------- | ----------- |
-| GET    | `/menuItems`                                   | Get all menu item   | 401                  | Should be Required | Unauthorized        | ✘           |
+| GET    | `/menuItems`                                   | Get all menu item   | 401, 400             | Should be Required | Unauthorized        | ✔           |
 | GET    | `/menuItems/getMenuItemsByFollowedRestaurants` | Followed menu items | 401                  | Required           | Unauthorized        | ✘           |
 | GET    | `/menuItems/:menuItemId`                       | Get menu item       | 401                  | Should be Required | Unauthorized        | ✘           |
 |        |                                                |                     | 404                  |                    | Menu item not found | ✘           |
