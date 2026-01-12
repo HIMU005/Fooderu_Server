@@ -86,12 +86,14 @@ paths:
                   value:
                     status: 200
                     data:
-                      - name: "Margherita Pizza"
+                      - _id: "507f1f77bcf86cd799439011"
+                        name: "Margherita Pizza"
                         price: 12.99
                         description: "Classic pizza with tomato sauce and mozzarella"
                         restaurant_id:
                           name: "Mario's Pizzeria"
-                      - name: "Pepperoni Pizza"
+                      - _id: "507f1f77bcf86cd799439012"
+                        name: "Pepperoni Pizza"
                         price: 14.99
                         description: "Pizza with pepperoni and cheese"
                         restaurant_id:
