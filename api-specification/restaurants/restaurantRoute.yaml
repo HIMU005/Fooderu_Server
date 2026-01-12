@@ -1,0 +1,459 @@
+openapi: 3.0.0
+info:
+  title: Post API
+  version: 1.0.0
+  description: This api documentation reflect the Behavior of post related api
+  termsOfService: http://example.com/terms/
+  contact:
+    name: Hashanuz Zaman
+    email: hashanuzzaman99@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local server
+  - url: https://fooderu-server.vercel.app
+    description: Production server
+
+paths:
+  /restaurants:
+    get:
+      summary: Get all restaurants
+      description: Retrieve a list of all restaurants
+      tags:
+        - Restaurants
+      responses:
+        "200":
+          description: Restaurant fetched successfully
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/AllRestaurantsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags:
+        - Restaurants
+      summary: Create a new Restaurants
+      description: Create a new Restaurants with the provided details.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRestaurantRequest"
+            example:
+              owner_id: "64a7f0c8e4b0c8b1a2d3e4f5"
+              name: "Tasty Bites"
+              registration_no: "REG123456"
+              phone: "+1234567890"
+              description: "A cozy cafe"
+
+      responses:
+        "201":
+          description: Restaurant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateRestaurantResponse"
+
+        "400":
+          description: Bad request  validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 400
+                message: "All fields are required"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /restaurants/{id}:
+    get:
+      tags: [Restaurant]
+      summary: Get a single Restaurant information by its ID
+      security:
+        - bearerAuth: []
+
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the restaurant to retrieve.
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: single restaurant fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: "#/components/schemas/Restaurant"
+                  message:
+                    type: string
+                    example: single restaurant fetched successfully
+
+        "400":
+          $ref: "#/components/responses/InvalidId"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      tags:
+        - Restaurant
+      summary: Update a restaurant info
+      description: Update a restaurant by its id. Only the owner of the restaurant can update the restaurant info
+      security:
+        - bearerAuth: []
+
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Restaurant"
+
+      responses:
+        "200":
+          description: Restaurant updaed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Restaurant updated
+
+        "400":
+          $ref: "#/components/responses/InvalidId"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "505":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RestaurantBase:
+      type: object
+      required:
+        - name
+        - registration_no
+        - phone
+        - address
+        - location
+        - description
+        - displayPicture
+      properties:
+        name:
+          type: string
+          # trim: true
+          description: Name of the restaurant
+          example: Tasty Bites
+
+        registration_no:
+          type: string
+          description: Registration number of the restaurant
+          example: REG123456
+
+        phone:
+          type: string
+          description: Contact phone number of the restaurant
+          example: +1234567890
+
+        address:
+          type: object
+          description: Physical address of the restaurant
+          required:
+            - country
+            - city
+            - mapAddress
+          properties:
+            country:
+              type: string
+              description: Country where the restaurant is located
+              example: USA
+              # trim: true
+            city:
+              type: string
+              description: City where the restaurant is located
+              example: New York
+              # trim: true
+            manualAddress:
+              type: string
+              description: Full manual address of the restaurant
+              example: 123 Main St, New York, NY 10001
+              # trim: true
+            mapAddress:
+              type: string
+              description: Address as per map location
+              example: 123 Main St, New York, NY 10001
+              # trim: true
+
+        location:
+          type: object
+          required:
+            - type
+            - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+                - Point
+              default: Point
+              description: GeoJSON type
+              example: Point
+            coordinates:
+              type: array
+              description: "[longitude, latitude]"
+              minItems: 2
+              maxItems: 2
+              items:
+                type: number
+              example: [-74.006, 40.7128]
+
+        description:
+          type: string
+          description: description of the restaurant
+          example: A cozy cafe serving artisan coffee and desserts.
+
+        displayPicture:
+          type: string
+          format: uri
+          example: https://cdn.example.com/restaurants/display.jpg
+
+        coverPicture:
+          type: string
+          format: uri
+          example: https://cdn.example.com/restaurants/display.jpg
+
+    Restaurant:
+      allOf:
+        - $ref: "#/components/schemas/RestaurantBase"
+        - type: object
+          required: [owner_id]
+          properties:
+            _id:
+              type: string
+              readOnly: true
+
+            owner_id:
+              type: string
+              example: 64a7f0c8e4b0c8b1a2d3e4f5
+
+            status:
+              type: string
+              enum: [active, inactive, banned]
+              default: active
+
+            restaurant_type:
+              type: string
+              enum:
+                - fast_food
+                - fine_dining
+                - cafe
+                - food_truck
+                - other
+              default: other
+
+            boosted_until:
+              type: string
+              format: date-time
+              nullable: true
+
+            createdAt:
+              type: string
+              format: date-time
+              readOnly: true
+
+            updatedAt:
+              type: string
+              format: date-time
+              readOnly: true
+
+    Restaurants:
+      type: array
+      items:
+        $ref: "#/components/schemas/Restaurant"
+
+    SingleRestaurantResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          $ref: "#/components/schemas/Restaurant"
+        message:
+          type: string
+          example: single restaurant fetched successfully
+
+    AllRestaurantsResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          $ref: "#/components/schemas/Restaurants"
+        message:
+          type: string
+          example: All restaurant data fetched successfully
+
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+
+    CreateRestaurantRequest:
+      allOf:
+        - $ref: "#/components/schemas/RestaurantBase"
+        - type: object
+          required: [owner_id]
+          properties:
+            owner_id:
+              type: string
+              description: Mongodb object id of the owner
+              example: 64a7f0c8e4b0c8b1a2d3e4f5
+
+    CreateRestaurantResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 201
+        data:
+          $ref: "#/components/schemas/Restaurant"
+        message:
+          type: string
+          example: Restaurant created successfully
+
+  responses:
+    BadRequest:
+      description: Bad request - The server could not understand the request due to invalid syntax.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 400
+            message: Bad request. Please check your input.
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 401
+            message: "Unauthorized. Please provide a valid authentication token."
+
+    Forbidden:
+      description: Forbidden - Only the owner of the restaurant can perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 403
+            message: "You are not the owner. Only the owner has permission "
+
+    NotFound:
+      description: Not Found - The requested resource could not be found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 404
+            message: "No Restaurant againts that Id"
+
+    Conflict:
+      description: Conflict - The user already owns a restaurant
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 409
+            message: "You have already a restaurant........"
+
+    UnprocessableEntity:
+      description: Unprocessable Entity - The request was well-formed but contains semantic errors.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 422
+            message: "Unprocessable Entity"
+
+    InternalServerError:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 500
+            message: "An unexpected error occurred on the server...."
+
+    InvalidId:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 400
+            message: "Invalid restaurant ID"
