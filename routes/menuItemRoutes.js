@@ -21,7 +21,7 @@ router.get(
 router.post("/:menuItemId/rate", protect, PostARating);
 
 // get a single munu item by its id
-router.get("/:menuItemId", GetASingleMenuItem);
+router.get("/:menuItemId", protect, GetASingleMenuItem);
 
 // update menuItem  - the owner of the restaurant can update the menu item details
 router.put("/:menuItemId", protect, updateMenuItem);
@@ -33,6 +33,6 @@ router.delete("/:menuItemId", protect, deleteMenuItem);
 router.get("/:menuItemId/myRating", protect, GetMyRating);
 
 // get all menu items
-router.get("/", getAllMenuItems);
+router.get("/", protect, getAllMenuItems);
 
 module.exports = router;

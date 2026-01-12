@@ -23,13 +23,13 @@ router.get("/:restaurantId/posts", getAllPostsUnderARestaurant);
 
 // get all restaurant items
 router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
-router.get("/:restaurantId", getRestaurant);
+router.get("/:restaurantId", protect, getRestaurant);
 router.put("/:restaurantId", protect, updateMyRestaurant);
 
 router.get("/byUserId/:ownerId", getARestaurantByTheOwerId);
 
 // get all restaurant
-router.get("/", getAllRestaurants);
+router.get("/", protect, getAllRestaurants);
 
 // POST /restaurants/:restaurantId/items
 router.post("/:restaurantId/items", createMenuItemController);

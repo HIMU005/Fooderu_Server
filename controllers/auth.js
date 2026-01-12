@@ -72,7 +72,7 @@ const verifyEmailController = async (req, res, next) => {
 const ressendVerificationEmailController = async (req, res, next) => {
   try {
     const { email } = req.query;
-    console.log(email);
+    // console.log(email);
 
     // Use the service
     const result = await resendEmailVerificationService(email);
