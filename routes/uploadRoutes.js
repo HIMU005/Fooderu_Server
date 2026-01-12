@@ -9,16 +9,17 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // 2. Define Route with Debugging
-router.post("/", 
-    // Middleware 1: Logging
-    (req, res, next) => {
-        console.log("DEBUG: Request received at /api/upload");
-        next();
-    },
-    // Middleware 2: Multer (Processes the file)
-    upload.single("image"), 
-    // Middleware 3: Controller
-    uploadImage 
+router.post(
+  "/",
+  // Middleware 1: Logging
+  (req, res, next) => {
+    // console.log("DEBUG: Request received at /api/upload");
+    next();
+  },
+  // Middleware 2: Multer (Processes the file)
+  upload.single("image"),
+  // Middleware 3: Controller
+  uploadImage
 );
 
 module.exports = router;

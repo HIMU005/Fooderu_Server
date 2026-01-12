@@ -3,12 +3,11 @@ const AppError = require("../utils/AppError");
 const User = require("../models/User");
 const { verifyToken } = require("../utils/jwtFunction");
 
+// In your protect middleware with throwing version:
 exports.protect = async (req, res, next) => {
   try {
     let token;
-    // console.log(req.headers.authorization);
 
-    // 1. Get token
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
@@ -17,36 +16,30 @@ exports.protect = async (req, res, next) => {
     }
 
     if (!token) {
-      // // throw new AppError("Not authorized, no token", 401);   change by himu
       return next(new AppError("Not authorized, no token", 401));
     }
 
-    // 2. Verify token
-
+    // This will throw if environment variable is missing
     const decoded = verifyToken(token);
+
     if (!decoded) {
-      // // throw new AppError("Not authorized, invalid token", 401); change by himu
-      return next(new AppError("Not authorized, invalid token", 401));
+      return next(new AppError("Invalid or expired token", 401));
     }
 
-    const decodedEmail = decoded.email;
-    const decodedId = decoded.id;
-
-    // 3. Find user by email
-    const currentUser = await User.findOne({ email: decodedEmail });
+    const currentUser = await User.findOne({ email: decoded.email });
 
     if (!currentUser) {
-      // // throw new AppError("User not found", 404); change by himu
-      return next(new AppError("User not found", 404));
+      return next(new AppError("User not found", 401));
     }
 
-    // 4. Grant access
     req.user = currentUser;
-
     next();
   } catch (error) {
-    // // console.error("Authentication error:", error);
-    // // throw new AppError("Authentication error:", 401); change by himu
-    return next(new AppError("Authentication error:", 401));
+    if (error.message.includes("not defined")) {
+      // Environment variable error
+      // console.error("Server configuration error:", error.message);
+      return next(new AppError("Server configuration error", 500));
+    }
+    return next(new AppError("Authentication error", 401));
   }
 };

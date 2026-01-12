@@ -46,28 +46,36 @@ const loginService = async (email, password) => {
 
   // if the user is not in the database
   if (!user) {
-    throw new AppError("User not found", 404);
+    // throw new AppError("User not found", 404);
+    return next(new AppError("User not found", 404));
   }
 
   const isMatched = await bcrypt.compare(password, user.password);
 
   // if password not matched with the database
   if (!isMatched) {
-    throw new AppError("Password not matched", 401);
+    // throw new AppError("Password not matched", 401);
+    return next(new AppError("Password not matched", 401));
   }
 
   // Check if email is verified
   if (!user.verified) {
-    throw new AppError(
-      "Email not verified. Please verify your email before logging in.",
-      403
+    // throw new AppError(
+    //   "Email not verified. Please verify your email before logging in.",
+    //   403
+    // );
+    return next(
+      new AppError(
+        "Email not verified. Please verify your email before logging in.",
+        403
+      )
     );
   }
 
   user.password = undefined;
 
   // jwt code is here
-  const token = assignToken(user._id, email);
+  const token = assignToken(user._id, email, user.user_type);
 
   // Convert user to object and add token
   const userObj = user.toObject();
