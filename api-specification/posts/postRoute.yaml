@@ -50,7 +50,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetPostsResponse"
         "500":
-          $ref: "#/components/responses/500"
+          $ref: "#/components/responses/InternalServerError"
 
     post:
       tags:
@@ -81,19 +81,19 @@ paths:
                     example: A Post is created
 
         "400":
-          $ref: "#/components/responses/400"
+          $ref: "#/components/responses/InvalidId"
 
         "401":
-          $ref: "#/components/responses/401"
+          $ref: "#/components/responses/Unauthorized"
 
         "403":
-          $ref: "#/components/responses/403"
+          $ref: "#/components/responses/Forbidden"
 
         "404":
-          $ref: "#/components/responses/404"
+          $ref: "#/components/responses/NotFound"
 
         "500":
-          $ref: "#/components/responses/500"
+          $ref: "#/components/responses/InternalServerError"
 
   /posts/{id}:
     get:
@@ -115,34 +115,25 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                    example: 200
-                  data:
-                    $ref: "#/components/schemas/Post"
-                  message:
-                    type: string
-                    example: Single post fetched
+                $ref: "#/components/schemas/SinglePostResponse"
 
         "400":
-          $ref: "#/components/responses/400"
+          $ref: "#/components/responses/InvalidId"
 
         "401":
-          $ref: "#/components/responses/401"
+          $ref: "#/components/responses/Unauthorized"
 
         "404":
-          $ref: "#/components/responses/404"
+          $ref: "#/components/responses/NotFound"
 
         "500":
-          $ref: "#/components/responses/500"
+          $ref: "#/components/responses/InternalServerError"
 
     put:
       tags:
         - Posts
       summary: Update a post
-      description: Update a post by its ID. Only the owner of the restaurant can update the post.
+      description: Partially update a post by its ID. Only the owner of the restaurant can update the post.
       security:
         - BearerAuth: []
 
@@ -158,7 +149,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Post"
+              $ref: "#/components/schemas/UpdatePostRequest"
       responses:
         "200":
           description: Post updaed successfully
@@ -175,19 +166,19 @@ paths:
                     example: Post updated successfully
 
         "400":
-          $ref: "#/components/responses/400"
+          $ref: "#/components/responses/InvalidId"
 
         "401":
-          $ref: "#/components/responses/401"
+          $ref: "#/components/responses/Unauthorized"
 
         "403":
-          $ref: "#/components/responses/403"
+          $ref: "#/components/responses/Forbidden"
 
         "404":
-          $ref: "#/components/responses/404"
+          $ref: "#/components/responses/NotFound"
 
         "500":
-          $ref: "#/components/responses/500"
+          $ref: "#/components/responses/InternalServerError"
 
     delete:
       tags:
@@ -219,19 +210,19 @@ paths:
                     example: Post deleted successfully
 
         "400":
-          $ref: "#/components/responses/400"
+          $ref: "#/components/responses/InvalidId"
 
         "401":
-          $ref: "#/components/responses/401"
+          $ref: "#/components/responses/Unauthorized"
 
         "403":
-          $ref: "#/components/responses/403"
+          $ref: "#/components/responses/Forbidden"
 
         "404":
-          $ref: "#/components/responses/404"
+          $ref: "#/components/responses/NotFound"
 
         "500":
-          $ref: "#/components/responses/500"
+          $ref: "#/components/responses/InternalServerError"
 
   /posts/followedRestaurantsPosts:
     get:
@@ -261,19 +252,19 @@ paths:
                     example: Followed restaurants posts fetched successfully
 
         "401":
-          $ref: "#/components/responses/401"
+          $ref: "#/components/responses/Unauthorized"
 
         "500":
-          $ref: "#/components/responses/500"
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   schemas:
-    Post:
+    PostBase:
       type: object
       properties:
         restaurant_id:
           type: string
-          example: 123123123
+          example: 64a7f0c8e4b0c8b1a2d3e4f5
         description:
           type: string
           example: "description"
@@ -292,25 +283,83 @@ components:
         details:
           type: object
           additionalProperties: true
+
+    Post:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: asdfghjkl
+
+        restaurant_id:
+          type: string
+
+        description:
+          type: string
+
+        image_url:
+          type: string
+
+        postType:
+          type: string
+
+        details:
+          type: object
+
         createdAt:
           type: string
           format: date-time
-          example: "2023-10-01T12:00:00Z"
+
         updatedAt:
           type: string
           format: date-time
-          example: "2023-10-01T12:00:00Z"
+
     CreatePostRequest:
       allOf:
-        - $ref: "#/components/schemas/Post"
+        - $ref: "#/components/schemas/PostBase"
         - type: object
           required:
             - restaurant_id
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          example: Updated post description
+
+        image_url:
+          type: string
+          format: uri
+          example: https://cdn.example.com/posts/updated.jpg
+
+        postType:
+          type: string
+          enum:
+            - normal
+            - menuItem
+            - event
+
+        details:
+          type: object
+          additionalProperties: true
 
     Posts:
       type: array
       items:
         $ref: "#/components/schemas/Post"
+
+    SinglePostResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          $ref: "#/components/schemas/Post"
+        message:
+          type: string
+          example: Single post fetched
 
     GetPostsResponse:
       type: object
@@ -333,6 +382,15 @@ components:
           type: string
           example: "Posts fetched successfully"
 
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+
   securitySchemes:
     BearerAuth:
       type: http
@@ -340,97 +398,72 @@ components:
       bearerFormat: JWT
 
   responses:
-    400:
+    BadRequest:
       description: Bad request - The server could not understand the request due to invalid syntax.
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              status:
-                type: integer
-                example: 400
-              message:
-                type: string
-                example: "Bad request. Please check your input."
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 400
+            message: Bad request. Please check your input.
 
-    401:
+    Unauthorized:
       description: Unauthorized - Invalid or missing authentication token.
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              status:
-                type: integer
-              message:
-                type: string
-            example:
-              status: 401
-              message: "Unauthorized. Please provide a valid authentication token."
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 401
+            message: "Unauthorized. Please provide a valid authentication token."
 
-    403:
+    Forbidden:
       description: Forbidden - Only the owner of the restaurant can perform this action.
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              status:
-                type: integer
-                example: 403
-              message:
-                type: string
-                example: "Access forbidden. You do not have the necessary permissions."
-            example:
-              status: 403
-              message: "Access forbidden. Only the owner of the restaurant can perform this action."
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 403
+            message: "You are not the owner. Only the owner has permission "
 
-    404:
+    NotFound:
       description: Not Found - The requested resource could not be found.
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              status:
-                type: integer
-                example: 404
-              message:
-                type: string
-                example: "Resource not found. Please check the URL and try again."
-            example:
-              status: 404
-              message: "Resource not found. Please check the URL and try again."
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 404
+            message: "Resource not found. Please check the URL and try again."
 
-    422:
+    UnprocessableEntity:
       description: Unprocessable Entity - The request was well-formed but contains semantic errors.
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              status:
-                type: integer
-                example: 422
-              message:
-                type: string
-                example: "Unprocessable Entity"
-            example:
-              status: 422
-              message: "Unprocessable Entity"
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 422
+            message: "Unprocessable Entity"
 
-    500:
+    InternalServerError:
       description: Internal Server Error - An unexpected error occurred on the server.
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              status:
-                type: integer
-              message:
-                type: string
-            example:
-              status: 500
-              message: "An unexpected error occurred on the server...."
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 500
+            message: "An unexpected error occurred on the server...."
+
+    InvalidId:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 400
+            message: "Invalid  PostId"
