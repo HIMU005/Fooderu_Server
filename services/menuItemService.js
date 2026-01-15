@@ -15,7 +15,8 @@ const createMenuItem = async (itemData) => {
   // console.log("restaurant found indicator", restaurant);
 
   if (!restaurant) {
-    throw new AppError("Restaurant not found", 404);
+    // throw new AppError("Restaurant not found", 404);
+    return next(new AppError("Restaurant not found", 404));
   }
 
   //   TODO:Validate boost date if provided
@@ -36,7 +37,10 @@ const createMenuItem = async (itemData) => {
 
     return menuItem;
   } catch (error) {
-    throw new AppError(`Failed to create menu Item: ${error.message}`, 400);
+    // throw new AppError(`Failed to create menu Item: ${error.message}`, 400);
+    return next(
+      new AppError(`Failed to create menu Item: ${error.message}`, 400)
+    );
   }
 };
 
@@ -44,7 +48,8 @@ const getAllItemsUnderARestaurantService = async (restaurantId) => {
   const restaurant = await Restaurant.findById(restaurantId);
 
   if (!restaurant) {
-    throw new AppError("Restaurant not found", 404);
+    // throw new AppError("Restaurant not found", 404);
+    return next(new AppError("Restaurant not found", 404));
   }
 
   try {
@@ -56,7 +61,10 @@ const getAllItemsUnderARestaurantService = async (restaurantId) => {
 
     return response;
   } catch (error) {
-    throw new AppError(`Failed to get menu Items: ${error.message}`, 400);
+    // throw new AppError(`Failed to get menu Items: ${error.message}`, 400);
+    return next(
+      new AppError(`Failed to get menu Items: ${error.message}`, 400)
+    );
   }
 };
 

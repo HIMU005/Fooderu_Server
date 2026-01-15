@@ -7,7 +7,8 @@ const createEvent = async (restaurantId, eventData) => {
   const restaurantExists = await Restaurant.findOne({ _id: restaurantId });
   // console.log("exist : ", restaurantExists);
   if (!restaurantExists) {
-    throw new Error("Restaurant not found");
+    // throw new Error("Restaurant not found");
+    return next(new AppError("Restaurant not found", 404));
   }
 
   // Create and save the event
@@ -36,7 +37,8 @@ const getEventsOfRestaurant = async (restaurantId, onlyLive = false) => {
 const toggleEventStatus = async (eventId) => {
   const event = await Event.findById(eventId);
   if (!event) {
-    throw new Error("Event not found");
+    // throw new Error("Event not found");
+    return next(new AppError("Event not found", 404));
   }
 
   event.is_live = !event.is_live;

@@ -4,7 +4,8 @@ const AppError = require("./AppError");
 // assign token with for email
 const assignToken = (id, email) => {
   if (!process.env.ACCESS_TOKEN_SECRET) {
-    throw new Error("ACCESS_TOKEN_SECRET is not defined");
+    // throw new Error("ACCESS_TOKEN_SECRET is not defined");
+    return next(new AppError("ACCESS_TOKEN_SECRET is not defined", 500));
   }
 
   return jwt.sign({ id, email }, process.env.ACCESS_TOKEN_SECRET, {
@@ -15,7 +16,8 @@ const assignToken = (id, email) => {
 // generate verification token (expires in 24 hours)
 const generateVerificationToken = (id, email) => {
   if (!process.env.VERIFICATION_TOKEN_SECRET) {
-    throw new Error("VERIFICATION_TOKEN_SECRET is not defined");
+    // throw new Error("VERIFICATION_TOKEN_SECRET is not defined");
+    return next(new AppError("VERIFICATION_TOKEN_SECRET is not defined", 500));
   }
 
   return jwt.sign(
@@ -34,7 +36,8 @@ const generateVerificationToken = (id, email) => {
 // verify token code will be here
 const verifyToken = (token) => {
   if (!process.env.ACCESS_TOKEN_SECRET) {
-    throw new Error("ACCESS_TOKEN_SECRET is not defined");
+    // throw new Error("ACCESS_TOKEN_SECRET is not defined");
+    return next(new AppError("ACCESS_TOKEN_SECRET is not defined", 500));
   }
 
   try {
@@ -48,7 +51,8 @@ const verifyToken = (token) => {
 // verify email verification token
 const verifyVerificationToken = (token) => {
   if (!process.env.VERIFICATION_TOKEN_SECRET) {
-    throw new Error("VERIFICATION_TOKEN_SECRET is not defined");
+    // throw new Error("VERIFICATION_TOKEN_SECRET is not defined");
+    return next(new AppError("VERIFICATION_TOKEN_SECRET is not defined", 500));
   }
 
   try {

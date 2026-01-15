@@ -17,13 +17,23 @@ const registerController = async (req, res, next) => {
 
   //   validation
   if (!email || !password) {
-    throw new AppError("Email and Password are required", 400);
+    // throw new AppError("Email and Password are required", 400);
+    // return next(new AppError("Email and Password are required", 400));
+    return res.json({
+      status: 400,
+      message: "Email and Password are required",
+    });
   }
 
   // if user already exists
   const existingUser = await findUserByProperty("email", email);
   if (existingUser) {
-    throw new AppError("User already exists with this email", 409);
+    // throw new AppError("User already exists with this email", 409);
+    // return next(new AppError("User already exists with this email", 409));
+    return res.json({
+      status: 409,
+      message: "User already exists with this email",
+    });
   }
 
   try {
@@ -37,7 +47,8 @@ const registerController = async (req, res, next) => {
   } catch (error) {
     console.error(error);
 
-    throw new AppError("Error while registering the user", 500);
+    // throw new AppError("Error while registering the user", 500);
+    return next(new AppError("Error while registering the user", 500));
   }
 };
 
@@ -83,6 +94,7 @@ const ressendVerificationEmailController = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+    // return next()
   }
 };
 
@@ -91,7 +103,12 @@ const logInController = async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    throw new AppError("Email and Password are required", 400);
+    // throw new AppError("Email and Password are required", 400);
+    // return next(new AppError("Email and Password are required", 400));
+    return res.json({
+      status: 400,
+      message: "Email and Password are required",
+    });
   }
 
   try {
@@ -100,7 +117,11 @@ const logInController = async (req, res, next) => {
 
     return res.send({ status: 200, data: user });
   } catch (error) {
-    return res.json({ status: 500, message: `server error ${error} ` });
+    console.error(error);
+
+    return res.json({ status: error.status, message: `${error.message} ` });
+    // return next(new AppError(error.message, error.statusCode || 500));
+    // return next(error);
   }
 };
 
