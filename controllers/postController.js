@@ -31,7 +31,8 @@ const postByUser = async (req, res, next) => {
   } catch (error) {
     // console.error(error);
 
-    throw new AppError(`server error ${error} `, 500);
+    // throw new AppError(`server error ${error} `, 500);
+    return next(new AppError(`server error ${error} `, 500));
   }
 };
 
@@ -59,7 +60,8 @@ const getAllPosts = async (req, res) => {
   } catch (error) {
     // console.error(error);
 
-    throw new AppError(`server error ${error} `, 500);
+    // throw new AppError(`server error ${error} `, 500);
+    return next(new AppError(`server error ${error} `, 500));
   }
 };
 

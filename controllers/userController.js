@@ -8,7 +8,8 @@ exports.getUserProfile = async (req, res, next) => {
     const user = await User.findById(req.user.id);
 
     if (!user) {
-      throw new AppError("User not found", 404);
+      // throw new AppError("User not found", 404);
+      return next(new AppError("User not found", 404));
     }
 
     // Check if user owns a restaurant
