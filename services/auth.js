@@ -14,7 +14,10 @@ const { sendVerificationEmail } = require("../utils/emailService");
 const registerService = async ({ email, password }) => {
   const user = await findUserByProperty("email", email);
 
-  if (user) throw new AppError("User already registered", 400);
+  if (user) {
+    // return next(new AppError("User already exists with this email", 409));
+    throw new AppError("User already exists with this email", 409);
+  }
 
   //   hash the password before saving it to the database
   const salt = await bcrypt.genSalt(10);
@@ -35,6 +38,13 @@ const registerService = async ({ email, password }) => {
       "Failed to send verification email. Please try again later.",
       500
     );
+
+    // return next(
+    //   new AppError(
+    //     "Failed to send verification email. Please try again later.",
+    //     500
+    //   )
+    // );
   }
 
   return newUser;
@@ -43,44 +53,47 @@ const registerService = async ({ email, password }) => {
 // login service
 const loginService = async (email, password) => {
   const user = await findUserByProperty("email", email);
+  // console.log("login service, user: ", user);
 
   // if the user is not in the database
   if (!user) {
-    // throw new AppError("User not found", 404);
-    return next(new AppError("User not found", 404));
+    throw new AppError("User not found, please register first", 404);
+    // return next(new AppError("User not found", 404));
   }
 
   const isMatched = await bcrypt.compare(password, user.password);
 
   // if password not matched with the database
   if (!isMatched) {
-    // throw new AppError("Password not matched", 401);
-    return next(new AppError("Password not matched", 401));
+    throw new AppError("Password not matched", 401);
+    // return next(new AppError("Password not matched", 401));
   }
 
   // Check if email is verified
   if (!user.verified) {
-    // throw new AppError(
-    //   "Email not verified. Please verify your email before logging in.",
-    //   403
-    // );
-    return next(
-      new AppError(
-        "Email not verified. Please verify your email before logging in.",
-        403
-      )
+    throw new AppError(
+      "Email not verified. Please verify your email before logging in.",
+      403
     );
+    //   return next(
+    //     new AppError(
+    //       "Email not verified. Please verify your email before logging in.",
+    //       403
+    //     )
+    //   );
   }
 
   user.password = undefined;
 
   // jwt code is here
   const token = assignToken(user._id, email, user.user_type);
+  // console.log("login service, token: ", token);
 
   // Convert user to object and add token
   const userObj = user.toObject();
   userObj.jwtToken = token;
   // user.jwtToken = token;
+  // console.log("login service, userObj: ", userObj);
 
   return userObj;
 };
@@ -89,12 +102,14 @@ const loginService = async (email, password) => {
 const verifyEmailService = async (token) => {
   if (!token) {
     throw new AppError("Verification token is required", 400);
+    // return next(new AppError("Verification token is required", 400));
   }
 
   const decoded = verifyVerificationToken(token);
 
   if (!decoded) {
     throw new AppError("Invalid or expired verification token", 400);
+    // return next(new AppError("Invalid or expired verification token", 400));
   }
 
   // console.log(decoded);
@@ -104,11 +119,13 @@ const verifyEmailService = async (token) => {
 
   if (!user) {
     throw new AppError("User not found", 404);
+    // return next(new AppError("User not found", 404));
   }
 
   // Check if already verified
   if (user.verified) {
     throw new AppError("Email is already verified", 400);
+    // return next(new AppError("Email is already verified", 400));
   }
 
   //Mark user as verified
@@ -121,6 +138,7 @@ const verifyEmailService = async (token) => {
 const resendEmailVerificationService = async (email) => {
   if (!email) {
     throw new AppError("Email is required", 400);
+    // return next(new AppError("Email is required", 400));
   }
 
   // console.log("email from service", email);
@@ -141,6 +159,7 @@ const resendEmailVerificationService = async (email) => {
   // Check if user is already verified
   if (user.verified) {
     throw new AppError("Email is already verified", 400);
+    // return next(new AppError("Email is already verified", 400));
   }
 
   // Generate a new verification token
@@ -153,6 +172,12 @@ const resendEmailVerificationService = async (email) => {
       "Failed to send verification email. Please try again later.",
       500
     );
+    // return next(
+    //   new AppError(
+    //     "Failed to send verification email. Please try again later.",
+    //     500
+    //   )
+    // );
   }
 
   return {

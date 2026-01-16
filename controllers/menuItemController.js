@@ -32,7 +32,8 @@ const createMenuItemController = async (req, res, next) => {
     // console.log("restaurant id : ", restaurantId);
 
     if (!name || !price) {
-      throw new AppError("Name and Price are required", 400);
+      // throw new AppError("Name and Price are required", 400);
+      return next(new AppError("Name and Price are required", 400));
     }
     if (name.length > 100) {
       return res.json({
