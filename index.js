@@ -4,6 +4,8 @@ require("dotenv").config();
 const connectDB = require("./db");
 const router = require("./routes");
 const path = require("path");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./swagger-output.json");
 const PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -15,6 +17,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 // app.options("*", cors());
+
+/* 🔹 Swagger route */
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(router);
 app.use("/images", express.static(path.join(__dirname, "images")));
