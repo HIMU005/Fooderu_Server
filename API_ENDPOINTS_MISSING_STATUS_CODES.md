@@ -64,17 +64,17 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 | Method | Endpoint                                       | Description         | Missing Status Codes | Authentication     | Purpose             | Implemented |
 | ------ | ---------------------------------------------- | ------------------- | -------------------- | ------------------ | ------------------- | ----------- |
 | GET    | `/menuItems`                                   | Get all menu item   | 401, 400             | Should be Required | Unauthorized        | ✔           |
-| GET    | `/menuItems/getMenuItemsByFollowedRestaurants` | Followed menu items | 401                  | Required           | Unauthorized        | ✘           |
-| GET    | `/menuItems/:menuItemId`                       | Get menu item       | 401                  | Should be Required | Unauthorized        | ✘           |
-|        |                                                |                     | 404                  |                    | Menu item not found | ✘           |
-| GET    | `/menuItems/:menuItemId/myRating`              | User rating         | 401                  | Required           | Unauthorized        | ✘           |
+| GET    | `/menuItems/getMenuItemsByFollowedRestaurants` | Followed menu items | 401                  | Required           | Unauthorized        | ✔           |
+| GET    | `/menuItems/:menuItemId`                       | Get menu item       | 401                  | Should be Required | Unauthorized        | ✔           |
+|        |                                                |                     | 404                  |                    | Menu item not found | ✔           |
+| GET    | `/menuItems/:menuItemId/myRating`              | User rating         | 401                  | Required           | Unauthorized        | ✔           |
 |        |                                                |                     | 404                  |                    | Rating not found    | ✘           |
-| POST   | `/menuItems/:menuItemId/rate`                  | Rate item           | 401                  | Required           | Unauthorized        | ✘           |
+| POST   | `/menuItems/:menuItemId/rate`                  | Rate item           | 401                  | Required           | Unauthorized        | ✔           |
 |        |                                                |                     | 404                  |                    | Menu item not found | ✘           |
-| PUT    | `/menuItems/:menuItemId`                       | Update item         | 401                  | Required           | Unauthorized        | ✘           |
+| PUT    | `/menuItems/:menuItemId`                       | Update item         | 401                  | Required           | Unauthorized        | ✔           |
 |        |                                                |                     | 403                  |                    | Not owner           | ✘           |
 |        |                                                |                     | 404                  |                    | Menu item not found | ✘           |
-| DELETE | `/menuItems/:menuItemId`                       | Delete item         | 401                  | Required           | Unauthorized        | ✘           |
+| DELETE | `/menuItems/:menuItemId`                       | Delete item         | 401                  | Required           | Unauthorized        | ✔           |
 |        |                                                |                     | 403                  |                    | Not owner           | ✘           |
 |        |                                                |                     | 404                  |                    | Menu item not found | ✘           |
 
