@@ -72,20 +72,18 @@ const createMenuItemController = async (req, res, next) => {
 };
 
 // get all restaurants items
-const getAllItemsUnderARestaurant = async (req, res) => {
+const getAllItemsUnderARestaurant = async (req, res, next) => {
   try {
     const { restaurantId } = req.params;
     const response = await getAllItemsUnderARestaurantService(restaurantId);
     res.json({ status: 200, data: response, message: "success" });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ status: 500, message: `Server error: ${error.message}` });
+    return next(new AppError(`Internal Server Error`, 500));
   }
 };
 
 // get all posts under a restaurant
-const getAllPostsUnderARestaurant = async (req, res) => {
+const getAllPostsUnderARestaurant = async (req, res, next) => {
   try {
     const { restaurantId } = req.params;
     const posts = await Post.find({ restaurant_id: restaurantId }).sort({
@@ -93,11 +91,7 @@ const getAllPostsUnderARestaurant = async (req, res) => {
     });
 
     if (!posts.length) {
-      return res.json({
-        status: 404,
-        message: "No posts found for this restaurant",
-        data: [],
-      });
+      return next(new AppError("No posts found for this restaurant", 404));
     }
 
     return res.json({
@@ -106,13 +100,12 @@ const getAllPostsUnderARestaurant = async (req, res) => {
       data: posts,
     });
   } catch (error) {
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    return next(new AppError(`Internal Server Error`, 500));
   }
 };
 
 // post a rating for a menu item
-// TODO MAKE IT PROTECTED
-const PostARating = async (req, res) => {
+const PostARating = async (req, res, next) => {
   try {
     const userId = req.user._id; // when the frontend wil be connected
     // const userId = "688e2ae1117148e446299150"; //himu@gmail.com
@@ -122,9 +115,7 @@ const PostARating = async (req, res) => {
 
     // as raing is mandatoryo and rating can't be less than 1 or greater than 5
     if (!rating || rating < 1 || rating > 5) {
-      return res
-        .status(400)
-        .json({ message: "Rating must be between 1 and 5" });
+      return next(new AppError("Rating must be between 1 and 5", 400));
     }
     // create and update rating of the menu item here
     await MenuItemRating.findOneAndUpdate(
@@ -174,29 +165,39 @@ const PostARating = async (req, res) => {
       totalRatings: agg[0]?.totalRatings || 0,
     });
   } catch (error) {
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    return next(new AppError(`Internal Server Error`, 500));
   }
 };
 
 // get a single menu item by its id
-const GetASingleMenuItem = async (req, res) => {
+const GetASingleMenuItem = async (req, res, next) => {
   try {
     const { menuItemId } = req.params;
+    // console.log(menuItemId);
+
+    // 1. Check if ID format is valid to prevent CastError
+    if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
+      // console.log("checking monggose id validity");
+
+      return next(new AppError("Invalid Menu Item ID format", 400));
+    }
+
     const menuItem = await MenuItem.findById(menuItemId).populate(
       "restaurant_id",
       "name"
     );
+    // console.log("menuItem", menuItem);
 
     if (!menuItem) {
-      return res.json({ status: 404, message: "Menu item not found" });
+      return next(new AppError("Menu Item not found", 404));
     }
-    res.json({
+    res.status(200).json({
       status: 200,
       data: menuItem,
       message: "Menu item fetched successfully",
     });
   } catch (error) {
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    return next(new AppError(`Internal Server Error`, 500));
   }
 };
 
@@ -233,7 +234,7 @@ const GetMyRating = async (req, res) => {
 };
 
 // get all the menuItems
-const getAllMenuItems = async (req, res) => {
+const getAllMenuItems = async (req, res, next) => {
   try {
     const { item, place, price, rating, fields = "*" } = req.query;
 
@@ -242,21 +243,19 @@ const getAllMenuItems = async (req, res) => {
     // Validate 'fields' parameter
     if (fields && fields !== "*") {
       if (typeof fields !== "string") {
-        return res.status(400).json({
-          status: 400,
-          message:
+        return next(
+          new AppError(
             "Invalid fields parameter format. Use comma-separated field names or '*'",
-        });
+            400
+          )
+        );
       }
     }
 
     // Validate and process 'item' parameter
     if (item) {
       if (typeof item !== "string" || item.trim().length === 0) {
-        return res.status(400).json({
-          status: 400,
-          message: "Item name must be a non-empty string",
-        });
+        return next(new AppError("Item name must be a non-empty string", 400));
       }
       queryParams.name = { $regex: item.trim(), $options: "i" };
     }
@@ -265,10 +264,9 @@ const getAllMenuItems = async (req, res) => {
     if (price) {
       const priceNum = parseFloat(price);
       if (isNaN(priceNum) || priceNum < 0) {
-        return res.status(400).json({
-          status: 400,
-          message: "Price must be a valid positive number",
-        });
+        return next(
+          new AppError("Price must be a valid non-negative number", 400)
+        );
       }
       queryParams.price = { $lte: priceNum };
     }
@@ -277,20 +275,16 @@ const getAllMenuItems = async (req, res) => {
     if (rating) {
       const ratingNum = parseFloat(rating);
       if (isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5) {
-        return res.status(400).json({
-          status: 400,
-          message: "Rating must be a valid number between 0 and 5",
-        });
+        return next(
+          new AppError("Rating must be a number between 0 and 5", 400)
+        );
       }
       queryParams.averageRating = { $lte: ratingNum };
     }
 
     // Validate 'place' parameter
     if (place && (typeof place !== "string" || place.trim().length === 0)) {
-      return res.status(400).json({
-        status: 400,
-        message: "Place must be a non-empty string",
-      });
+      return next(new AppError("Place must be a non-empty string", 400));
     }
 
     // Parse requested fields
@@ -387,11 +381,11 @@ const getAllMenuItems = async (req, res) => {
       message: "All menu items fetched successfully",
     });
   } catch (error) {
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    return next(new AppError(`Internal Server Error`, 500));
   }
 };
 
-const getMenuItemsByFollowedRestaurants = async (req, res) => {
+const getMenuItemsByFollowedRestaurants = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
@@ -404,11 +398,7 @@ const getMenuItemsByFollowedRestaurants = async (req, res) => {
       .lean();
     // if no restaurants is followed then return an empty array
     if (!followedRestaurants.length) {
-      return res.json({
-        status: 200,
-        data: [],
-        message: "No follwed restaurants, so no menu items found",
-      });
+      return next(new AppError("No followed restaurants found", 404));
     }
 
     // map all  the restaurants ids
@@ -429,7 +419,7 @@ const getMenuItemsByFollowedRestaurants = async (req, res) => {
       message: "Menu items from followed restaurants fetched successfully",
     });
   } catch (error) {
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    return next(new AppError(`Internal Server Error`, 500));
   }
 };
 

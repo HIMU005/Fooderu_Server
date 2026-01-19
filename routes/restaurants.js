@@ -19,10 +19,10 @@ const router = require("express").Router({ mergeParams: true });
 
 router.get("/follow-status", protect, getRestaurantsWithFollowStatus);
 
-router.get("/:restaurantId/posts", getAllPostsUnderARestaurant);
+router.get("/:restaurantId/posts", protect, getAllPostsUnderARestaurant);
 
 // get all restaurant items
-router.get("/:restaurantId/items", getAllItemsUnderARestaurant);
+router.get("/:restaurantId/items", protect, getAllItemsUnderARestaurant);
 router.get("/:restaurantId", protect, getRestaurant);
 router.put("/:restaurantId", protect, updateMyRestaurant);
 
@@ -32,9 +32,9 @@ router.get("/byUserId/:ownerId", protect, getARestaurantByTheOwerId);
 router.get("/", protect, getAllRestaurants);
 
 // POST /restaurants/:restaurantId/items
-router.post("/:restaurantId/items", createMenuItemController);
+router.post("/:restaurantId/items", protect, createMenuItemController);
 
 // POST /restaurants
-router.post("/", createRestaurant);
+router.post("/", protect, createRestaurant);
 
 module.exports = router;
