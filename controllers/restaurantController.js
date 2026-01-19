@@ -14,22 +14,18 @@ const getRestaurant = async (req, res, next) => {
   try {
     const id = req.params.restaurantId || req.params.id;
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return next(new AppError("Invalid restaurant ID", 400));
+      throw new AppError("Invalid restaurant ID", 400);
     }
     const restaurant = await Restaurant.findById({ _id: id });
 
     if (!restaurant) {
-      return next(new AppError("No Restaurant againts that Id", 404));
+      throw new AppError("No Restaurant againts that Id", 404);
     }
     return res.json({
       status: 200,
       data: restaurant,
       message: "single restaurant fetched successfully",
     });
-    // res.status(200).json({
-    //   status: "success",
-    //   data: restaurant,
-    // });
   } catch (error) {
     next(error);
   }
@@ -46,12 +42,7 @@ const getAllRestaurant = async (req, res, next) => {
       data: restaurants,
     });
   } catch (error) {
-    // console.error("Error getting restaurants: ", error);
-    res.status(500).json({
-      status: "fail",
-      message: "Server error",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
@@ -60,7 +51,7 @@ const getMyRestaurant = async (req, res, next) => {
   try {
     const restaurant = await getRestaurantById(
       req.params.id,
-      req.user.id // Pass user ID for ownership check
+      req.user.id, // Pass user ID for ownership check
     );
     res.status(200).json({
       status: "success",
@@ -83,27 +74,27 @@ const createRestaurant = async (req, res, next) => {
     !restaurantInfo.description ||
     !restaurantInfo.location
   ) {
-    return res.json({ status: 400, message: "All fields are required" });
+    throw new AppError("All fields are required", 400);
   }
 
   try {
     const owenerInfo = await User.findById(restaurantInfo.owner_id);
-    if (owenerInfo.hasRestaurant) {
-      return res.json({
-        status: 409,
-        message: "You have already a restaurant........",
-      });
+
+    if (!owenerInfo) {
+      throw new AppError("Owner not found", 404);
     }
+
+    if (owenerInfo.hasRestaurant) {
+      throw new AppError("You already have a restaurant", 409);
+    }
+
     const data = await createRestaurantService(restaurantInfo);
     if (!data) {
-      return res
-        .status(500)
-        .json({ status: 500, message: "Failed to create restaurant" });
+      throw new AppError("Failed to create restaurant", 500);
     }
     if (data.errors) {
       // console.log(data.errors);
-
-      return res.status(400).json({ status: 400, message: data.errors });
+      throw new AppError(data.errors, 400);
     }
 
     // update user info
@@ -115,16 +106,14 @@ const createRestaurant = async (req, res, next) => {
           hasRestaurant: true,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     return res
       .status(201)
       .json({ status: 201, message: "Restaurant created successfully", data });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ status: 500, message: `Server error: ${error.message}` });
+    next(error);
   }
 };
 
@@ -138,9 +127,7 @@ const getAllRestaurants = async (req, res) => {
       message: "All restaurant data fetched successfully",
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ status: 500, message: `Server error: ${error.message}` });
+    next(error);
   }
 };
 
@@ -148,13 +135,12 @@ const getARestaurantByTheOwerId = async (req, res, next) => {
   const { ownerId } = req.params;
   try {
     if (!mongoose.Types.ObjectId.isValid(ownerId)) {
-      return next(new AppError("Invalid Owner ID", 400));
+      throw new AppError("Invalid Owner ID", 400);
     }
 
     const restaurantInfo = await Restaurant.findOne({ owner_id: ownerId });
     if (!restaurantInfo) {
-      // return res.json({ status: 404, message: "User have no restaurant" });
-      return next(new AppError("User have no Restaurant ", 404));
+      throw new AppError("User have no Restaurant ", 404);
     }
     return res.json({
       status: 200,
@@ -162,7 +148,6 @@ const getARestaurantByTheOwerId = async (req, res, next) => {
       data: restaurantInfo,
     });
   } catch (error) {
-    // return res.json({ status: 500, message: `server errro!! ${error}` });
     next(error);
   }
 };
@@ -226,11 +211,7 @@ const getRestaurantsWithFollowStatus = async (req, res) => {
       data: restaurantsWithStatus,
     });
   } catch (error) {
-    console.error("Error getting restaurants with follow status:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error",
-    });
+    next(error);
   }
 };
 
@@ -240,30 +221,27 @@ const updateMyRestaurant = async (req, res, next) => {
     const restaurantId = req.params.restaurantId;
 
     if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
-      return next(new AppError("Invalid restaurant ID", 400));
+      throw new AppError("Invalid restaurant ID", 400);
     }
 
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
-      return next(new AppError("No restaurant found with that Id", 404));
+      throw new AppError("No Restaurant againts that Id", 404);
     }
     if (restaurant.owner_id.toString() !== req.user._id.toString()) {
-      return next(
-        new AppError(
-          "You are not the owner. Only the owner has permission ",
-          403
-        )
+      throw new AppError(
+        "You are not the owner. Only the owner has permission ",
+        403,
       );
     }
     const update = req.body;
-    // console.log(update);
 
     const updated = await Restaurant.findByIdAndUpdate(restaurantId, update, {
       new: true,
       runValidators: true,
     });
     if (!updated) {
-      return next(new AppError("No Restaurant againts that Id", 404));
+      throw new AppError("No Restaurant againts that Id", 404);
     }
     return res.json({ status: 200, message: "Restaurant updated" });
   } catch (error) {
