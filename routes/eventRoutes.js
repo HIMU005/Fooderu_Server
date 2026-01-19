@@ -9,11 +9,11 @@ const {
 } = require("../controllers/eventController");
 
 // Protect routes that modify data
-router.post("/:restaurantId", create);
-router.patch("/:restaurantId/:eventId/toggle", toggleStatus);
+router.post("/:restaurantId", protect, create);
+router.patch("/:restaurantId/:eventId/toggle", protect, toggleStatus);
 // Public route for getting events of a single restaurant
-router.get("/:restaurantId", getEventsOfSingleRestaurant);
+router.get("/:restaurantId", protect, getEventsOfSingleRestaurant);
 //api for getting all the events of all restaurant
-router.get("/", getAllEventsFromAllRestaurants);
+router.get("/", protect, getAllEventsFromAllRestaurants);
 
 module.exports = router;
