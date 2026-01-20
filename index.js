@@ -7,6 +7,8 @@ const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swagger-output.json");
 const PORT = process.env.PORT || 5000;
+const YAML = require("yamljs");
+const fs = require("fs");
 
 const app = express();
 app.use(express.json());
@@ -19,6 +21,52 @@ app.use(cors(corsOptions));
 // app.options("*", cors());
 
 /* 🔹 Swagger route */
+
+// const postSwaggerPath = path.join(
+//   __dirname,
+//   "api-specification",
+//   "posts",
+//   "postRoute.yaml",
+// );
+// if (fs.existsSync(postSwaggerPath)) {
+//   const postSwagger = YAML.load(postSwaggerPath);
+//   app.use(
+//     "/api-docs/posts",
+//     swaggerUi.serve,
+//     swaggerUi.setup(postSwagger, {
+//       customSiteTitle: "Fooderu Posts API Documentation",
+//       swaggerOptions: {
+//         defaultModelsExpandDepth: -1, // Hide schemas by default
+//         docExpansion: "list",
+//         filter: true,
+//       },
+//     }),
+//   );
+//   console.log("✅ Posts API docs available at /api-docs/posts");
+// }
+
+// const restaurantSwaggerPath = path.join(
+//   __dirname,
+//   "api-specification",
+//   "restaurants",
+//   "restaurantRoute.yaml",
+// );
+// if (fs.existsSync(restaurantSwaggerPath)) {
+//   const restaurantSwagger = YAML.load(restaurantSwaggerPath);
+//   app.use(
+//     "/api-docs/restaurants",
+//     swaggerUi.serve,
+//     swaggerUi.setup(restaurantSwagger, {
+//       customSiteTitle: "Fooderu Restaurants API Documentation",
+//       swaggerOptions: {
+//         defaultModelsExpandDepth: -1, // Hide schemas by default
+//         docExpansion: "list",
+//         filter: true,
+//       },
+//     }),
+//   );
+//   console.log("✅ Restaurants API docs available at /api-docs/restaurants");
+// }
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(router);
