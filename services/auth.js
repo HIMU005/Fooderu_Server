@@ -36,15 +36,8 @@ const registerService = async ({ email, password }) => {
     console.error("Failed to send verification email:", error);
     throw new AppError(
       "Failed to send verification email. Please try again later.",
-      500
+      500,
     );
-
-    // return next(
-    //   new AppError(
-    //     "Failed to send verification email. Please try again later.",
-    //     500
-    //   )
-    // );
   }
 
   return newUser;
@@ -73,7 +66,7 @@ const loginService = async (email, password) => {
   if (!user.verified) {
     throw new AppError(
       "Email not verified. Please verify your email before logging in.",
-      403
+      403,
     );
     //   return next(
     //     new AppError(
@@ -170,7 +163,7 @@ const resendEmailVerificationService = async (email) => {
   } catch (error) {
     throw new AppError(
       "Failed to send verification email. Please try again later.",
-      500
+      500,
     );
     // return next(
     //   new AppError(

@@ -17,23 +17,7 @@ const registerController = async (req, res, next) => {
 
   //   validation
   if (!email || !password) {
-    // throw new AppError("Email and Password are required", 400);
-    // return next(new AppError("Email and Password are required", 400));
-    return res.json({
-      status: 400,
-      message: "Email and Password are required",
-    });
-  }
-
-  // if user already exists
-  const existingUser = await findUserByProperty("email", email);
-  if (existingUser) {
-    // throw new AppError("User already exists with this email", 409);
-    // return next(new AppError("User already exists with this email", 409));
-    return res.json({
-      status: 409,
-      message: "User already exists with this email",
-    });
+    throw new AppError("Email and Password are required", 400);
   }
 
   try {
@@ -45,10 +29,7 @@ const registerController = async (req, res, next) => {
 
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
-    console.error(error);
-
-    // throw new AppError("Error while registering the user", 500);
-    return next(new AppError("Error while registering the user", 500));
+    next(error);
   }
 };
 
