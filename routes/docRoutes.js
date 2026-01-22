@@ -39,13 +39,20 @@ const restaurantSpecPath = path.join(
   "restaurants",
   "restaurantRoute.yaml",
 );
+const menuItemSpecPath = path.join(
+  __dirname,
+  "..",
+  "api-specification",
+  "menuItem",
+  "menuItem.yaml",
+);
 
 // 1. Posts Docs
 if (fs.existsSync(postSpecPath)) {
   const postSwagger = YAML.load(postSpecPath);
   router.use(
     "/posts",
-    swaggerUi.serve, // Use standard serve for CDN approach
+    swaggerUi.serveFiles(postSwagger, swaggerOptions),
     swaggerUi.setup(postSwagger, {
       ...swaggerOptions,
       customSiteTitle: "Fooderu Posts API",
@@ -58,10 +65,22 @@ if (fs.existsSync(restaurantSpecPath)) {
   const restaurantSwagger = YAML.load(restaurantSpecPath);
   router.use(
     "/restaurants",
-    swaggerUi.serve,
+    swaggerUi.serveFiles(restaurantSwagger, swaggerOptions),
     swaggerUi.setup(restaurantSwagger, {
       ...swaggerOptions,
       customSiteTitle: "Fooderu Restaurants API",
+    }),
+  );
+}
+// 2. MenuItem Docs
+if (fs.existsSync(menuItemSpecPath)) {
+  const menuItemSwagger = YAML.load(menuItemSpecPath);
+  router.use(
+    "/menuItems",
+    swaggerUi.serveFiles(menuItemSwagger, swaggerOptions),
+    swaggerUi.setup(menuItemSwagger, {
+      ...swaggerOptions,
+      customSiteTitle: "Fooderu Menu Items API",
     }),
   );
 }
@@ -87,6 +106,7 @@ router.get("/", (req, res) => {
         <div class="btn-group">
           <a href="/docs/posts" class="card">Posts API</a>
           <a href="/docs/restaurants" class="card alt">Restaurants API</a>
+          <a href="/docs/menuItems" class="card alt">Menu Items API</a>
         </div>
       </div>
     </body>
