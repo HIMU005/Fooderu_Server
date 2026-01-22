@@ -9,6 +9,7 @@ const followRoutes = require("./followRoutes");
 const uploadRoutes = require("./uploadRoutes");
 const commentRoutes = require("./commentRoutes");
 const trendingRoutes = require("./trendingRoutes");
+const docRoutes = require("./docRoutes");
 
 // auth routes
 router.use("/auth", authRoutes);
@@ -37,5 +38,8 @@ router.use("/upload", uploadRoutes);
 
 // trending routes
 router.use("/trendings", trendingRoutes);
+
+// documentation route
+router.use("/docs", docRoutes);
 
 module.exports = router;
