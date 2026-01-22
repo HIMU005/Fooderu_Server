@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: Post API
+  title: Restaurant API
   version: 1.0.0
-  description: This api documentation reflect the Behavior of post related api
+  description: This api documentation reflect the Behavior of restaurant related api
   termsOfService: http://example.com/terms/
   contact:
     name: Hashanuz Zaman
