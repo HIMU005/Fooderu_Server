@@ -4,8 +4,6 @@ require("dotenv").config();
 const connectDB = require("./db");
 const router = require("./routes");
 const path = require("path");
-const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger-output.json");
 const PORT = process.env.PORT || 5000;
 const YAML = require("yamljs");
 const fs = require("fs");
