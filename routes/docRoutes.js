@@ -6,16 +6,25 @@ const fs = require("fs");
 
 const router = express.Router();
 
-// Standard Swagger UI configuration
+// CDN paths for Swagger UI assets to ensure they load correctly on Vercel
+const CSS_URL =
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css";
+const JS_URLS = [
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js",
+];
+
 const swaggerOptions = {
   swaggerOptions: {
-    defaultModelsExpandDepth: -1, // Hides schemas section by default
-    docExpansion: "list", // Collapses operations by default
-    filter: true, // Enables search bar
+    defaultModelsExpandDepth: -1,
+    docExpansion: "list",
+    filter: true,
   },
+  customCssUrl: CSS_URL,
+  customJs: JS_URLS,
 };
 
-// --- Resolve Paths to YAML Files ---
+// Paths to YAML files
 const postSpecPath = path.join(
   __dirname,
   "..",
@@ -31,12 +40,12 @@ const restaurantSpecPath = path.join(
   "restaurantRoute.yaml",
 );
 
-// 1. Setup Posts Documentation (/docs/posts)
+// 1. Posts Docs
 if (fs.existsSync(postSpecPath)) {
   const postSwagger = YAML.load(postSpecPath);
   router.use(
     "/posts",
-    swaggerUi.serveFiles(postSwagger, swaggerOptions),
+    swaggerUi.serve, // Use standard serve for CDN approach
     swaggerUi.setup(postSwagger, {
       ...swaggerOptions,
       customSiteTitle: "Fooderu Posts API",
@@ -44,12 +53,12 @@ if (fs.existsSync(postSpecPath)) {
   );
 }
 
-// 2. Setup Restaurants Documentation (/docs/restaurants)
+// 2. Restaurants Docs
 if (fs.existsSync(restaurantSpecPath)) {
   const restaurantSwagger = YAML.load(restaurantSpecPath);
   router.use(
     "/restaurants",
-    swaggerUi.serveFiles(restaurantSwagger, swaggerOptions),
+    swaggerUi.serve,
     swaggerUi.setup(restaurantSwagger, {
       ...swaggerOptions,
       customSiteTitle: "Fooderu Restaurants API",
@@ -57,7 +66,7 @@ if (fs.existsSync(restaurantSpecPath)) {
   );
 }
 
-// 3. Main Selection UI (/docs)
+// 3. Selection UI
 router.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -65,28 +74,19 @@ router.get("/", (req, res) => {
     <head>
       <title>Fooderu API Portal</title>
       <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f1f5f9; margin: 0; }
-        .container { text-align: center; background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        h1 { color: #0f172a; margin-bottom: 0.5rem; }
-        p { color: #64748b; margin-bottom: 2rem; }
-        .btn-group { display: flex; gap: 1rem; justify-content: center; }
-        .card { 
-          text-decoration: none; color: white; background: #2563eb; 
-          padding: 12px 24px; border-radius: 6px; font-weight: 600; 
-          transition: all 0.2s; 
-        }
-        .card:hover { background: #1d4ed8; transform: translateY(-2px); }
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f1f5f9; margin: 0; }
+        .container { text-align: center; background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-group { display: flex; gap: 1rem; margin-top: 2rem; }
+        .card { text-decoration: none; color: white; background: #2563eb; padding: 12px 24px; border-radius: 6px; font-weight: 600; }
         .card.alt { background: #10b981; }
-        .card.alt:hover { background: #059669; }
       </style>
     </head>
     <body>
       <div class="container">
         <h1>Fooderu API Docs</h1>
-        <p>Select a module to view the interactive specification:</p>
         <div class="btn-group">
-          <a href="/docs/posts" class="card">📝 Posts API</a>
-          <a href="/docs/restaurants" class="card alt">🍴 Restaurants API</a>
+          <a href="/docs/posts" class="card">Posts API</a>
+          <a href="/docs/restaurants" class="card alt">Restaurants API</a>
         </div>
       </div>
     </body>
