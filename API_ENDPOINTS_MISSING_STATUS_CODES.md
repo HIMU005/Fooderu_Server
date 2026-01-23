@@ -26,36 +26,41 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 ## 2. User Endpoints (`/users`)
 
-| Method | Endpoint    | Description              | Missing Status Codes | Authentication | Purpose                  | Implemented |
-| ------ | ----------- | ------------------------ | -------------------- | -------------- | ------------------------ | ----------- |
-| GET    | `/users/me` | Get current user profile | 401                  | Required       | Missing or invalid token | ✘           |
-|        |             |                          | 404                  | Required       | User not found           | ✘           |
-| PUT    | `/users/me` | Update profile           | 401                  | Required       | Unauthorized             | ✘           |
-|        |             |                          | 404                  | Required       | User not found           | ✘           |
+| Method | Endpoint    | Description              | Missing Status Codes | Authentication | Purpose                              | Implemented |
+| ------ | ----------- | ------------------------ | -------------------- | -------------- | ------------------------------------ | ----------- |
+| GET    | `/users/me` | Get current user profile | 401                  | Required       | Missing or invalid token             | ✅          |
+|        |             |                          | 404                  | Required       | User not found                       | ✅          |
+| PUT    | `/users/me` | Update profile           | 401                  | Required       | Unauthorized                         | ✅          |
+|        |             |                          | 400                  | Required       | Email password userType can't update | ✅ 🧑‍💻       |
+|        |             |                          | 404                  | Required       | User not found                       | ✅          |
 
 ---
 
 ## 3. Restaurant Endpoints (`/restaurants`)
 
-| Method | Endpoint                           | Description                    | Missing Status Codes | Authentication     | Purpose                 | Implemented |
-| ------ | ---------------------------------- | ------------------------------ | -------------------- | ------------------ | ----------------------- | ----------- |
-| GET    | `/restaurants`                     | Get all restaurants            | 401                  | Should be Required | Unauthorized            | ✘           |
-| GET    | `/restaurants/follow-status`       | Restaurants with follow status | 401                  | Required           | Unauthorized            | ✘           |
-| GET    | `/restaurants/byUserId/:ownerId`   | Get by owner ID                | 401                  | Should be Required | Unauthorized            | ✘           |
-|        |                                    |                                | 404                  |                    | Owner not found         | ✘           |
-| GET    | `/restaurants/:restaurantId`       | Get restaurant                 | 401                  | Should be Required | Unauthorized            | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found    | ✘           |
-| GET    | `/restaurants/:restaurantId/items` | Get menu items                 | 401                  | Should be Required | Unauthorized            | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found    | ✘           |
-| GET    | `/restaurants/:restaurantId/posts` | Get posts                      | 401                  | Should be Required | Unauthorized            | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found    | ✘           |
-| POST   | `/restaurants`                     | Create restaurant              | 401                  | Should be Required | Unauthorized            | ✘           |
-| POST   | `/restaurants/:restaurantId/items` | Create menu item               | 401                  | Should be Required | Unauthorized            | ✘           |
-|        |                                    |                                | 403                  |                    | Not owner of restaurant | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found    | ✘           |
-| PUT    | `/restaurants/:restaurantId`       | Update restaurant              | 401                  | Required           | Unauthorized            | ✘           |
-|        |                                    |                                | 403                  |                    | Not owner of restaurant | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found    | ✘           |
+| Method | Endpoint                           | Description                    | Missing Status Codes | Authentication     | Purpose                   | Implemented |
+| ------ | ---------------------------------- | ------------------------------ | -------------------- | ------------------ | ------------------------- | ----------- |
+| GET    | `/restaurants`                     | Get all restaurants            | 401                  | Should be Required | Unauthorized              | ✅          |
+| GET    | `/restaurants/follow-status`       | Restaurants with follow status | 401                  | Required           | Unauthorized              | ✅          |
+| GET    | `/restaurants/byUserId/:ownerId`   | Get by owner ID                | 401                  | Should be Required | Unauthorized              | ✅          |
+|        |                                    | Restaurant id object missmatch | 400                  |                    | Object id missmatch       | ✅🧑‍💻        |
+|        |                                    |                                | 404                  |                    | Owner not found           | ✅          |
+| GET    | `/restaurants/:restaurantId`       | Get restaurant                 | 401                  | Should be Required | Unauthorized              | ✅          |
+|        |                                    | Restaurant id object missmatch | 400                  |                    | Object id missmatch       | ✅          |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✅          |
+| GET    | `/restaurants/:restaurantId/items` | Get menu items                 | 401                  | Should be Required | Unauthorized              | ✘           |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
+| GET    | `/restaurants/:restaurantId/posts` | Get posts                      | 401                  | Should be Required | Unauthorized              | ✘           |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
+| POST   | `/restaurants`                     | Create restaurant              | 401                  | Should be Required | Unauthorized              | ✅          |
+|        |                                    |                                | 409                  | Should be Required | Already have a restaurant | ✅          |
+| POST   | `/restaurants/:restaurantId/items` | Create menu item               | 401                  | Should be Required | Unauthorized              | ✘           |
+|        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✘           |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
+| PUT    | `/restaurants/:restaurantId`       | Update restaurant              | 401                  | Required           | Unauthorized              | ✅          |
+|        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✅          |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✅          |
+|        |                                    | Restaurant id object missmatch | 400                  |                    | Object id missmatch       | ✅🧑‍💻        |
 
 ---
 
@@ -106,17 +111,21 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 ## 6. Event Endpoints (`/events`)
 
-| Method | Endpoint                                | Description                         | Missing Status Codes | Authentication     | Purpose                    | Implemented |
-| ------ | --------------------------------------- | ----------------------------------- | -------------------- | ------------------ | -------------------------- | ----------- |
-| GET    | `/events`                               | Get all events from all restaurants | 401                  | Should be Required | Unauthorized               | ✘           |
-| GET    | `/events/:restaurantId`                 | Get restaurant events               | 401                  | Should be Required | Unauthorized               | ✘           |
-|        |                                         |                                     | 404                  |                    | Restaurant not found       | ✘           |
-| POST   | `/events/:restaurantId`                 | Create event                        | 401                  | Should be Required | Unauthorized               | ✘           |
-|        |                                         |                                     | 403                  |                    | Not restaurant owner       | ✘           |
-|        |                                         |                                     | 404                  |                    | Restaurant not found       | ✘           |
-| PATCH  | `/events/:restaurantId/:eventId/toggle` | Toggle event                        | 401                  | Should be Required | Unauthorized               | ✘           |
-|        |                                         |                                     | 403                  |                    | Not event owner            | ✘           |
-|        |                                         |                                     | 404                  |                    | Event/restaurant not found | ✘           |
+| Method | Endpoint                                | Description                         | Missing Status Codes | Authentication     | Purpose                                          | Implemented |
+| ------ | --------------------------------------- | ----------------------------------- | -------------------- | ------------------ | ------------------------------------------------ | ----------- |
+| GET    | `/events`                               | Get all events from all restaurants | 401                  | Should be Required | Unauthorized                                     | ✅          |
+| GET    | `/events/:restaurantId`                 | Get restaurant events               | 401                  | Should be Required | Unauthorized                                     | ✅          |
+|        |                                         |                                     | 400                  |                    | Restaurant object id missmatch                   | ✅🧑‍💻        |
+|        |                                         |                                     | 404                  |                    | Restaurant not found                             | ✅          |
+| POST   | `/events/:restaurantId`                 | Create event                        | 401                  | Should be Required | Unauthorized                                     | ✅          |
+|        |                                         |                                     | 403                  |                    | Not restaurant owner                             | ✅          |
+|        |                                         |                                     | 404                  |                    | Restaurant not found                             | ✅          |
+|        |                                         |                                     | 400                  |                    | Mongoose object id missmatch                     | ✅🧑‍💻        |
+| PATCH  | `/events/:restaurantId/:eventId/toggle` | Toggle event                        | 401                  | Should be Required | Unauthorized                                     | ✅          |
+|        |                                         |                                     | 403                  |                    | Not event owner                                  | ✅          |
+|        |                                         |                                     | 404                  |                    | Event/restaurant not found                       | ✅          |
+|        |                                         |                                     | 400                  |                    | Invalid restaurant / event ID                    | ✅🧑‍💻        |
+|        |                                         |                                     | 403                  |                    | This event and the restaurant are not associated | ✅🧑‍💻        |
 
 ---
 
