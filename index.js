@@ -7,6 +7,10 @@ const path = require("path");
 const PORT = process.env.PORT || 5000;
 const YAML = require("yamljs");
 const fs = require("fs");
+const cleanupOTPJob = require("./cronJobs/cleanupOTP");
+
+// Start the OTP cleanup cron job
+cleanupOTPJob.start();
 
 const app = express();
 app.use(express.json());
