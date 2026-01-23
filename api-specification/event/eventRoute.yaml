@@ -1,0 +1,296 @@
+openapi: 3.0.0
+info:
+  title: Event API
+  version: 1.0.0
+  description: API for managing events
+  termsOfService: http://example.com/terms/
+  contact:
+    name: Hashanuz Zaman
+    email: hashanuzzaman99@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local server
+  - url: https://fooderu-server.vercel.app
+    description: Production server
+
+paths:
+  /events:
+    get:
+      summary: Get all events
+      description: Fetch all active events
+      tags:
+        - Get all events
+      responses:
+        "200":
+          description: Events fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventListSuccessResponse"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /events/{restaurantId}:
+    get:
+      summary: Get events by restaurant
+      description: Fetch all events belonging to a specific restaurant
+      tags:
+        - Get events under a Restaurant
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Restaurant ID to fetch events for
+          schema:
+            type: string
+            example: "69739e5c2c48fd8ec3db26c5"
+      responses:
+        "200":
+          description: Events fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventListSuccessResponse"
+        "400":
+          $ref: "#/components/responses/InvalidId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    post:
+      summary: Create an event for a restaurant
+      tags:
+        - Create Event
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "696507204a869cfcf502d761"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCreate"
+      responses:
+        "201":
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventCreateSuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    EventBase:
+      type: object
+      properties:
+        restaurantId:
+          type: string
+          example: "69739e5c2c48fd8ec3db26c5"
+        event_title:
+          type: string
+          maxLength: 100
+          example: "Summer Special"
+        description:
+          type: string
+          example: "Enjoy our summer special menu with exclusive discounts!"
+        is_live:
+          type: boolean
+          example: true
+        image_url:
+          type: string
+          format: uri
+          example: "http://example.com/images/summer-special.jpg"
+        expires_at:
+          type: string
+          format: date-time
+          example: "2024-12-31T23:59:59Z"
+
+    Event:
+      allOf:
+        - $ref: "#/components/schemas/EventBase"
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: "5f8d0d55b54764421b7156c5"
+            created_at:
+              type: string
+              format: date-time
+              example: "2024-01-01T12:00:00Z"
+            updated_at:
+              type: string
+              format: date-time
+              example: "2024-01-02T12:00:00Z"
+
+    EventCreate:
+      type: object
+      required:
+        - event_title
+        - expires_at
+      properties:
+        event_title:
+          type: string
+          maxLength: 100
+          example: "Weekend Special Offer"
+        description:
+          type: string
+          example: "Flat 20% off on all items"
+        image_url:
+          type: string
+          format: uri
+          example: https://example.com/event.jpg
+        expires_at:
+          type: string
+          format: date-time
+          example: "2026-02-15T23:59:59.000Z"
+
+    EventListSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        count:
+          type: integer
+          example: 1
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+
+    EventCreateSuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        statusCode:
+          type: integer
+          example: 201
+        data:
+          $ref: "#/components/schemas/Event"
+        message:
+          type: string
+          example: Event created successfully
+
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: string
+        statusCode:
+          type: integer
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - The server could not understand the request due to invalid syntax.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: fail
+            statusCode: 400
+            message: Bad request. Please check your input.
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: fail
+            statusCode: 401
+            message: "Unauthorized. Please provide a valid authentication token."
+
+    Forbidden:
+      description: Forbidden - Only the owner of the restaurant can perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: fail
+            statusCode: 403
+            message: "You are not the owner. Only the owner has permission "
+
+    NotFound:
+      description: Not Found - The requested resource could not be found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: fail
+            statusCode: 404
+            message: "Resource not found. Please check the URL and try again."
+
+    UnprocessableEntity:
+      description: Unprocessable Entity - The request was well-formed but contains semantic errors.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            statusCode: 422
+            message: "Unprocessable Entity"
+
+    InternalServerError:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            statusCode: 500
+            message: "An unexpected error occurred on the server...."
+
+    InvalidId:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: fail
+            statusCode: 400
+            message: "Invalid Id format."
