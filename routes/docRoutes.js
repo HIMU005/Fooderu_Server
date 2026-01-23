@@ -57,6 +57,14 @@ const menuItemSpecPath = path.join(
   "menuItem.yaml",
 );
 
+const eventSpecPath = path.join(
+  __dirname,
+  "..",
+  "api-specification",
+  "event",
+  "eventRoute.yaml",
+);
+
 // 1. Posts Docs
 if (fs.existsSync(postSpecPath)) {
   const postSwagger = YAML.load(postSpecPath);
@@ -82,7 +90,7 @@ if (fs.existsSync(restaurantSpecPath)) {
     }),
   );
 }
-// 2. MenuItem Docs
+// 3. MenuItem Docs
 if (fs.existsSync(menuItemSpecPath)) {
   const menuItemSwagger = YAML.load(menuItemSpecPath);
   router.use(
@@ -91,6 +99,18 @@ if (fs.existsSync(menuItemSpecPath)) {
     swaggerUi.setup(menuItemSwagger, {
       ...swaggerOptions,
       customSiteTitle: "Fooderu Menu Items API",
+    }),
+  );
+}
+// 4. Event Docs
+if (fs.existsSync(eventSpecPath)) {
+  const eventSwagger = YAML.load(eventSpecPath);
+  router.use(
+    "/events",
+    swaggerUi.serveFiles(eventSwagger, swaggerOptions),
+    swaggerUi.setup(eventSwagger, {
+      ...swaggerOptions,
+      customSiteTitle: "Fooderu Events API",
     }),
   );
 }
@@ -131,6 +151,7 @@ router.get("/", (req, res) => {
           <a href="/docs/restaurants" class="card alt">Restaurants API</a>
           <a href="/docs/menuItems" class="card alt">Menu Items API</a>
           <a href="/docs/users" class="card alt">Users API</a>
+          <a href="/docs/events" class="card alt">Events API</a>
         </div>
       </div>
     </body>
