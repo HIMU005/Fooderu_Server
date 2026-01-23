@@ -1,6 +1,9 @@
 const User = require("../models/User");
 const {
-  registerService,
+  registerServiceWeb,
+  registerServiceOtp,
+  verifyOTPService,
+  resendOTPService,
   loginService,
   verifyEmailService,
   resendEmailVerificationService,
@@ -11,8 +14,81 @@ const { assignToken } = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
 const { Clerk } = require("@clerk/clerk-sdk-node");
 
+// Register controller: For OTP
+const registerControllerOTP = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.json({
+      status: 400,
+      message: "Email and Password are required",
+    });
+  }
+
+  try {
+    const result = await registerServiceOtp({ email, password });
+
+    return res.status(201).json({
+      status: 201,
+      success: true,
+      message: result.message,
+      data: {
+        email: result.email,
+        userId: result.userId,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Verify OTP Controller
+const verifyOTPController = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      throw new AppError("Email and OTP are required", 400);
+    }
+
+    const result = await verifyOTPService(email, otp);
+
+    return res.status(200).json({
+      status: "success",
+      message: result.message,
+      data: result.user,
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};
+
+// Resend OTP Controller
+const resendOTPController = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new AppError("Email is required", 400);
+    }
+
+    const result = await resendOTPService(email);
+    console.log(result);
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};
+
 // controller for register
-const registerController = async (req, res, next) => {
+const registerControllerWeb = async (req, res, next) => {
   const { email, password } = req.body;
 
   //   validation
@@ -21,7 +97,7 @@ const registerController = async (req, res, next) => {
   }
 
   try {
-    const user = await registerService({
+    const user = await registerServiceWeb({
       email,
       password,
     });
@@ -84,25 +160,28 @@ const logInController = async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    // throw new AppError("Email and Password are required", 400);
-    // return next(new AppError("Email and Password are required", 400));
-    return res.json({
-      status: 400,
-      message: "Email and Password are required",
-    });
+    throw new AppError("Email and Password are required", 400);
   }
 
   try {
     const user = await loginService(email, password);
-    // console.log(user);
 
-    return res.send({ status: 200, data: user });
+    return res.status(200).json({ status: "success", data: user });
   } catch (error) {
     console.error(error);
 
-    return res.json({ status: error.status, message: `${error.message} ` });
-    // return next(new AppError(error.message, error.statusCode || 500));
-    // return next(error);
+    // Handle unverified email case
+    if (error.statusCode === 403 && error.message.includes("OTP")) {
+      return res.json({
+        status: 403,
+        success: false,
+        message: error.message,
+        requiresVerification: true,
+        email: email,
+      });
+    }
+
+    next(error);
   }
 };
 
@@ -253,11 +332,14 @@ const loginWithFirebaseController = async (req, res, next) => {
 };
 
 module.exports = {
-  registerController,
+  registerControllerWeb,
   logInController,
   logInWithSocialController,
   logInWithClerkcontroller,
   loginWithFirebaseController,
   verifyEmailController,
   ressendVerificationEmailController,
+  registerControllerOTP,
+  verifyOTPController,
+  resendOTPController,
 };

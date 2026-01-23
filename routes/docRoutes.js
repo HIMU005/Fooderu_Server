@@ -32,6 +32,7 @@ const postSpecPath = path.join(
   "posts",
   "postRoute.yaml",
 );
+
 const restaurantSpecPath = path.join(
   __dirname,
   "..",
@@ -39,6 +40,15 @@ const restaurantSpecPath = path.join(
   "restaurants",
   "restaurantRoute.yaml",
 );
+
+const userSpecPath = path.join(
+  __dirname,
+  "..",
+  "api-specification",
+  "users",
+  "userRoute.yaml",
+);
+
 const menuItemSpecPath = path.join(
   __dirname,
   "..",
@@ -85,6 +95,19 @@ if (fs.existsSync(menuItemSpecPath)) {
   );
 }
 
+// 2. User Docs
+if (fs.existsSync(userSpecPath)) {
+  const userSwagger = YAML.load(userSpecPath);
+  router.use(
+    "/users",
+    swaggerUi.serveFiles(userSwagger, swaggerOptions),
+    swaggerUi.setup(userSwagger, {
+      ...swaggerOptions,
+      customSiteTitle: "Fooderu Users API",
+    }),
+  );
+}
+
 // 3. Selection UI
 router.get("/", (req, res) => {
   res.send(`
@@ -107,6 +130,7 @@ router.get("/", (req, res) => {
           <a href="/docs/posts" class="card">Posts API</a>
           <a href="/docs/restaurants" class="card alt">Restaurants API</a>
           <a href="/docs/menuItems" class="card alt">Menu Items API</a>
+          <a href="/docs/users" class="card alt">Users API</a>
         </div>
       </div>
     </body>
