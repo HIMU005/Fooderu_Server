@@ -1,0 +1,273 @@
+openapi: 3.0.0
+info:
+  title: User API
+  version: 1.0.0
+  description: This API documentation reflect the Behavior of User Routes
+  termsOfService: http://example.com/terms/
+  contact:
+    name: Hashanuz Zaman
+    email: hashanuzzaman99@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local server
+  - url: https://fooderu-server.vercel.app
+    description: Production server
+
+paths:
+  /users/me:
+    get:
+      summary: Get current user information
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful response with user information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSuccessResponse"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      summary: Update current user's profile
+      description: Update allowed user profile fields (email, password, and user_type are not allowed)
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserUpdateSuccessResponse"
+        "400":
+          description: Invalid update fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserBase:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: abc@gmail.com
+        phone:
+          type: string
+          format: phone
+          example: "+1234567890"
+        verified:
+          type: boolean
+          example: false
+        oauth_provider:
+          type: string
+          example: google
+        name:
+          type: string
+          example: John Doe
+        user_type:
+          type: string
+          enum: [user, admin]
+        profile_picture:
+          type: string
+          format: uri
+          example: "http://example.com/profile.jpg"
+        coverPhoto:
+          type: string
+          format: uri
+          example: "http://example.com/cover.jpg"
+        location:
+          type: string
+          example: Dhaka, Bangladesh
+        interests:
+          type: string
+          example: street food
+        status:
+          type: string
+          enum: [active, inactive, banned]
+          example: active
+        hasRestaurant:
+          type: boolean
+          example: false
+
+    User:
+      allOf:
+        - $ref: "#/components/schemas/UserBase"
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: "69086bd46a0189bfeb1795d4"
+            restaurant_id:
+              type: string
+              example: "696507204a869cfcf502d761"
+            createdAt:
+              type: string
+              format: date-time
+              example: "2023-10-01T12:00:00Z"
+            updatedAt:
+              type: string
+              format: date-time
+              example: "2023-10-10T12:00:00Z"
+
+    UserUpdate:
+      type: object
+      description: Fields allowed to update in user profile
+      properties:
+        name:
+          type: string
+          example: Himu Hashanuz Zaman
+        phone:
+          type: string
+          example: "+8801700000000"
+        profile_picture:
+          type: string
+          format: uri
+          example: https://example.com/profile.jpg
+        coverPhoto:
+          type: string
+          format: uri
+          example: https://example.com/cover.jpg
+        location:
+          type: string
+          example: Dhaka, Bangladesh
+        interests:
+          type: string
+          example: Street food
+        status:
+          type: string
+          enum: [active, inactive]
+
+    UserUpdateSuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: User profile updated successfully
+        data:
+          $ref: "#/components/schemas/User"
+
+    UserSuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/User"
+        message:
+          type: string
+          example: User fetched successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Bad request
+
+  responses:
+    BadRequest:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            statusCode: 400
+            message: Invalid request data
+
+    Unauthorized:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            statusCode: 401
+            message: Authentication required or invalid token
+
+    Forbidden:
+      description: You do not have permission to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            statusCode: 403
+            message: You do not have permission to access this resource
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            statusCode: 404
+            message: Resource not found
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            statusCode: 500
+            message: Internal server error

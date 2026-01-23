@@ -25,6 +25,7 @@ exports.getUserProfile = async (req, res, next) => {
           hasRestaurant: restaurantCount > 0,
         },
       },
+      message: "User profile fetched successfully",
     });
   } catch (error) {
     next(error);
