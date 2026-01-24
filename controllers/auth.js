@@ -59,7 +59,6 @@ const verifyOTPController = async (req, res, next) => {
       data: result.user,
     });
   } catch (error) {
-    console.error(error);
     next(error);
   }
 };
@@ -74,7 +73,6 @@ const resendOTPController = async (req, res, next) => {
     }
 
     const result = await resendOTPService(email);
-    console.log(result);
 
     return res.status(200).json({
       status: 200,
@@ -82,7 +80,6 @@ const resendOTPController = async (req, res, next) => {
       message: result.message,
     });
   } catch (error) {
-    console.error(error);
     next(error);
   }
 };
@@ -127,8 +124,6 @@ const verifyEmailController = async (req, res, next) => {
       redirectUrl: `${process.env.FRONTEND_URL_LOCAL}/verification-success`,
     });
   } catch (error) {
-    console.error(error);
-
     return res.status(400).json({
       success: false,
       message: error.message || "Email verification failed",
@@ -140,7 +135,6 @@ const verifyEmailController = async (req, res, next) => {
 const ressendVerificationEmailController = async (req, res, next) => {
   try {
     const { email } = req.query;
-    // console.log(email);
 
     // Use the service
     const result = await resendEmailVerificationService(email);
@@ -168,8 +162,6 @@ const logInController = async (req, res, next) => {
 
     return res.status(200).json({ status: "success", data: user });
   } catch (error) {
-    console.error(error);
-
     // Handle unverified email case
     if (error.statusCode === 403 && error.message.includes("OTP")) {
       return res.json({
@@ -296,39 +288,38 @@ const logInWithClerkcontroller = async (req, res, next) => {
 };
 
 const loginWithFirebaseController = async (req, res, next) => {
-  const payload = req.body;
-  // console.log(155, payload);
-  const exitsingUser = await findUserByProperty("email", payload?.email);
+  try {
+    const payload = req.body;
+    const exitsingUser = await findUserByProperty("email", payload?.email);
 
-  // console.log(158, exitsingUser);
-  if (exitsingUser) {
-    // console.log("i am here ");
-    const token = assignToken(exitsingUser._id, payload.email);
-    const user = { ...exitsingUser.toObject(), jwtToken: token };
-    return res.json({ status: 200, message: "already logged in", data: user });
+    if (exitsingUser) {
+      const token = assignToken(exitsingUser._id, payload.email);
+      const user = { ...exitsingUser.toObject(), jwtToken: token };
+      return res.json({
+        status: 200,
+        message: "already logged in",
+        data: user,
+      });
+    }
+
+    if (!exitsingUser) {
+      const newUser = await User.create({
+        ...payload,
+        verified: true,
+      });
+
+      const token = assignToken(newUser._id, payload.email);
+      const userObj = newUser.toObject();
+      userObj.jwtToken = token;
+      return res.status(200).json({
+        status: "success",
+        message: "new user created",
+        data: userObj,
+      });
+    }
+  } catch (error) {
+    next(error);
   }
-
-  if (!exitsingUser) {
-    // console.log("new user ");
-    const newUser = await User.create({
-      ...payload,
-      // email: payload.email,
-      // name: payload.name,
-      // profile_picture: payload.picture,
-      // oauth_provider: payload?.oauth_provider,
-    });
-
-    const token = assignToken(newUser._id, payload.email);
-    const userObj = newUser.toObject();
-    userObj.jwtToken = token;
-    return res.json({
-      status: 200,
-      memssage: "new user created",
-      data: userObj,
-    });
-  }
-
-  return res.json({ status: 200, message: "connected", data: payload });
 };
 
 module.exports = {
