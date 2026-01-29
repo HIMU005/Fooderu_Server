@@ -1,24 +1,34 @@
+const { default: mongoose } = require("mongoose");
 const Post = require("../models/Post");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const AppError = require("../utils/AppError");
 
-const postByUser = async (req, res) => {
-  const { restaurant_id, description, image_url, isEvent } = req.body;
-  if (!restaurant_id) {
-    return res.json({ status: 404, message: "restaurant_id is required" });
-  }
+const postByUser = async (req, res, next) => {
   try {
-    const response = await Post.create({
+    const { restaurant_id, description, image_url } = req.body;
+    if (!restaurant_id) {
+      throw new AppError("restaurant_id is required", 404);
+    }
+    // if (typeof isEvent !== "boolean") {
+    //   return res.json({ status: 422, message: "Unprocessable Entity" });
+    // }
+    if (!mongoose.Types.ObjectId.isValid(restaurant_id)) {
+      throw new AppError("Invalid restaurant ID", 400);
+    }
+
+    if (!description && !image_url) {
+      throw new AppError("Required items is not provided", 400);
+    }
+
+    await Post.create({
       restaurant_id,
       description,
       image_url,
-      isEvent,
+      // isEvent,
     });
     return res.json({ status: 201, message: "A post is created..." });
   } catch (error) {
-    // console.error(error);
-
-    throw new AppError(`server error ${error} `, 500);
+    next(error);
   }
 };
 
@@ -44,9 +54,7 @@ const getAllPosts = async (req, res) => {
       message: "Posts fetched successfully",
     });
   } catch (error) {
-    // console.error(error);
-
-    throw new AppError(`server error ${error} `, 500);
+    next(error);
   }
 };
 
@@ -67,7 +75,7 @@ const getPostsByFollowedRestaurants = async (req, res) => {
   }
 
   const followedRestaurantIds = followedRestaurants.map(
-    (fr) => fr.restaurant_id
+    (fr) => fr.restaurant_id,
   );
 
   try {
@@ -83,18 +91,21 @@ const getPostsByFollowedRestaurants = async (req, res) => {
       message: "Posts from followed restaurants fetched successfully",
     });
   } catch (error) {
-    // console.error(error);
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    next(error);
   }
 };
 
 // get a single post details
-const getASinglePost = async (req, res) => {
+const getASinglePost = async (req, res, next) => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("Invalid post ID", 400);
+    }
+
     const post = await Post.findById(id);
     if (!post) {
-      return res.json({ status: 404, message: "Post not found" });
+      throw new AppError("Post not found", 404);
     }
     return res.json({
       status: 200,
@@ -102,32 +113,35 @@ const getASinglePost = async (req, res) => {
       message: "Single post fetched",
     });
   } catch (error) {
-    throw new AppError(`server error ${error} `, 500);
+    next(error);
   }
 };
 
 // update postDetails by id by the restaurant owner
-const updatePostDetails = async (req, res) => {
+const updatePostDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new AppError("Invalid post ID", 400));
+    }
     const updateData = req.body;
     const userId = req.user._id;
     // const userId = "68b9b5178e9b3b4eaa03a438";
 
     const singlePost = await Post.findById(id).populate(
       "restaurant_id",
-      "owner_id"
+      "owner_id",
     );
 
     if (!singlePost) {
-      return res.json({ status: 404, message: "Post not found" });
+      throw new AppError("Post not found", 404);
     }
 
     if (singlePost?.restaurant_id?.owner_id.toString() !== userId.toString()) {
-      return res.json({
-        status: 403,
-        message: "Only the owner of the restaurant can update the post",
-      });
+      throw new AppError(
+        "Only the owner of the restaurant can update the post",
+        403,
+      );
     }
 
     const updatedPost = await Post.findByIdAndUpdate(id, updateData, {
@@ -141,37 +155,40 @@ const updatePostDetails = async (req, res) => {
       data: updatedPost,
     });
   } catch (error) {
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    next(error);
   }
 };
 
-const deletePost = async (req, res) => {
+const deletePost = async (req, res, next) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("Invalid post ID", 400);
+    }
     const userId = req.user._id;
     console.log("userId:", userId,id);
     // const userId = "68b9b5178e9b3b4eaa03a438";
     const singlePost = await Post.findById(id).populate(
       "restaurant_id",
-      "owner_id"
+      "owner_id",
     );
 
     if (!singlePost) {
-      return res.json({ status: 404, message: "Post not found" });
+      throw new AppError("Post not found", 404);
     }
 
     if (singlePost?.restaurant_id?.owner_id.toString() !== userId.toString()) {
-      return res.json({
-        status: 403,
-        message: "Only the owner of the restaurant can update the post",
-      });
+      throw new AppError(
+        "Only the owner of the restaurant can delete the post",
+        403,
+      );
     }
     // delete the post
     await Post.findByIdAndDelete(id);
 
-    return res.json({ status: 200, message: "MenuItem deleted successfully" });
+    return res.json({ status: 200, message: "Post deleted successfully" });
   } catch (error) {
-    return res.json({ status: 500, message: `Server error: ${error.message}` });
+    next(error);
   }
 };
 

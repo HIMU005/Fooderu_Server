@@ -4,21 +4,30 @@ const findUsers = () => {
   return User.find();
 };
 
-const findUserByProperty = (key, value) => {
+const findUserByProperty = async (key, value) => {
+  // console.log("key", key);
+  // console.log("value", value);
+
+  let user = null;
   if (key === "_id") {
-    return User.findById(value);
+    user = await User.findById(value).select("+password");
+    return user;
   }
 
-  return User.findOne({ [key]: value });
+  user = await User.findOne({ [key]: value }).select("+password");
+
+  return user;
 };
 
-const createNewUser = ({ email, password }) => {
+const createNewUser = async ({ email, password }) => {
   const user = new User({
     email,
     password,
   });
 
-  return user.save();
+  await user.save();
+
+  return user;
 };
 
 module.exports = { findUsers, findUserByProperty, createNewUser };

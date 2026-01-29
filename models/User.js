@@ -15,18 +15,12 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      // required: true,
       select: false, // hides it from query results
     },
     verified: {
       type: Boolean,
       default: false,
-    },
-    verification_token: {
-      type: String,
-    },
-    verification_token_expires_in: {
-      type: Date,
     },
     oauth_provider: {
       type: String, // e.g., 'google', 'facebook'
@@ -68,7 +62,7 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const User = model("User", userSchema);

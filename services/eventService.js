@@ -1,5 +1,6 @@
 const Event = require("../models/Event");
 const Restaurant = require("../models/Restaurant");
+const AppError = require("../utils/AppError");
 
 // Create a new event
 const createEvent = async (restaurantId, eventData) => {
@@ -7,7 +8,8 @@ const createEvent = async (restaurantId, eventData) => {
   const restaurantExists = await Restaurant.findOne({ _id: restaurantId });
   // console.log("exist : ", restaurantExists);
   if (!restaurantExists) {
-    throw new Error("Restaurant not found");
+    // throw new Error("Restaurant not found");
+    return next(new AppError("Restaurant not found", 404));
   }
 
   // Create and save the event
@@ -23,6 +25,11 @@ const createEvent = async (restaurantId, eventData) => {
 const getEventsOfRestaurant = async (restaurantId, onlyLive = false) => {
   const query = { restaurant_id: restaurantId };
 
+  const restaurantExists = await Restaurant.findOne({ _id: restaurantId });
+  if (!restaurantExists) {
+    throw new AppError("Restaurant not found", 404);
+  }
+
   // Filter for live events if requested
   if (onlyLive) {
     query.is_live = true;
@@ -33,10 +40,16 @@ const getEventsOfRestaurant = async (restaurantId, onlyLive = false) => {
 };
 
 // Toggle an event's live status
-const toggleEventStatus = async (eventId) => {
+const toggleEventStatus = async (eventId, restaurantId) => {
   const event = await Event.findById(eventId);
   if (!event) {
-    throw new Error("Event not found");
+    throw new AppError("Event not found", 404);
+  }
+  if (event?.restaurant_id.toString() !== restaurantId) {
+    throw new AppError("This event and the restaurant are not associated", 403);
+  }
+  if (!event) {
+    throw new AppError("Event not found", 404);
   }
 
   event.is_live = !event.is_live;

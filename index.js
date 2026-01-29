@@ -5,6 +5,12 @@ const connectDB = require("./db");
 const router = require("./routes");
 const path = require("path");
 const PORT = process.env.PORT || 5000;
+const YAML = require("yamljs");
+const fs = require("fs");
+const cleanupOTPJob = require("./cronJobs/cleanupOTP");
+
+// Start the OTP cleanup cron job
+cleanupOTPJob.start();
 
 const app = express();
 app.use(express.json());
@@ -14,8 +20,6 @@ const corsOptions = {
   optionSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
-// app.options("*", cors());
-
 app.use(router);
 app.use("/images", express.static(path.join(__dirname, "images")));
 
@@ -32,6 +36,7 @@ app.use((err, _req, res, _next) => {
 
   res.status(err.statusCode).json({
     status: err.status,
+    statusCode: err.statusCode,
     message: err.message,
   });
 });

@@ -1,23 +1,36 @@
+const e = require("express");
 const Event = require("../models/Event");
+const Restaurant = require("../models/Restaurant");
 const {
   createEvent,
   toggleEventStatus,
   getEventsOfRestaurant,
 } = require("../services/eventService");
+const AppError = require("../utils/AppError");
+const { default: mongoose } = require("mongoose");
 
 // Handle creating a new event
-const create = async (req, res) => {
+const create = async (req, res, next) => {
   try {
     const { restaurantId } = req.params;
-    // console.log(restaurantId);
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      throw new AppError("Invalid restaurant ID", 400);
+    }
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      throw new AppError("Restaurant not found", 404);
+    }
     const { event_title, description, image_url, expires_at } = req.body;
-    // console.log(req.body);
+    if (restaurantId !== req.user.restaurant_id.toString()) {
+      throw new AppError(
+        "You are not authorized to create event for this restaurant",
+        403,
+      );
+    }
 
     // Basic validation
     if (!event_title || !expires_at) {
-      return res
-        .status(400)
-        .json({ error: "Title and expiration date are required" });
+      throw new AppError("Title and expiration date are required", 400);
     }
 
     const newEvent = await createEvent(restaurantId, {
@@ -27,22 +40,35 @@ const create = async (req, res) => {
       expires_at: new Date(expires_at),
     });
 
-    res.status(201).json(newEvent);
+    res.status(201).json({
+      status: "success",
+      statusCode: 201,
+      data: newEvent,
+      message: "Event created successfully",
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 
 // Handle getting events
-const getEventsOfSingleRestaurant = async (req, res) => {
+const getEventsOfSingleRestaurant = async (req, res, next) => {
   try {
     const { restaurantId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      throw new AppError("Invalid restaurant ID", 400);
+    }
     const { live } = req.query;
 
     const events = await getEventsOfRestaurant(restaurantId, live === "true");
-    res.json(events);
+    res.status(200).json({
+      status: "success",
+      statusCode: 200,
+      data: events,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    // res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 
@@ -68,7 +94,7 @@ const getAllEventsFromAllRestaurants = async (req, res) => {
       data: events,
     });
   } catch (error) {
-    console.error("Error getting all events:", error);
+    // console.error("Error getting all events:", error);
     res.status(500).json({
       success: false,
       error: "Server error while fetching events",
@@ -77,13 +103,33 @@ const getAllEventsFromAllRestaurants = async (req, res) => {
 };
 
 // Handle toggling event status
-const toggleStatus = async (req, res) => {
+const toggleStatus = async (req, res, next) => {
   try {
-    const { eventId } = req.params;
-    const updatedEvent = await toggleEventStatus(eventId);
-    res.json(updatedEvent);
+    const { eventId, restaurantId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      throw new AppError("Invalid event ID", 400);
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      throw new AppError("Invalid restaurant ID", 400);
+    }
+
+    if (restaurantId !== req.user.restaurant_id.toString()) {
+      throw new AppError(
+        "You are not authorized to toggle event for this restaurant",
+        403,
+      );
+    }
+
+    const updatedEvent = await toggleEventStatus(eventId, restaurantId);
+    return res.status(200).json({
+      status: "success",
+      statusCode: 200,
+      data: updatedEvent,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    // res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 

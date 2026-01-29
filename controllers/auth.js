@@ -1,17 +1,91 @@
 const User = require("../models/User");
-const { registerService, loginService } = require("../services/auth");
+const {
+  registerServiceWeb,
+  registerServiceOtp,
+  verifyOTPService,
+  resendOTPService,
+  loginService,
+  verifyEmailService,
+  resendEmailVerificationService,
+} = require("../services/auth");
 const { findUserByProperty } = require("../services/user");
 const bcrypt = require("bcryptjs");
 const { assignToken } = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
 const { Clerk } = require("@clerk/clerk-sdk-node");
-const {
-  sendVerificationEamil,
-  sendWelcomeEmail,
-} = require("../middlewares/Email");
+
+// Register controller: For OTP
+const registerControllerOTP = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.json({
+      status: 400,
+      message: "Email and Password are required",
+    });
+  }
+
+  try {
+    const result = await registerServiceOtp({ email, password });
+
+    return res.status(201).json({
+      status: 201,
+      success: true,
+      message: result.message,
+      data: {
+        email: result.email,
+        userId: result.userId,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Verify OTP Controller
+const verifyOTPController = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      throw new AppError("Email and OTP are required", 400);
+    }
+
+    const result = await verifyOTPService(email, otp);
+
+    return res.status(200).json({
+      status: "success",
+      message: result.message,
+      data: result.user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Resend OTP Controller
+const resendOTPController = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new AppError("Email is required", 400);
+    }
+
+    const result = await resendOTPService(email);
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // controller for register
-const registerController = async (req, res, next) => {
+const registerControllerWeb = async (req, res, next) => {
   const { email, password } = req.body;
 
   //   validation
@@ -20,47 +94,58 @@ const registerController = async (req, res, next) => {
   }
 
   try {
-    const user = await registerService({
+    const user = await registerServiceWeb({
       email,
       password,
     });
     user.password = undefined;
 
-    await sendVerificationEamil(email, user.verification_token);
-
     return res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
-    console.error(error);
-    throw new AppError(error, 500);
+    next(error);
   }
 };
 
 const verifyEmailController = async (req, res, next) => {
-  const { code } = req.body;
-
   try {
-    const user = await User.findOne({
-      verification_token: code,
-      verification_token_expires_in: { $gt: Date.now() },
-    });
+    const { token } = req.query;
 
-    if (!user) {
+    if (!token) {
       return res
         .status(400)
-        .json({ message: "Invalid or expired verification code" });
+        .json({ message: "Verification token is required" });
     }
 
-    user.verified = true;
-    user.verification_token = undefined;
-    user.verification_token_expires_in = undefined;
-    await user.save();
-    await sendWelcomeEmail(user.email);
-    return res.status(200).json({ message: "Email verified successfully" });
+    const result = await verifyEmailService(token);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      redirectUrl: `${process.env.FRONTEND_URL_LOCAL}/verification-success`,
+    });
   } catch (error) {
-    // console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "internal server error" });
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Email verification failed",
+      redirectUrl: `${process.env.FRONTEND_URL}/verification-failed`,
+    });
+  }
+};
+
+const ressendVerificationEmailController = async (req, res, next) => {
+  try {
+    const { email } = req.query;
+
+    // Use the service
+    const result = await resendEmailVerificationService(email);
+
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+    // return next()
   }
 };
 
@@ -68,11 +153,27 @@ const verifyEmailController = async (req, res, next) => {
 const logInController = async (req, res, next) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    throw new AppError("Email and Password are required", 400);
+  }
+
   try {
     const user = await loginService(email, password);
-    return res.send({ status: 200, data: user });
+
+    return res.status(200).json({ status: "success", data: user });
   } catch (error) {
-    return res.json({ status: 500, message: `server error ${error} ` });
+    // Handle unverified email case
+    if (error.statusCode === 403 && error.message.includes("OTP")) {
+      return res.json({
+        status: 403,
+        success: false,
+        message: error.message,
+        requiresVerification: true,
+        email: email,
+      });
+    }
+
+    next(error);
   }
 };
 
@@ -187,46 +288,49 @@ const logInWithClerkcontroller = async (req, res, next) => {
 };
 
 const loginWithFirebaseController = async (req, res, next) => {
-  const payload = req.body;
-  // console.log(155, payload);
-  const exitsingUser = await findUserByProperty("email", payload?.email);
+  try {
+    const payload = req.body;
+    const exitsingUser = await findUserByProperty("email", payload?.email);
 
-  // console.log(158, exitsingUser);
-  if (exitsingUser) {
-    // console.log("i am here ");
-    const token = assignToken(exitsingUser._id, payload.email);
-    const user = { ...exitsingUser.toObject(), jwtToken: token };
-    return res.json({ status: 200, message: "already logged in", data: user });
+    if (exitsingUser) {
+      const token = assignToken(exitsingUser._id, payload.email);
+      const user = { ...exitsingUser.toObject(), jwtToken: token };
+      return res.json({
+        status: 200,
+        message: "already logged in",
+        data: user,
+      });
+    }
+
+    if (!exitsingUser) {
+      const newUser = await User.create({
+        ...payload,
+        verified: true,
+      });
+
+      const token = assignToken(newUser._id, payload.email);
+      const userObj = newUser.toObject();
+      userObj.jwtToken = token;
+      return res.status(200).json({
+        status: "success",
+        message: "new user created",
+        data: userObj,
+      });
+    }
+  } catch (error) {
+    next(error);
   }
-
-  if (!exitsingUser) {
-    // console.log("new user ");
-    const newUser = await User.create({
-      ...payload,
-      // email: payload.email,
-      // name: payload.name,
-      // profile_picture: payload.picture,
-      // oauth_provider: payload?.oauth_provider,
-    });
-
-    const token = assignToken(newUser._id, payload.email);
-    const userObj = newUser.toObject();
-    userObj.jwtToken = token;
-    return res.json({
-      status: 200,
-      memssage: "new user created",
-      data: userObj,
-    });
-  }
-
-  return res.json({ status: 200, message: "connected", data: payload });
 };
 
 module.exports = {
-  registerController,
+  registerControllerWeb,
   logInController,
   logInWithSocialController,
   logInWithClerkcontroller,
   loginWithFirebaseController,
   verifyEmailController,
+  ressendVerificationEmailController,
+  registerControllerOTP,
+  verifyOTPController,
+  resendOTPController,
 };

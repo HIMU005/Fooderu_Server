@@ -1,0 +1,469 @@
+openapi: 3.0.0
+info:
+  title: Post API
+  version: 1.0.0
+  description: This api documentation reflect the Behavior of post related api
+  termsOfService: http://example.com/terms/
+  contact:
+    name: Hashanuz Zaman
+    email: hashanuzzaman99@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local server
+  - url: https://fooderu-server.vercel.app
+    description: Production server
+
+paths:
+  /posts:
+    get:
+      tags:
+        - Posts
+      summary: Get all posts
+      description: Retrieve a list of all posts.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of posts to return.
+          schema:
+            type: integer
+            default: 5
+            example: 5
+
+        - name: skip
+          in: query
+          required: false
+          description: Number of posts to skip for pagination.
+          schema:
+            type: integer
+            default: 0
+            example: 0
+      responses:
+        "200":
+          description: Posts fetched successfully
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/GetPostsResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    post:
+      tags:
+        - Posts
+      summary: Create a new post
+      security:
+        - BearerAuth: []
+      description: Create a new post with the provided details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostRequest"
+      responses:
+        "201":
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: A Post is created
+
+        "400":
+          $ref: "#/components/responses/InvalidId"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /posts/{id}:
+    get:
+      tags:
+        - Posts
+      summary: Get a post by ID
+      description: Retrieve a single post by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the post to retrieve.
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: Post fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SinglePostResponse"
+
+        "400":
+          $ref: "#/components/responses/InvalidId"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      tags:
+        - Posts
+      summary: Update a post
+      description: Partially update a post by its ID. Only the owner of the restaurant can update the post.
+      security:
+        - BearerAuth: []
+
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the post to update.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePostRequest"
+      responses:
+        "200":
+          description: Post updaed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Post updated successfully
+
+        "400":
+          $ref: "#/components/responses/InvalidId"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Posts
+      summary: Delete a post
+      description: Delete a post by its ID. Only the owner of the restaurant can delete the post.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the post to delete.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Post deleted successfully
+
+        "400":
+          $ref: "#/components/responses/InvalidId"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /posts/followedRestaurantsPosts:
+    get:
+      tags:
+        - Posts
+      summary: Get posts from followed restaurants
+      description: Retrieve posts from restaurants that the authenticated user follows.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Posts fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Post"
+                  message:
+                    type: string
+                    example: Followed restaurants posts fetched successfully
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  schemas:
+    PostBase:
+      type: object
+      properties:
+        restaurant_id:
+          type: string
+          example: 64a7f0c8e4b0c8b1a2d3e4f5
+        description:
+          type: string
+          example: "description"
+        image_url:
+          type: string
+          example: "imagelink"
+
+        postType:
+          type: string
+          enum:
+            - normal
+            - menuItem
+            - event
+          example: normal
+
+        details:
+          type: object
+          additionalProperties: true
+
+    Post:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: asdfghjkl
+
+        restaurant_id:
+          type: string
+
+        description:
+          type: string
+
+        image_url:
+          type: string
+
+        postType:
+          type: string
+
+        details:
+          type: object
+
+        createdAt:
+          type: string
+          format: date-time
+
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePostRequest:
+      allOf:
+        - $ref: "#/components/schemas/PostBase"
+        - type: object
+          required:
+            - restaurant_id
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          example: Updated post description
+
+        image_url:
+          type: string
+          format: uri
+          example: https://cdn.example.com/posts/updated.jpg
+
+        postType:
+          type: string
+          enum:
+            - normal
+            - menuItem
+            - event
+
+        details:
+          type: object
+          additionalProperties: true
+
+    Posts:
+      type: array
+      items:
+        $ref: "#/components/schemas/Post"
+
+    SinglePostResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          $ref: "#/components/schemas/Post"
+        message:
+          type: string
+          example: Single post fetched
+
+    GetPostsResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          $ref: "#/components/schemas/Posts"
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 5
+        skip:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "Posts fetched successfully"
+
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Bad request - The server could not understand the request due to invalid syntax.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 400
+            message: Bad request. Please check your input.
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 401
+            message: "Unauthorized. Please provide a valid authentication token."
+
+    Forbidden:
+      description: Forbidden - Only the owner of the restaurant can perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 403
+            message: "You are not the owner. Only the owner has permission "
+
+    NotFound:
+      description: Not Found - The requested resource could not be found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 404
+            message: "Resource not found. Please check the URL and try again."
+
+    UnprocessableEntity:
+      description: Unprocessable Entity - The request was well-formed but contains semantic errors.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 422
+            message: "Unprocessable Entity"
+
+    InternalServerError:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 500
+            message: "An unexpected error occurred on the server...."
+
+    InvalidId:
+      description: Internal Server Error - An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 400
+            message: "Invalid  PostId"

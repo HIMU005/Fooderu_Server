@@ -12,7 +12,6 @@ const AppError = require("../utils/AppError");
 const createMenuItem = async (itemData) => {
   // verify restaurant exists
   const restaurant = await Restaurant.findById(itemData.restaurant_id);
-  // console.log("restaurant found indicator", restaurant);
 
   if (!restaurant) {
     throw new AppError("Restaurant not found", 404);
@@ -53,6 +52,10 @@ const getAllItemsUnderARestaurantService = async (restaurantId) => {
     })
       .sort({ createdAt: -1 })
       .populate("restaurant_id");
+
+    if (response.length === 0 || !response) {
+      throw new AppError("No menu items found for this restaurant", 404);
+    }
 
     return response;
   } catch (error) {
