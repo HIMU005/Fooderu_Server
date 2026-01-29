@@ -1,0 +1,1627 @@
+openapi: 3.0.0
+info:
+  title: Authentication API
+  version: 1.0.0
+  description: |
+    This API documentation covers all authentication and user management endpoints.
+
+    ## 📋 Authentication Methods
+    The API supports multiple authentication methods:
+
+    ### 1. Email/Password Registration
+    - **Email Verification Link**: Traditional email verification
+    - **OTP Verification**: One-time password verification (recommended)
+
+    ### 2. Social Authentication
+    - **Social Media**: Google, Facebook via OAuth
+    - **Clerk**: Professional authentication service
+    - **Firebase**: Google Firebase authentication
+
+    ### 3. Email Verification
+    - Verification via link or OTP
+    - Resend verification options
+
+    ## 🔐 Security Features
+    - JWT token-based authentication (4-hour expiry)
+    - Password hashing with bcrypt
+    - OTP expiration (5 minutes)
+    - Rate limiting on OTP requests
+    - Email enumeration protection
+    - Conflict prevention for social logins
+
+    ## 🚀 Quick Start
+    1. Register using `/auth/register_otp` (recommended) or `/auth/register`
+    2. Verify email via `/auth/verify_otp` or email link
+    3. Login using `/auth/login`
+    4. Use JWT token in Authorization header for protected routes
+
+  contact:
+    name: Jobaer Hossain
+    email: jobaer6767@gmail.com
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+  - url: https://fooderu-server.vercel.app
+    description: Production server
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user (Email Verification Link)
+      description: |
+        Register a new user with email and password using traditional email verification.
+        Sends a verification link to the user's email address.
+
+        ## 📝 Registration Process
+        1. Submit email and password
+        2. System creates user with `verified: false`
+        3. Verification email sent with JWT token link
+        4. User clicks link to verify email
+        5. User can then login with credentials
+
+        ## ⚠️ Important Notes
+        - Email must be verified before login (`verified: true`)
+        - Password is hashed with bcrypt before storage
+        - Email is converted to lowercase
+        - Default `user_type` is "user"
+        - Returns user object without password
+      operationId: registerWeb
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: User registration credentials
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's email address (will be stored in lowercase)
+                  example: "john.doe@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: User's password (minimum 6 characters recommended)
+                  minLength: 6
+                  example: "SecurePass123!"
+              additionalProperties: false
+            examples:
+              basicRegistration:
+                summary: Basic registration
+                value:
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+      responses:
+        "201":
+          description: User created successfully - verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User created successfully"
+                  user:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        format: objectid
+                        example: "507f1f77bcf86cd799439011"
+                      email:
+                        type: string
+                        format: email
+                        example: "john.doe@example.com"
+                      verified:
+                        type: boolean
+                        example: false
+                      user_type:
+                        type: string
+                        example: "user"
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-15T10:30:00Z"
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-15T10:30:00Z"
+              examples:
+                success:
+                  summary: Registration successful
+                  value:
+                    message: "User created successfully"
+                    user:
+                      _id: "507f1f77bcf86cd799439011"
+                      email: "john.doe@example.com"
+                      verified: false
+                      user_type: "user"
+                      createdAt: "2024-01-15T10:30:00Z"
+                      updatedAt: "2024-01-15T10:30:00Z"
+        "400":
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Email and Password are required"
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    status: 400
+                    message: "Email and Password are required"
+        "409":
+          description: Conflict - user already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 409
+                  message:
+                    type: string
+                    example: "User already exists with this email"
+              examples:
+                userExists:
+                  summary: Email already registered
+                  value:
+                    status: "fail"
+                    statusCode: 409
+                    message: "User already exists with this email"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                serverError:
+                  summary: Server error during registration
+                  value:
+                    status: "error"
+                    statusCode: 500
+                    message: "Failed to send verification email. Please try again later."
+
+  /auth/register_otp:
+    post:
+      summary: Register a new user (OTP Verification)
+      description: |
+        Register a new user with email and password using OTP verification.
+        This is the recommended registration method for better user experience.
+
+        ## 🎯 Advantages Over Link Verification
+        - **Faster verification**: No link clicking required
+        - **Better UX**: Users stay in your app
+        - **Mobile-friendly**: Easy OTP input on mobile devices
+        - **Auto-login**: User automatically logged in after verification
+
+        ## 📲 OTP Registration Flow
+        1. Submit email and password
+        2. System creates user with `verified: false`
+        3. 6-digit OTP sent to email (valid for 5 minutes)
+        4. User enters OTP in your app
+        5. System verifies OTP, marks user as verified
+        6. User automatically logged in with JWT token
+
+        ## 🔒 OTP Security
+        - 6-digit numeric code
+        - 5-minute expiration
+        - Single-use only
+        - Maximum 5 attempts
+        - Rate limited (1 minute cooldown)
+      operationId: registerOTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: User registration data for OTP verification
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+                  example: "jane.smith@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: User's password
+                  minLength: 6
+                  example: "StrongPassword456!"
+              additionalProperties: false
+            examples:
+              otpRegistration:
+                summary: OTP registration
+                value:
+                  email: "jane.smith@example.com"
+                  password: "StrongPassword456!"
+      responses:
+        "201":
+          description: User created - OTP sent to email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 201
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Registration successful! Please check your email for OTP."
+                  data:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                        example: "jane.smith@example.com"
+                      userId:
+                        type: string
+                        format: objectid
+                        example: "507f1f77bcf86cd799439012"
+              examples:
+                otpSent:
+                  summary: OTP sent successfully
+                  value:
+                    status: 201
+                    success: true
+                    message: "Registration successful! Please check your email for OTP."
+                    data:
+                      email: "jane.smith@example.com"
+                      userId: "507f1f77bcf86cd799439012"
+
+  /auth/verify_otp:
+    post:
+      summary: Verify OTP for email verification
+      description: |
+        Verify the 6-digit OTP sent to user's email.
+        Upon successful verification, user is automatically logged in.
+
+        ## ✅ Successful Verification
+        1. OTP is validated (expiry, usage, attempts)
+        2. User's `verified` field set to `true`
+        3. All OTPs for this email are deleted
+        4. JWT token is generated (4-hour expiry)
+        5. User data with token is returned
+
+        ## ❌ Failed Verification
+        - Invalid OTP: Returns 400
+        - Expired OTP: Returns 400
+        - Max attempts exceeded: Returns 429
+        - Already verified: Returns 400
+
+        ## 🔄 Next Steps After Verification
+        - Use returned JWT token for authenticated requests
+        - Token should be included in Authorization header
+        - User can now access protected routes
+      operationId: verifyOTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: OTP verification credentials
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address used during registration
+                  example: "jane.smith@example.com"
+                otp:
+                  type: string
+                  pattern: "^[0-9]{6}$"
+                  description: 6-digit OTP received via email
+                  minLength: 6
+                  maxLength: 6
+                  example: "123456"
+              additionalProperties: false
+            examples:
+              verifyOtp:
+                summary: Verify OTP
+                value:
+                  email: "jane.smith@example.com"
+                  otp: "123456"
+      responses:
+        "200":
+          description: OTP verified successfully - user logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Email verified successfully"
+                  token:
+                    type: string
+                    description: JWT Bearer token for authentication
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        format: objectid
+                      email:
+                        type: string
+                        format: email
+                      verified:
+                        type: boolean
+                      user_type:
+                        type: string
+                      jwtToken:
+                        type: string
+              examples:
+                verified:
+                  summary: OTP verified and user logged in
+                  value:
+                    status: "success"
+                    message: "Email verified successfully"
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    user:
+                      _id: "507f1f77bcf86cd799439012"
+                      email: "jane.smith@example.com"
+                      verified: true
+                      user_type: "user"
+                      jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: Invalid OTP or validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+              examples:
+                invalidOtp:
+                  summary: Invalid or expired OTP
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Invalid or expired OTP"
+                alreadyVerified:
+                  summary: Email already verified
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Email is already verified"
+        "429":
+          description: Too many OTP attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many attempts. Please request a new OTP."
+              examples:
+                tooManyAttempts:
+                  summary: Maximum attempts exceeded
+                  value:
+                    status: "fail"
+                    statusCode: 429
+                    message: "Too many attempts. Please request a new OTP."
+
+  /auth/resend_otp:
+    post:
+      summary: Resend OTP to email
+      description: |
+        Resend a new OTP to the user's email address.
+        Rate limited to prevent spam (1 minute cooldown between requests).
+
+        ## 📬 When to Use
+        - OTP expired (5 minutes)
+        - OTP not received in email
+        - Need a new OTP code
+        - Previous OTP invalid
+
+        ## ⏱️ Rate Limiting
+        - 1 minute cooldown between OTP requests
+        - Prevents email bombing
+        - Protects against brute force attacks
+
+        ## 🔄 Process
+        1. Checks for recent OTP requests
+        2. Deletes old unused OTPs
+        3. Generates new 6-digit OTP
+        4. Sends email with new OTP
+        5. Sets new 5-minute expiry
+      operationId: resendOTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: Email address for OTP resend
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address to receive new OTP
+                  example: "jane.smith@example.com"
+              additionalProperties: false
+            examples:
+              resendRequest:
+                summary: Request OTP resend
+                value:
+                  email: "jane.smith@example.com"
+      responses:
+        "200":
+          description: New OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "OTP resent successfully"
+                  resend:
+                    type: boolean
+                    example: true
+              examples:
+                resent:
+                  summary: OTP resent
+                  value:
+                    status: 200
+                    success: true
+                    message: "OTP resent successfully"
+                    resend: true
+        "429":
+          description: Too many requests - rate limited
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 429
+                  message:
+                    type: string
+                    example: "Please wait before requesting a new OTP"
+              examples:
+                rateLimited:
+                  summary: Rate limited - wait 1 minute
+                  value:
+                    status: "fail"
+                    statusCode: 429
+                    message: "Please wait before requesting a new OTP"
+
+  /auth/login:
+    post:
+      summary: Login with email and password
+      description: |
+        Authenticate an existing user with email and password.
+        Returns a JWT token for accessing protected routes.
+
+        ## 🔐 Authentication Requirements
+        - Email must be verified (`verified: true`)
+        - Correct email and password combination
+        - Active account status (not banned or inactive)
+
+        ## 🚫 Common Login Failures
+        - **404**: User not found (register first)
+        - **401**: Invalid credentials (wrong password)
+        - **403**: Email not verified (verify first)
+        - **403 with OTP**: Suggests OTP verification method
+
+        ## 🎫 Token Information
+        - **Type**: JWT Bearer token
+        - **Expiry**: 4 hours
+        - **Contents**: User ID, email, user_type
+        - **Header**: `Authorization: Bearer <token>`
+
+        ## 🔄 Automatic OTP Suggestion
+        If user is unverified and OTP registration was used,
+        the API suggests OTP verification with email details.
+      operationId: login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: User login credentials
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Registered email address
+                  example: "john.doe@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: Account password
+                  example: "SecurePass123!"
+              additionalProperties: false
+            examples:
+              loginCredentials:
+                summary: Standard login
+                value:
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+      responses:
+        "200":
+          description: Login successful - JWT token returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        format: objectid
+                      email:
+                        type: string
+                        format: email
+                      user_type:
+                        type: string
+                        enum: ["admin", "user"]
+                      verified:
+                        type: boolean
+                      jwtToken:
+                        type: string
+              examples:
+                loginSuccess:
+                  summary: Login successful
+                  value:
+                    status: "success"
+                    data:
+                      _id: "507f1f77bcf86cd799439011"
+                      email: "john.doe@example.com"
+                      user_type: "user"
+                      verified: true
+                      jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: Unauthorized - invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedError"
+              examples:
+                invalidCredentials:
+                  summary: Wrong password
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Invalid Credentials"
+        "403":
+          description: Forbidden - email not verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 403
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  requiresVerification:
+                    type: boolean
+                    example: true
+                  email:
+                    type: string
+                    format: email
+              examples:
+                unverifiedEmail:
+                  summary: Email not verified
+                  value:
+                    status: 403
+                    success: false
+                    message: "Email not verified. Please verify your email before logging in."
+                    requiresVerification: true
+                    email: "john.doe@example.com"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                userNotFound:
+                  summary: User doesn't exist
+                  value:
+                    status: "fail"
+                    statusCode: 404
+                    message: "User not found, please register first"
+
+  /auth/login_with_social:
+    post:
+      summary: Social media login/registration
+      description: |
+        Login or register using social media OAuth providers (Google, Facebook, etc.).
+        Automatically creates account if user doesn't exist.
+
+        ## 🔄 Social Login Flow
+        1. User authenticates with social provider
+        2. Provider returns user data (email, ID, profile)
+        3. System checks if email exists:
+           - **Exists**: Returns user with JWT token
+           - **Doesn't exist**: Creates new account
+        4. Auto-verification (social providers are trusted)
+
+        ## 🆕 Auto-Registration Features
+        - Creates account with social provider data
+        - Sets `oauth_provider` and `oauth_id` fields
+        - Marks account as verified (`verified: true`)
+        - Stores profile picture if available
+        - Combines first/last name into `name` field
+
+        ## 🔒 Security Considerations
+        - Uses provider's authentication security
+        - Trusts provider's email verification
+        - No password required for social accounts
+      operationId: loginWithSocial
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: Social authentication data from provider
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - oauth_id
+                - email
+                - oauth_provider
+              properties:
+                oauth_id:
+                  type: string
+                  description: Unique user ID from OAuth provider
+                  example: "123456789012345678901"
+                email:
+                  type: string
+                  format: email
+                  description: Email address from provider
+                  example: "user@gmail.com"
+                oauth_provider:
+                  type: string
+                  description: Name of the OAuth provider
+                  example: "google"
+                profile_picture:
+                  type: string
+                  format: uri
+                  description: URL to user's profile picture
+                  example: "https://lh3.googleusercontent.com/..."
+                firstName:
+                  type: string
+                  description: User's first name from provider
+                  example: "John"
+                lastName:
+                  type: string
+                  description: User's last name from provider
+                  example: "Doe"
+              additionalProperties: false
+            examples:
+              googleLogin:
+                summary: Google OAuth login
+                value:
+                  oauth_id: "123456789012345678901"
+                  email: "john.doe@gmail.com"
+                  oauth_provider: "google"
+                  profile_picture: "https://lh3.googleusercontent.com/a/..."
+                  firstName: "John"
+                  lastName: "Doe"
+      responses:
+        "200":
+          description: Social login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "social login successfull"
+                  user:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        format: objectid
+                      email:
+                        type: string
+                        format: email
+                      oauth_provider:
+                        type: string
+                      name:
+                        type: string
+                      profile_picture:
+                        type: string
+                        format: uri
+                      verified:
+                        type: boolean
+                      jwtToken:
+                        type: string
+              examples:
+                socialLoginSuccess:
+                  summary: Social login successful
+                  value:
+                    status: 200
+                    message: "social login successfull"
+                    user:
+                      _id: "507f1f77bcf86cd799439013"
+                      email: "john.doe@gmail.com"
+                      oauth_provider: "google"
+                      name: "John Doe"
+                      profile_picture: "https://lh3.googleusercontent.com/a/..."
+                      verified: true
+                      jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  /auth/login_with_clerk:
+    post:
+      summary: Clerk authentication service login
+      description: |
+        Login or register using Clerk authentication service.
+        Includes conflict resolution for existing email accounts.
+
+        ## ⚠️ Conflict Resolution Logic
+        1. **Email exists without OAuth** (traditional registration):
+           - Delete Clerk account (prevent duplicate)
+           - Return 409 - Use email/password login
+        2. **Email exists with different provider**:
+           - Return 409 - Use original provider
+        3. **Email exists with same provider**:
+           - Login successful
+        4. **Email doesn't exist**:
+           - Create new account
+           - Login successful
+
+        ## 🛡️ Security Features
+        - Prevents account takeover
+        - Maintains existing authentication methods
+        - Deletes duplicate Clerk accounts
+        - Protects user's original registration
+
+        ## 🔧 Use Case
+        When integrating Clerk into an existing system with users.
+      operationId: loginWithClerk
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: Clerk authentication payload
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - oauth_id
+                - clerk_id
+                - email
+                - oauth_provider
+              properties:
+                oauth_id:
+                  type: string
+                  description: OAuth ID from Clerk
+                  example: "oauth2_google|123456789"
+                clerk_id:
+                  type: string
+                  description: Clerk's internal user ID
+                  example: "user_2abcdefghijklmnop"
+                email:
+                  type: string
+                  format: email
+                  description: User's email from Clerk
+                  example: "user@example.com"
+                oauth_provider:
+                  type: string
+                  description: OAuth provider via Clerk
+                  example: "google"
+                profile_picture:
+                  type: string
+                  format: uri
+                  description: Profile picture URL
+                firstName:
+                  type: string
+                  description: First name
+                lastName:
+                  type: string
+                  description: Last name
+              additionalProperties: false
+            examples:
+              clerkAuth:
+                summary: Clerk authentication
+                value:
+                  oauth_id: "oauth2_google|123456789"
+                  clerk_id: "user_2abcdefghijklmnop"
+                  email: "john.doe@example.com"
+                  oauth_provider: "google"
+                  profile_picture: "https://img.clerk.com/..."
+                  firstName: "John"
+                  lastName: "Doe"
+      responses:
+        "200":
+          description: Clerk login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "login successfull"
+                  user:
+                    type: object
+              examples:
+                clerkSuccess:
+                  summary: Clerk login successful
+                  value:
+                    status: 200
+                    message: "login successfull"
+                    user:
+                      _id: "507f1f77bcf86cd799439014"
+                      email: "john.doe@example.com"
+                      oauth_provider: "google"
+                      jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "required field is not provided"
+              examples:
+                missingFields:
+                  summary: Required fields missing
+                  value:
+                    status: 400
+                    message: "required field is not provided"
+        "409":
+          description: Email conflict - already registered differently
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 409
+                  message:
+                    type: string
+                    example: "Email already registered. please try with email and password"
+              examples:
+                emailConflict:
+                  summary: Email already exists
+                  value:
+                    status: 409
+                    message: "Email already registered. please try with email and password"
+
+  /auth/login_with_firebase:
+    post:
+      summary: Firebase authentication login
+      description: |
+        Login or register using Google Firebase authentication.
+        Automatically creates verified account for new users.
+
+        ## 🔥 Firebase Integration
+        - Uses Firebase Authentication service
+        - Trusts Firebase's email verification
+        - Auto-creates accounts for new users
+        - Auto-verification (`verified: true`)
+
+        ## 🆕 Auto-Creation Logic
+        1. Check if email exists in database
+        2. **Exists**: Return user with JWT token
+        3. **Doesn't exist**: Create new user with Firebase data
+        4. Set `verified: true` (Firebase verifies)
+        5. Return new user with JWT token
+
+        ## 📦 Firebase Payload
+        Should include standard Firebase user object fields:
+        - `email`: User's email
+        - `uid`: Firebase user ID
+        - `displayName`: User's name
+        - `photoURL`: Profile picture URL
+        - Other Firebase user properties
+      operationId: loginWithFirebase
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        description: Firebase authentication user object
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Firebase authenticated email
+                  example: "user@example.com"
+                uid:
+                  type: string
+                  description: Firebase user ID
+                  example: "firebase_uid_123456"
+                displayName:
+                  type: string
+                  description: User's display name
+                  example: "John Doe"
+                photoURL:
+                  type: string
+                  format: uri
+                  description: Profile picture URL
+                  example: "https://firebasestorage.googleapis.com/..."
+                # Other Firebase user properties can be included
+              additionalProperties: true
+            examples:
+              firebaseUser:
+                summary: Firebase user object
+                value:
+                  email: "john.doe@example.com"
+                  uid: "firebase_uid_abcdef123456"
+                  displayName: "John Doe"
+                  photoURL: "https://firebasestorage.googleapis.com/v0/b/..."
+      responses:
+        "200":
+          description: Firebase login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        format: objectid
+                      email:
+                        type: string
+                        format: email
+                      verified:
+                        type: boolean
+                      jwtToken:
+                        type: string
+              examples:
+                existingUser:
+                  summary: Existing user login
+                  value:
+                    status: "success"
+                    message: "already logged in"
+                    data:
+                      _id: "507f1f77bcf86cd799439015"
+                      email: "john.doe@example.com"
+                      verified: true
+                      jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                newUser:
+                  summary: New user created
+                  value:
+                    status: "success"
+                    message: "new user created"
+                    data:
+                      _id: "507f1f77bcf86cd799439016"
+                      email: "new.user@example.com"
+                      verified: true
+                      jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  /auth/verify_email:
+    get:
+      summary: Verify email address via token
+      description: |
+        Verify user's email address using JWT verification token from email.
+        Redirects to frontend success or failure pages.
+
+        ## 📧 Email Verification Flow
+        1. User registers → receives verification email
+        2. Email contains link with `?token=<jwt_token>`
+        3. User clicks link → hits this endpoint
+        4. System validates JWT token
+        5. Marks user as `verified: true`
+        6. Redirects to frontend success page
+
+        ## 🔗 Frontend Integration
+        - **Success**: Redirects to `/verification-success`
+        - **Failure**: Redirects to `/verification-failed`
+        - Frontend should show appropriate messages
+        - Frontend can then redirect to login
+
+        ## ⏰ Token Expiry
+        - JWT verification tokens expire
+        - User must use link within expiry period
+        - Expired tokens return 400 error
+      operationId: verifyEmail
+      tags:
+        - Authentication
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: JWT verification token from email link
+          schema:
+            type: string
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzMW..."
+      responses:
+        "200":
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Email verified successfully. You can now log in."
+                  redirectUrl:
+                    type: string
+                    format: uri
+                    description: Frontend URL for verification success
+                    example: "http://localhost:3000/verification-success"
+              examples:
+                verificationSuccess:
+                  summary: Email verified
+                  value:
+                    success: true
+                    message: "Email verified successfully. You can now log in."
+                    redirectUrl: "http://localhost:3000/verification-success"
+        "400":
+          description: Invalid token or verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  redirectUrl:
+                    type: string
+                    format: uri
+                    description: Frontend URL for verification failure
+              examples:
+                invalidToken:
+                  summary: Invalid or expired token
+                  value:
+                    success: false
+                    message: "Invalid or expired verification token"
+                    redirectUrl: "http://localhost:3000/verification-failed"
+                alreadyVerified:
+                  summary: Already verified
+                  value:
+                    success: false
+                    message: "Email is already verified"
+                    redirectUrl: "http://localhost:3000/verification-failed"
+
+  /auth/resend_verification_email:
+    get:
+      summary: Resend verification email
+      description: |
+        Resend email verification link to user's email address.
+        For security, always returns success message even if email doesn't exist.
+
+        ## 🛡️ Security Design
+        - **Never reveals email existence**
+        - Always returns "email sent" message
+        - Prevents email enumeration attacks
+        - Same response for all cases
+
+        ## 📨 Response Behavior
+        - **Email exists & unverified**: Sends verification email
+        - **Email exists & verified**: Returns 400 error
+        - **Email doesn't exist**: Returns success message (security)
+
+        ## 🔄 Process
+        1. Checks if email exists and is unverified
+        2. Generates new verification token
+        3. Sends verification email
+        4. Returns success message
+      operationId: resendVerificationEmail
+      tags:
+        - Authentication
+      parameters:
+        - name: email
+          in: query
+          required: true
+          description: Email address to resend verification
+          schema:
+            type: string
+            format: email
+            example: "user@example.com"
+      responses:
+        "200":
+          description: Verification email sent (or would be sent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Verification email sent successfully. Please check your inbox."
+              examples:
+                emailResent:
+                  summary: Verification email resent
+                  value:
+                    success: true
+                    message: "Verification email sent successfully. Please check your inbox."
+        "400":
+          description: Email already verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Email is already verified"
+              examples:
+                alreadyVerified:
+                  summary: Email already verified
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Email is already verified"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        ## 🔐 JWT Bearer Token Authentication
+
+        Most endpoints require JWT token authentication.
+        Obtain tokens through registration or login endpoints.
+
+        ### 📝 Token Details
+        - **Format**: JWT (JSON Web Token)
+        - **Expiry**: 4 hours
+        - **Contents**: User ID, email, user_type
+        - **Issuer**: Fooderu Authentication System
+
+        ### 🚀 How to Use
+        1. Get token from `/auth/login` or `/auth/verify_otp`
+        2. Include in Authorization header:
+        ```
+        Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        ```
+        3. Token automatically refreshes on new login
+
+        ### 🔒 Security Notes
+        - Store tokens securely (not in localStorage for production)
+        - Tokens expire after 4 hours
+        - Re-authenticate to get new token
+        - Never expose tokens in client-side code
+
+  schemas:
+    AppErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["fail", "error"]
+          description: Status type (fail for 4xx errors, error for 5xx errors)
+          example: "fail"
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid credentials"
+
+    UnauthorizedError:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 401
+            status:
+              type: string
+              example: "fail"
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 400
+            status:
+              type: string
+              example: "fail"
+
+    NotFoundError:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 404
+            status:
+              type: string
+              example: "fail"
+
+    ForbiddenError:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 403
+            status:
+              type: string
+              example: "fail"
+
+    ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 500
+            status:
+              type: string
+              example: "error"
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectid
+          description: Unique MongoDB identifier
+          example: "507f1f77bcf86cd799439011"
+        email:
+          type: string
+          format: email
+          description: User's email address (always lowercase)
+          example: "user@example.com"
+        phone:
+          type: string
+          description: User's phone number (optional)
+          example: "+1234567890"
+        verified:
+          type: boolean
+          description: Email verification status
+          default: false
+          example: true
+        oauth_provider:
+          type: string
+          description: OAuth provider for social login
+          enum: ["google", "facebook", "clerk", "firebase"]
+          example: "google"
+        oauth_id:
+          type: string
+          description: User ID from OAuth provider
+          example: "123456789012345678901"
+        user_type:
+          type: string
+          description: User role in the system
+          enum: ["admin", "user"]
+          default: "user"
+          example: "user"
+        name:
+          type: string
+          description: User's full name
+          example: "John Doe"
+        profile_picture:
+          type: string
+          format: uri
+          description: URL to profile picture
+          example: "https://example.com/profile.jpg"
+        coverPhoto:
+          type: string
+          format: uri
+          description: URL to cover photo
+          example: "https://example.com/cover.jpg"
+        location:
+          type: string
+          description: User's location
+          example: "New York, USA"
+        interests:
+          type: string
+          description: User's interests
+          example: "Food, Travel, Technology"
+        status:
+          type: string
+          description: Account status
+          enum: ["active", "inactive", "banned"]
+          default: "active"
+          example: "active"
+        restaurant_id:
+          type: string
+          format: objectid
+          description: Reference to owned restaurant (if restaurant owner)
+          example: "507f1f77bcf86cd799439022"
+        hasRestaurant:
+          type: boolean
+          description: Whether user owns a restaurant
+          default: false
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          readOnly: true
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          readOnly: true
+          example: "2024-01-16T14:20:00Z"
+      description: |
+        ## 👤 User Model
+
+        Represents a user in the Fooderu system.
+        Users can be customers or restaurant owners.
+
+        ### 🏷️ User Types
+        - **user**: Regular customer
+        - **admin**: System administrator
+
+        ### 🔐 Authentication Methods
+        - **Email/Password**: Traditional login
+        - **Social OAuth**: Google, Facebook, etc.
+        - **Clerk**: Professional auth service
+        - **Firebase**: Google Firebase auth
+
+        ### 🏪 Restaurant Owners
+        - `restaurant_id`: Reference to owned restaurant
+        - `hasRestaurant`: Boolean flag
+        - Restaurant owners have additional privileges
+
+    OTP:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectid
+          description: Unique OTP identifier
+          example: "507f1f77bcf86cd799439051"
+        email:
+          type: string
+          format: email
+          description: Recipient email address
+          example: "user@example.com"
+        userId:
+          type: string
+          format: objectid
+          description: Reference to user
+          example: "507f1f77bcf86cd799439011"
+        otp:
+          type: string
+          pattern: "^[0-9]{6}$"
+          description: 6-digit one-time password
+          example: "123456"
+        purpose:
+          type: string
+          description: Purpose of the OTP
+          enum: ["email_verification", "password_reset", "account_recovery"]
+          default: "email_verification"
+          example: "email_verification"
+        attempts:
+          type: integer
+          description: Number of verification attempts
+          minimum: 0
+          maximum: 5
+          default: 0
+          example: 1
+        expiresAt:
+          type: string
+          format: date-time
+          description: OTP expiration timestamp
+          example: "2024-01-15T10:35:00Z"
+        isUsed:
+          type: boolean
+          description: Whether OTP has been used
+          default: false
+          example: false
+        ipAddress:
+          type: string
+          description: IP address of requestor
+          example: "192.168.1.1"
+        userAgent:
+          type: string
+          description: User agent of requestor
+          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        createdAt:
+          type: string
+          format: date-time
+          description: OTP creation timestamp
+          readOnly: true
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          readOnly: true
+          example: "2024-01-15T10:30:00Z"
+      description: |
+        ## 🔢 OTP Model
+
+        One-Time Password for email verification.
+        Automatically expires after 5 minutes.
+
+        ### ⚙️ Database Indexes
+        - Compound index on `{email, purpose, isUsed}`
+        - TTL index on `expiresAt` (auto-delete after 5min)
+        - Compound index on `{userId, expiresAt}`
+
+        ### 🔒 Security Features
+        - Auto-cleanup of old unused OTPs
+        - Attempt counter (max 5 attempts)
+        - Single-use only
+        - Rate limiting protection
+
+    LoginResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["success", "fail"]
+          description: Response status
+          example: "success"
+        data:
+          type: object
+          properties:
+            _id:
+              type: string
+              format: objectid
+            email:
+              type: string
+              format: email
+            user_type:
+              type: string
+              enum: ["admin", "user"]
+            verified:
+              type: boolean
+            jwtToken:
+              type: string
+              description: JWT authentication token
+        message:
+          type: string
+          description: Response message
+          example: "Login successful"
+
+tags:
+  - name: Authentication
+    description: |
+      ## 🔐 Authentication & User Management
+
+      Endpoints for user registration, login, and account management.
+      Supports multiple authentication methods for flexibility.
+
+      ### 📋 Available Methods
+      1. **Traditional**: Email/Password with verification
+      2. **OTP-based**: Email/Password with OTP verification (recommended)
+      3. **Social**: Google, Facebook, Clerk, Firebase
+      4. **Email Verification**: Link-based and OTP-based
+
+      ### 🎯 Recommended Flow
+      For new implementations, use OTP-based registration:
+      ```
+      POST /auth/register_otp → POST /auth/verify_otp → POST /auth/login
+      ```
+
+      ### 🔒 Security Features
+      - JWT tokens with 4-hour expiry
+      - Password hashing with bcrypt
+      - Email enumeration protection
+      - Rate limiting on OTP requests
+      - Conflict prevention for social logins
