@@ -33,6 +33,7 @@ const postSpecPath = path.join(
   "postRoute.yaml",
 );
 
+// Restaurant YAML path
 const restaurantSpecPath = path.join(
   __dirname,
   "..",
@@ -41,6 +42,7 @@ const restaurantSpecPath = path.join(
   "restaurantRoute.yaml",
 );
 
+// User YAML path
 const userSpecPath = path.join(
   __dirname,
   "..",
@@ -49,6 +51,7 @@ const userSpecPath = path.join(
   "userRoute.yaml",
 );
 
+// MenuItem YAML path
 const menuItemSpecPath = path.join(
   __dirname,
   "..",
@@ -57,6 +60,15 @@ const menuItemSpecPath = path.join(
   "menuItem.yaml",
 );
 
+// Event YAML path
+const authSpecPath = path.join(
+  __dirname,
+  "..",
+  "api-specification",
+  "auth",
+  "authRoute.yaml",
+);
+// Event YAML path
 const eventSpecPath = path.join(
   __dirname,
   "..",
@@ -90,6 +102,7 @@ if (fs.existsSync(restaurantSpecPath)) {
     }),
   );
 }
+
 // 3. MenuItem Docs
 if (fs.existsSync(menuItemSpecPath)) {
   const menuItemSwagger = YAML.load(menuItemSpecPath);
@@ -102,6 +115,7 @@ if (fs.existsSync(menuItemSpecPath)) {
     }),
   );
 }
+
 // 4. Event Docs
 if (fs.existsSync(eventSpecPath)) {
   const eventSwagger = YAML.load(eventSpecPath);
@@ -115,7 +129,7 @@ if (fs.existsSync(eventSpecPath)) {
   );
 }
 
-// 2. User Docs
+// 5. User Docs
 if (fs.existsSync(userSpecPath)) {
   const userSwagger = YAML.load(userSpecPath);
   router.use(
@@ -124,6 +138,19 @@ if (fs.existsSync(userSpecPath)) {
     swaggerUi.setup(userSwagger, {
       ...swaggerOptions,
       customSiteTitle: "Fooderu Users API",
+    }),
+  );
+}
+
+// 6. Auth Docs
+if (fs.existsSync(authSpecPath)) {
+  const authSwagger = YAML.load(authSpecPath);
+  router.use(
+    "/auth",
+    swaggerUi.serveFiles(authSwagger, swaggerOptions),
+    swaggerUi.setup(authSwagger, {
+      ...swaggerOptions,
+      customSiteTitle: "Fooderu Auth API",
     }),
   );
 }
@@ -149,9 +176,10 @@ router.get("/", (req, res) => {
         <div class="btn-group">
           <a href="/docs/posts" class="card">Posts API</a>
           <a href="/docs/restaurants" class="card alt">Restaurants API</a>
-          <a href="/docs/menuItems" class="card alt">Menu Items API</a>
+          <a href="/docs/menuItems" class="card ">Menu Items API</a>
           <a href="/docs/users" class="card alt">Users API</a>
-          <a href="/docs/events" class="card alt">Events API</a>
+          <a href="/docs/events" class="card ">Events API</a>
+          <a href="/docs/auth" class="card alt">Auth API</a>
         </div>
       </div>
     </body>
