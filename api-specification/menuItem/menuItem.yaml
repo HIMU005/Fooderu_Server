@@ -691,6 +691,570 @@ paths:
                     statusCode: 500
                     message: "Server error: Internal server error"
 
+    delete:
+      summary: Delete a menu item
+      description: |
+        Delete a menu item by its ID.
+
+        ## 🔒 Authentication & Authorization Required
+        - Requires a valid JWT token
+        - Only the **owner of the restaurant** can delete menu items
+
+        ## Deletion Behavior
+        - Permanently removes the menu item from the database
+        - Performs ownership validation before deletion
+        - Validates MongoDB ObjectId format before querying
+
+        ## Notes
+        - This operation is irreversible
+        - Associated ratings and reviews may be affected (cascade handling depends on implementation)
+        - Returns success message without data on successful deletion
+      operationId: deleteMenuItem
+      tags:
+        - Menu Items
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: menuItemId
+          in: path
+          description: |
+            Unique identifier of the menu item to delete.
+
+            Must be a valid MongoDB ObjectId (24-character hex string).
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+            example: "507f1f77bcf86cd799439011"
+      responses:
+        "200":
+          description: Successfully deleted menu item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "MenuItem deleted successfully"
+              examples:
+                success:
+                  summary: DELETE /menuItems/507f1f77bcf86cd799439011
+                  description: Menu item successfully deleted
+                  value:
+                    status: "success"
+                    message: "MenuItem deleted successfully"
+
+        "400":
+          description: Bad request - invalid menu item ID format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid Menu Item ID format"
+              examples:
+                invalidId:
+                  summary: Invalid ObjectId format
+                  description: Menu item ID is not a valid MongoDB ObjectId
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Invalid Menu Item ID format"
+
+        "401":
+          description: Unauthorized - Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedError"
+              examples:
+                noToken:
+                  summary: No token provided
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Not authorized, no token"
+                invalidToken:
+                  summary: Invalid or expired token
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Invalid or expired token"
+
+        "403":
+          description: Forbidden - Insufficient permissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 403
+                  message:
+                    type: string
+                    example: "Only the owner of the restaurant can delete the menu item"
+              examples:
+                notOwner:
+                  summary: Not restaurant owner
+                  description: Authenticated user is not the owner of the restaurant
+                  value:
+                    status: "fail"
+                    statusCode: 403
+                    message: "Only the owner of the restaurant can delete the menu item"
+
+        "404":
+          description: Not found - Menu item does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "Menu item not found"
+              examples:
+                notFound:
+                  summary: Menu item not found
+                  description: Menu item with the provided ID does not exist
+                  value:
+                    status: "fail"
+                    statusCode: 404
+                    message: "Menu item not found"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                serverError:
+                  summary: DELETE /menuItems/507f1f77bcf86cd799439011
+                  description: General server error
+                  value:
+                    status: "error"
+                    statusCode: 500
+                    message: "Server error: Internal server error"
+
+  /menuItems/{menuItemId}/rate:
+    post:
+      summary: Rate a menu item
+      description: |
+        Submit or update a rating for a specific menu item.
+
+        ## 🔒 Authentication Required
+        - Requires a valid JWT token
+        - User must be authenticated
+
+        ## Rating Behavior
+        - Creates a new rating if the user hasn't rated this menu item before
+        - Updates existing rating if the user has already rated this item
+        - Automatically recalculates the average rating and total ratings count
+        - Validates rating value (must be between 1 and 5)
+
+        ## How Ratings Work
+        1. User submits rating between 1-5
+        2. System creates/updates user's rating in MenuItemRating collection
+        3. System recalculates average rating using aggregation
+        4. System updates menu item's averageRating and totalRatings fields
+        5. Returns updated average rating and total ratings count
+
+        ## Notes
+        - Users can only submit one rating per menu item (upsert behavior)
+        - Rating updates immediately affect the menu item's average
+        - Returns the updated average rating and total ratings count
+      operationId: rateMenuItem
+      tags:
+        - Menu Items
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: menuItemId
+          in: path
+          description: |
+            Unique identifier of the menu item to rate.
+
+            Must be a valid MongoDB ObjectId (24-character hex string).
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+            example: "507f1f77bcf86cd799439011"
+      requestBody:
+        required: true
+        description: |
+          Rating data for the menu item.
+
+          ### Rating Scale:
+          - **1**: Poor
+          - **2**: Fair
+          - **3**: Good
+          - **4**: Very Good
+          - **5**: Excellent
+
+          ### Examples:
+          1. Submit a 5-star rating:
+          ```json
+          {
+            "rating": 5
+          }
+          ```
+
+          2. Update existing rating to 4 stars:
+          ```json
+          {
+            "rating": 4
+          }
+          ```
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+              properties:
+                rating:
+                  type: number
+                  format: float
+                  description: |
+                    Rating value for the menu item.
+                    Must be between 1 and 5 (inclusive).
+                  minimum: 1
+                  maximum: 5
+                  example: 4.5
+              additionalProperties: false
+            examples:
+              fiveStar:
+                summary: 5-star rating
+                value:
+                  rating: 5
+              fourStar:
+                summary: 4-star rating
+                value:
+                  rating: 4
+              threePointFive:
+                summary: 3.5-star rating
+                value:
+                  rating: 3.5
+      responses:
+        "200":
+          description: Successfully rated menu item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Thanks for your rating."
+                  averageRating:
+                    type: number
+                    format: float
+                    description: Updated average rating for the menu item
+                    minimum: 0
+                    maximum: 5
+                    example: 4.3
+                  totalRatings:
+                    type: integer
+                    description: Updated total number of ratings
+                    minimum: 0
+                    example: 42
+              examples:
+                newRating:
+                  summary: First time rating
+                  description: User submits a rating for the first time
+                  value:
+                    status: "success"
+                    message: "Thanks for your rating."
+                    averageRating: 4.5
+                    totalRatings: 1
+                updateRating:
+                  summary: Update existing rating
+                  description: User updates their existing rating
+                  value:
+                    status: "success"
+                    message: "Thanks for your rating."
+                    averageRating: 4.3
+                    totalRatings: 42
+
+        "400":
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              examples:
+                invalidId:
+                  summary: Invalid ObjectId format
+                  description: Menu item ID is not a valid MongoDB ObjectId
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Invalid Menu Item ID format"
+                invalidRating:
+                  summary: Invalid rating value
+                  description: Rating is outside valid range (1-5)
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Rating must be between 1 and 5"
+                missingRating:
+                  summary: Missing rating field
+                  description: Rating field is not provided in request body
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Rating is required"
+
+        "401":
+          description: Unauthorized - Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedError"
+              examples:
+                noToken:
+                  summary: No token provided
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Not authorized, no token"
+                invalidToken:
+                  summary: Invalid or expired token
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Invalid or expired token"
+
+        "404":
+          description: Not found - Menu item does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "Menu item not found"
+              examples:
+                notFound:
+                  summary: Menu item not found
+                  description: Menu item with the provided ID does not exist
+                  value:
+                    status: "fail"
+                    statusCode: 404
+                    message: "Menu item not found"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                serverError:
+                  summary: POST /menuItems/507f1f77bcf86cd799439011/rate
+                  description: General server error
+                  value:
+                    status: "error"
+                    statusCode: 500
+                    message: "Server error: Internal server error"
+
+  /menuItems/{menuItemId}/myRating:
+    get:
+      summary: Get user's rating for a menu item
+      description: |
+        Retrieve the rating submitted by the currently authenticated user for a specific menu item.
+
+        ## 🔒 Authentication Required
+        - Requires a valid JWT token
+        - User must be authenticated
+
+        ## Behavior
+        - Retrieves the specific rating given by the authenticated user
+        - Returns 404 if the user hasn't rated this menu item yet
+        - Validates MongoDB ObjectId format before querying
+
+        ## Use Cases
+        1. **Check if user has rated**: Determine if user has already rated this item
+        2. **Display user's rating**: Show the user's own rating on the UI
+        3. **Edit rating**: Get existing rating before allowing user to update it
+
+        ## Notes
+        - Returns the complete rating document including metadata
+        - The response includes the rating value and timestamps
+        - Useful for displaying "Your Rating: ⭐⭐⭐⭐⭐" on frontend
+      operationId: getMyRating
+      tags:
+        - Menu Items
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: menuItemId
+          in: path
+          description: |
+            Unique identifier of the menu item to check rating for.
+
+            Must be a valid MongoDB ObjectId (24-character hex string).
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+            example: "507f1f77bcf86cd799439011"
+      responses:
+        "200":
+          description: Successfully retrieved user's rating
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    $ref: "#/components/schemas/MenuItemRating"
+                  message:
+                    type: string
+                    example: "Rating fetched for the item by this user successfully done"
+              examples:
+                hasRating:
+                  summary: User has rated this item
+                  description: User has previously rated this menu item
+                  value:
+                    status: "success"
+                    data:
+                      _id: "507f1f77bcf86cd799439051"
+                      user: "507f1f77bcf86cd799439052"
+                      menuItem: "507f1f77bcf86cd799439011"
+                      rating: 4.5
+                      createdAt: "2024-01-15T10:30:00Z"
+                      updatedAt: "2024-01-15T10:30:00Z"
+                    message: "Rating fetched for the item by this user successfully done"
+
+        "400":
+          description: Bad request - invalid menu item ID format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid Menu Item ID format"
+              examples:
+                invalidId:
+                  summary: Invalid ObjectId format
+                  description: Menu item ID is not a valid MongoDB ObjectId
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Invalid Menu Item ID format"
+
+        "401":
+          description: Unauthorized - Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedError"
+              examples:
+                noToken:
+                  summary: No token provided
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Not authorized, no token"
+                invalidToken:
+                  summary: Invalid or expired token
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Invalid or expired token"
+
+        "404":
+          description: Not found - User hasn't rated this menu item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "Rating not found for this menu item by this user"
+              examples:
+                notRated:
+                  summary: User hasn't rated this item
+                  description: Authenticated user hasn't rated this specific menu item
+                  value:
+                    status: "fail"
+                    statusCode: 404
+                    message: "Rating not found for this menu item by this user"
+                notFound:
+                  summary: Menu item not found
+                  description: Menu item with the provided ID does not exist
+                  value:
+                    status: "fail"
+                    statusCode: 404
+                    message: "Menu item not found"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                serverError:
+                  summary: GET /menuItems/507f1f77bcf86cd799439011/myRating
+                  description: General server error
+                  value:
+                    status: "error"
+                    statusCode: 500
+                    message: "Server error: Internal server error"
+
 components:
   securitySchemes:
     BearerAuth:
@@ -976,6 +1540,65 @@ components:
           description: Last update timestamp
           readOnly: true
           example: "2024-01-15T10:30:00Z"
+
+    MenuItemRating:
+      type: object
+      required:
+        - user
+        - menuItem
+        - rating
+      properties:
+        _id:
+          type: string
+          format: objectid
+          description: Unique identifier for the rating record
+          example: "507f1f77bcf86cd799439051"
+        user:
+          type: string
+          format: objectid
+          description: Reference to the user who submitted the rating
+          example: "507f1f77bcf86cd799439052"
+        menuItem:
+          type: string
+          format: objectid
+          description: Reference to the menu item being rated
+          example: "507f1f77bcf86cd799439011"
+        rating:
+          type: number
+          format: float
+          description: |
+            Rating value given by the user.
+            Must be between 1 and 5 (inclusive).
+          minimum: 1
+          maximum: 5
+          example: 4.5
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the rating was created
+          readOnly: true
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the rating was last updated
+          readOnly: true
+          example: "2024-01-16T14:20:00Z"
+      description: |
+        Represents a user's rating for a specific menu item.
+
+        ## Database Constraints:
+        - Each user can only rate a specific menu item once (unique compound index)
+        - Rating values are validated to be between 1 and 5
+        - Both user and menuItem references are required
+
+        ## Indexes:
+        - Compound unique index on `{ user: 1, menuItem: 1 }`
+        - Ensures one rating per user per menu item
+
+        ## Relationships:
+        - `user`: References the `User` model
+        - `menuItem`: References the `MenuItem` model
 
     RestaurantReference:
       type: object

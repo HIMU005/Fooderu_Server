@@ -472,7 +472,7 @@ const updateMenuItem = async (req, res, next) => {
 };
 
 // delete menuItem
-const deleteMenuItem = async (req, res) => {
+const deleteMenuItem = async (req, res, next) => {
   try {
     const { menuItemId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
