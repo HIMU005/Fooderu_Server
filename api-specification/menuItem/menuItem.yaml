@@ -106,6 +106,7 @@ paths:
                         price: 12.99
                         description: "Classic pizza with tomato sauce and mozzarella"
                         restaurant_id:
+                          id: "507f1f77bcf86cd799439043"
                           name: "Mario's Pizzeria"
                       - _id: "507f1f77bcf86cd799439012"
                         name: "Pepperoni Pizza"
@@ -167,6 +168,7 @@ paths:
                         description: "Classic pizza with tomato sauce and mozzarella"
                         averageRating: 4.8
                         restaurant_id:
+                          id: "507f1f77bcf86cd799439054"
                           name: "Mario's Pizzeria"
                           address:
                             mapAddress: "123 Main Street, New York, NY 10001, USA"
@@ -183,8 +185,7 @@ paths:
                         price: 12.99
                         description: "Classic pizza with tomato sauce and mozzarella"
                         averageRating: 4.8
-                        restaurant_id:
-                          name: "Mario's Pizzeria"
+
                     message: "All menu items fetched successfully"
 
                 nestedFields:
@@ -195,6 +196,7 @@ paths:
                     data:
                       - name: "Margherita Pizza"
                         restaurant_id:
+                          id: "507f1f77bcf86cd799439014"
                           name: "Mario's Pizzeria"
                           displayPicture: "https://example.com/images/restaurant.jpg"
                           address:
@@ -202,6 +204,7 @@ paths:
                             mapAddress: "123 Main Street, New York, NY 10001, USA"
                       - name: "Pepperoni Pizza"
                         restaurant_id:
+                          id: "507f1f77bcf86cd799439015"
                           name: "Tony's Pizza"
                           displayPicture: "https://example.com/images/tonys.jpg"
                           address:
@@ -242,45 +245,48 @@ paths:
                   summary: GET /menuItems?item=123
                   description: Invalid item parameter (number instead of string)
                   value:
-                    status: 400
+                    status: "fail"
+                    statusCode: 400
                     message: "Item name must be a non-empty string"
 
                 invalidPriceString:
                   summary: GET /menuItems?price=abc
                   description: Invalid price parameter (non-numeric string)
                   value:
-                    status: 400
+                    status: "fail"
+                    statusCode: 400
                     message: "Price must be a valid positive number"
 
                 invalidRatingRange:
                   summary: GET /menuItems?rating=10
                   description: Invalid rating parameter (out of range 0-5)
                   value:
-                    status: 400
+                    status: "fail"
+                    statusCode: 400
                     message: "Rating must be a valid number between 0 and 5"
 
                 invalidFieldsFormat:
                   summary: GET /menuItems?fields=name;price
                   description: Invalid fields parameter format (using semicolon instead of comma)
                   value:
-                    status: 400
+                    status: "fail"
+                    statusCode: 400
                     message: "Invalid fields parameter format. Use comma-separated field names or '*'"
-                    errors:
-                      - field: "fields"
-                        message: "Fields must be comma-separated field names or '*'"
 
                 emptyPlace:
                   summary: GET /menuItems?place=
                   description: Empty place parameter
                   value:
-                    status: 400
+                    status: "fail"
+                    statusCode: 400
                     message: "Place must be a non-empty string"
 
                 invalidFieldName:
                   summary: GET /menuItems?fields=invalidField
                   description: Invalid field name in fields parameter
                   value:
-                    status: 400
+                    status: "fail"
+                    statusCode: 400
                     message: "Invalid field names detected in fields parameter"
 
         "401":
@@ -301,28 +307,32 @@ paths:
                   summary: No token provided
                   description: Request made without Authorization header or token
                   value:
-                    status: 401
+                    status: "fail"
+                    statusCode: 401
                     message: "Not authorized, no token"
 
                 invalidToken:
                   summary: Invalid or expired token
                   description: Token is expired, malformed, or has invalid signature
                   value:
-                    status: 401
+                    status: "fail"
+                    statusCode: 401
                     message: "Invalid or expired token"
 
                 userNotFound:
                   summary: User not found
                   description: Token is valid but user account doesn't exist in database
                   value:
-                    status: 401
+                    status: "fail"
+                    statusCode: 401
                     message: "User not found"
 
                 authenticationError:
                   summary: General authentication error
                   description: Catch-all for other authentication failures
                   value:
-                    status: 401
+                    status: "fail"
+                    statusCode: 401
                     message: "Authentication error"
 
         "500":
@@ -336,7 +346,8 @@ paths:
                   summary: GET /menuItems?item=pizza
                   description: General server error during filtering
                   value:
-                    status: 500
+                    status: "fail"
+                    statusCode: 500
                     message: "Server error: Internal server error"
 
 components:
