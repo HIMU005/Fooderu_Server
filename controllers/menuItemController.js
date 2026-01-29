@@ -425,7 +425,7 @@ const getMenuItemsByFollowedRestaurants = async (req, res, next) => {
 };
 
 // update menuITems
-const updateMenuItem = async (req, res) => {
+const updateMenuItem = async (req, res, next) => {
   try {
     const { menuItemId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
@@ -472,7 +472,7 @@ const updateMenuItem = async (req, res) => {
 };
 
 // delete menuItem
-const deleteMenuItem = async (req, res) => {
+const deleteMenuItem = async (req, res, next) => {
   try {
     const { menuItemId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
