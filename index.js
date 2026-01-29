@@ -15,7 +15,7 @@ cleanupOTPJob.start();
 const app = express();
 app.use(express.json());
 const corsOptions = {
-  origin: [process.env.FRONTEND_URL],
+  origin: [process.env.FRONTEND_URL, process.env.APPURL],
   // credentials: true,
   optionSuccessStatus: 200,
 };
