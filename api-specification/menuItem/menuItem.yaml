@@ -243,61 +243,14 @@ paths:
               examples:
                 invalidItemNumber:
                   summary: GET /menuItems?item=123
-                  description: Invalid item parameter (number instead of string)
+                  description: Invalid item parameter
                   value:
                     status: "fail"
                     statusCode: 400
                     message: "Item name must be a non-empty string"
 
-                invalidPriceString:
-                  summary: GET /menuItems?price=abc
-                  description: Invalid price parameter (non-numeric string)
-                  value:
-                    status: "fail"
-                    statusCode: 400
-                    message: "Price must be a valid positive number"
-
-                invalidRatingRange:
-                  summary: GET /menuItems?rating=10
-                  description: Invalid rating parameter (out of range 0-5)
-                  value:
-                    status: "fail"
-                    statusCode: 400
-                    message: "Rating must be a valid number between 0 and 5"
-
-                invalidFieldsFormat:
-                  summary: GET /menuItems?fields=name;price
-                  description: Invalid fields parameter format (using semicolon instead of comma)
-                  value:
-                    status: "fail"
-                    statusCode: 400
-                    message: "Invalid fields parameter format. Use comma-separated field names or '*'"
-
-                emptyPlace:
-                  summary: GET /menuItems?place=
-                  description: Empty place parameter
-                  value:
-                    status: "fail"
-                    statusCode: 400
-                    message: "Place must be a non-empty string"
-
-                invalidFieldName:
-                  summary: GET /menuItems?fields=invalidField
-                  description: Invalid field name in fields parameter
-                  value:
-                    status: "fail"
-                    statusCode: 400
-                    message: "Invalid field names detected in fields parameter"
-
         "401":
-          description: |
-            Unauthorized - Authentication failed.
-
-            ## Common Causes:
-            - No Authorization header provided
-            - Missing or invalid Bearer token
-            - Expired JWT token (tokens expire after 4 hours)
-            - User account not found
+          description: Unauthorized - Authentication failed
           content:
             application/json:
               schema:
@@ -305,35 +258,24 @@ paths:
               examples:
                 noToken:
                   summary: No token provided
-                  description: Request made without Authorization header or token
                   value:
                     status: "fail"
                     statusCode: 401
                     message: "Not authorized, no token"
 
-                invalidToken:
-                  summary: Invalid or expired token
-                  description: Token is expired, malformed, or has invalid signature
+        "404":
+          description: Not found - Resource does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                notFound:
+                  summary: Resource not found
                   value:
                     status: "fail"
-                    statusCode: 401
-                    message: "Invalid or expired token"
-
-                userNotFound:
-                  summary: User not found
-                  description: Token is valid but user account doesn't exist in database
-                  value:
-                    status: "fail"
-                    statusCode: 401
-                    message: "User not found"
-
-                authenticationError:
-                  summary: General authentication error
-                  description: Catch-all for other authentication failures
-                  value:
-                    status: "fail"
-                    statusCode: 401
-                    message: "Authentication error"
+                    statusCode: 404
+                    message: "Menu Item not found"
 
         "500":
           description: Internal server error
@@ -343,8 +285,162 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
                 serverError:
-                  summary: GET /menuItems?item=pizza
-                  description: General server error during filtering
+                  summary: Server error
+                  value:
+                    status: "error"
+                    statusCode: 500
+                    message: "Server error: Internal server error"
+
+  /menuItems/{menuItemId}:
+    get:
+      summary: Get a single menu item by ID
+      description: |
+        Retrieve a single menu item by its unique identifier.
+
+        ## Authentication Required
+        This endpoint requires a valid JWT token in the Authorization header.
+
+        ## Notes
+        - Returns the complete menu item object
+        - Populates restaurant information (name only)
+        - Validates MongoDB ObjectId format before querying
+      operationId: getMenuItemById
+      tags:
+        - Menu Items
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: menuItemId
+          in: path
+          description: |
+            Unique identifier of the menu item to retrieve.
+
+            Must be a valid MongoDB ObjectId (24-character hex string).
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+            example: "507f1f77bcf86cd799439011"
+
+      responses:
+        "200":
+          description: Successfully retrieved menu item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: "#/components/schemas/MenuItem"
+                  message:
+                    type: string
+                    example: "Menu item fetched successfully"
+              examples:
+                success:
+                  summary: GET /menuItems/507f1f77bcf86cd799439011
+                  description: Successful response with menu item details
+                  value:
+                    status: 200
+                    data:
+                      _id: "507f1f77bcf86cd799439011"
+                      name: "Margherita Pizza"
+                      price: 12.99
+                      description: "Classic pizza with tomato sauce and mozzarella"
+                      image_url: "https://example.com/images/pizza.jpg"
+                      is_boosted: false
+                      boosted_until: null
+                      averageRating: 4.8
+                      totalRatings: 150
+                      restaurant_id:
+                        _id: "507f1f77bcf86cd799439012"
+                        name: "Mario's Pizzeria"
+                      createdAt: "2024-01-15T10:30:00Z"
+                      updatedAt: "2024-01-15T10:30:00Z"
+                    message: "Menu item fetched successfully"
+
+        "400":
+          description: Bad request - invalid menu item ID format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid Menu Item ID format"
+              examples:
+                invalidId:
+                  summary: Invalid ObjectId format
+                  description: Menu item ID is not a valid MongoDB ObjectId
+                  value:
+                    status: "fail"
+                    statusCode: 400
+                    message: "Invalid Menu Item ID format"
+
+        "401":
+          description: Unauthorized - Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedError"
+              examples:
+                noToken:
+                  summary: No token provided
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Not authorized, no token"
+                invalidToken:
+                  summary: Invalid or expired token
+                  value:
+                    status: "fail"
+                    statusCode: 401
+                    message: "Invalid or expired token"
+
+        "404":
+          description: Not found - Menu item does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  statusCode:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "Menu Item not found"
+              examples:
+                notFound:
+                  summary: Menu item not found
+                  description: Menu item with the provided ID does not exist
+                  value:
+                    status: "fail"
+                    statusCode: 404
+                    message: "Menu Item not found"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                serverError:
+                  summary: GET /menuItems/507f1f77bcf86cd799439011
+                  description: General server error
                   value:
                     status: "fail"
                     statusCode: 500
@@ -455,34 +551,70 @@ components:
         default: "*"
 
   schemas:
-    UnauthorizedError:
+    AppErrorResponse:
       type: object
       properties:
         status:
-          type: integer
-          description: HTTP status code (always 401)
-          example: 401
-        message:
           type: string
-          description: Human-readable error message
-          example: "Not authorized, no token"
-      required:
-        - status
-        - message
-
-    ValidationErrorResponse:
-      type: object
-      properties:
-        status:
+          enum: ["fail", "error"]
+          description: Status type (fail for 4xx errors, error for 5xx errors)
+          example: "fail"
+        statusCode:
           type: integer
+          description: HTTP status code
           example: 400
         message:
           type: string
-          example: "Validation error"
-        errors:
-          type: array
-          items:
-            $ref: "#/components/schemas/ErrorDetail"
+          description: Human-readable error message
+          example: "Invalid Menu Item ID format"
+
+    UnauthorizedError:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 401
+            status:
+              type: string
+              example: "fail"
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 400
+            status:
+              type: string
+              example: "fail"
+
+    NotFoundError:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 404
+            status:
+              type: string
+              example: "fail"
+
+    ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/AppErrorResponse"
+        - type: object
+          properties:
+            statusCode:
+              type: integer
+              example: 500
+            status:
+              type: string
+              example: "error"
 
     ErrorDetail:
       type: object
@@ -496,25 +628,29 @@ components:
 
     MenuItemsResponse:
       type: object
-      required:
-        - status
-        - data
-        - message
       properties:
         status:
           type: integer
-          enum: [200]
-          description: HTTP status code
           example: 200
         data:
           type: array
           items:
             $ref: "#/components/schemas/MenuItem"
-          description: Array of menu items matching the filters
         message:
           type: string
-          description: Human-readable response message
           example: "All menu items fetched successfully"
+
+    SingleMenuItemResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        data:
+          $ref: "#/components/schemas/MenuItem"
+        message:
+          type: string
+          example: "Menu item fetched successfully"
 
     MenuItem:
       type: object
@@ -623,18 +759,6 @@ components:
           type: string
           description: Address from map service
           example: "123 Main Street, New York, NY 10001, USA"
-
-    ErrorResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          description: HTTP status code
-          example: 500
-        message:
-          type: string
-          description: Human-readable error message
-          example: "Server error: Internal server error"
 
 tags:
   - name: Menu Items
