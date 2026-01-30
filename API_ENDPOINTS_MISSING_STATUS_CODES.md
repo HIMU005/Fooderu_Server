@@ -145,8 +145,8 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 | Method | Endpoint                       | Description   | Missing Status Codes | Authentication | Purpose              | Implemented |
 | ------ | ------------------------------ | ------------- | -------------------- | -------------- | -------------------- | ----------- |
-| POST   | `/follow/:restaurantId/toggle` | Toggle follow | 401                  | Required       | Unauthorized         | ✘           |
-|        |                                |               | 404                  |                | Restaurant not found | ✘           |
+| POST   | `/follow/:restaurantId/toggle` | Toggle follow | 401                  | Required       | Unauthorized         | ✔           |
+|        |                                |               | 404                  |                | Restaurant not found | ✔           |
 
 ---
 
