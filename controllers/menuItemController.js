@@ -29,6 +29,22 @@ const createMenuItemController = async (req, res, next) => {
     } = req.body;
 
     const { restaurantId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      throw new AppError("Invalid Restaurant ID format", 400);
+    }
+
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      throw new AppError("Restaurant not found", 404);
+    }
+
+    const { userId } = req.user._id;
+    if (restaurant.owner_id.toString() !== userId.toString()) {
+      throw new AppError(
+        "Only the owner of the restaurant can add menu items",
+        403,
+      );
+    }
 
     if (!name || !price) {
       throw new AppError("Name and Price are required", 400);

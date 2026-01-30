@@ -48,15 +48,15 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 | GET    | `/restaurants/:restaurantId`       | Get restaurant                 | 401                  | Should be Required | Unauthorized              | ✅          |
 |        |                                    | Restaurant id object missmatch | 400                  |                    | Object id missmatch       | ✅          |
 |        |                                    |                                | 404                  |                    | Restaurant not found      | ✅          |
-| GET    | `/restaurants/:restaurantId/items` | Get menu items                 | 401                  | Should be Required | Unauthorized              | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
+| GET    | `/restaurants/:restaurantId/items` | Get menu items                 | 401                  | Should be Required | Unauthorized              | ✔           |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✔           |
 | GET    | `/restaurants/:restaurantId/posts` | Get posts                      | 401                  | Should be Required | Unauthorized              | ✘           |
 |        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
 | POST   | `/restaurants`                     | Create restaurant              | 401                  | Should be Required | Unauthorized              | ✅          |
 |        |                                    |                                | 409                  | Should be Required | Already have a restaurant | ✅          |
-| POST   | `/restaurants/:restaurantId/items` | Create menu item               | 401                  | Should be Required | Unauthorized              | ✘           |
-|        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
+| POST   | `/restaurants/:restaurantId/items` | Create menu item               | 401                  | Should be Required | Unauthorized              | ✔           |
+|        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✔           |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✔           |
 | PUT    | `/restaurants/:restaurantId`       | Update restaurant              | 401                  | Required           | Unauthorized              | ✅          |
 |        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✅          |
 |        |                                    |                                | 404                  |                    | Restaurant not found      | ✅          |
