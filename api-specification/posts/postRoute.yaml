@@ -2,7 +2,21 @@ openapi: 3.0.0
 info:
   title: Post API
   version: 1.0.0
-  description: This api documentation reflect the Behavior of post related api
+  description: |
+    This api documentation reflect the Behavior of post related api
+
+    ## Authentication
+    This API uses JWT Bearer Token authentication. Include the token in the Authorization header.
+
+    ### How to Authenticate:
+    1. Obtain a token from the `/auth/login` or `/auth/register` endpoints
+    2. Include it in the Authorization header: `Bearer <your_token>`
+    3. Token expires in 4 hours
+
+    ### Token Format:
+    ```
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    ```
   termsOfService: http://example.com/terms/
   contact:
     name: Hashanuz Zaman
@@ -21,7 +35,7 @@ paths:
   /posts:
     get:
       tags:
-        - Posts
+        - Get all Posts
       summary: Get all posts
       description: Retrieve a list of all posts.
       parameters:
@@ -49,12 +63,68 @@ paths:
             "application/json":
               schema:
                 $ref: "#/components/schemas/GetPostsResponse"
+              examples:
+                noQuery:
+                  summary: Get posts without query params (default pagination)
+                  value:
+                    status: 200
+                    data:
+                      - _id: "post123"
+                        restaurant_id: "rest001"
+                        description: "New menu launched 🎉"
+                        image_url: "https://cdn.example.com/posts/1.jpg"
+                        postType: "menuItem"
+                        details:
+                          price: 250
+                        createdAt: "2025-01-01T10:00:00Z"
+                        updatedAt: "2025-01-01T10:00:00Z"
+                      - _id: "post124"
+                        restaurant_id: "rest002"
+                        description: "Weekend offer!"
+                        image_url: "https://cdn.example.com/posts/2.jpg"
+                        postType: "event"
+                        details:
+                          discount: "20%"
+                        createdAt: "2025-01-02T12:00:00Z"
+                        updatedAt: "2025-01-02T12:00:00Z"
+                    total: 100
+                    limit: 5
+                    skip: 0
+                    message: "Posts fetched successfully"
+
+                withQuery:
+                  summary: Get posts with limit=2 & skip=5
+                  value:
+                    status: 200
+                    data:
+                      - _id: "post130"
+                        restaurant_id: "rest005"
+                        description: "Special breakfast combo"
+                        image_url: "https://cdn.example.com/posts/5.jpg"
+                        postType: "normal"
+                        details: {}
+                        createdAt: "2025-01-05T08:30:00Z"
+                        updatedAt: "2025-01-05T08:30:00Z"
+                      - _id: "post131"
+                        restaurant_id: "rest006"
+                        description: "Live music tonight 🎶"
+                        image_url: "https://cdn.example.com/posts/6.jpg"
+                        postType: "event"
+                        details:
+                          time: "8 PM"
+                        createdAt: "2025-01-05T09:00:00Z"
+                        updatedAt: "2025-01-05T09:00:00Z"
+                    total: 100
+                    limit: 2
+                    skip: 5
+                    message: "Posts fetched successfully"
+
         "500":
           $ref: "#/components/responses/InternalServerError"
 
     post:
       tags:
-        - Posts
+        - Create Post
       summary: Create a new post
       security:
         - BearerAuth: []
@@ -98,7 +168,7 @@ paths:
   /posts/{id}:
     get:
       tags:
-        - Posts
+        - Get A Single Post
       summary: Get a post by ID
       description: Retrieve a single post by its ID.
       parameters:
@@ -131,7 +201,7 @@ paths:
 
     put:
       tags:
-        - Posts
+        - Update Post
       summary: Update a post
       description: Partially update a post by its ID. Only the owner of the restaurant can update the post.
       security:
@@ -182,7 +252,7 @@ paths:
 
     delete:
       tags:
-        - Posts
+        - Delete Post
       summary: Delete a post
       description: Delete a post by its ID. Only the owner of the restaurant can delete the post.
       security:
@@ -227,7 +297,7 @@ paths:
   /posts/followedRestaurantsPosts:
     get:
       tags:
-        - Posts
+        - Get Followed Restaurants Posts
       summary: Get posts from followed restaurants
       description: Retrieve posts from restaurants that the authenticated user follows.
       security:
