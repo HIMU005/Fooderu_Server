@@ -2,7 +2,20 @@ openapi: 3.0.0
 info:
   title: Restaurant API
   version: 1.0.0
-  description: This api documentation reflect the Behavior of restaurant related api
+  description: |
+    This api documentation reflect the Behavior of restaurant related api
+    ## Authentication
+    This API uses JWT Bearer Token authentication. Include the token in the Authorization header.
+
+    ### How to Authenticate:
+    1. Obtain a token from the `/auth/login` or `/auth/register` endpoints
+    2. Include it in the Authorization header: `Bearer <your_token>`
+    3. Token expires in 4 hours
+
+    ### Token Format:
+    ```
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    ```
   termsOfService: http://example.com/terms/
   contact:
     name: Hashanuz Zaman
