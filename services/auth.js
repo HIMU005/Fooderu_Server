@@ -135,14 +135,12 @@ const resendOTPService = async (email) => {
 const verifyEmailService = async (token) => {
   if (!token) {
     throw new AppError("Verification token is required", 400);
-    // return next(new AppError("Verification token is required", 400));
   }
 
   const decoded = verifyVerificationToken(token);
 
   if (!decoded) {
-    throw new AppError("Invalid or expired verification token", 400);
-    // return next(new AppError("Invalid or expired verification token", 400));
+    throw new AppError("Invalid or expired verification token", 401);
   }
 
   // console.log(decoded);

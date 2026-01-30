@@ -15,12 +15,12 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 | Method | Endpoint                    | Description             | Missing Status Codes | Authentication | Purpose                               | Implemented |
 | ------ | --------------------------- | ----------------------- | -------------------- | -------------- | ------------------------------------- | ----------- |
 | POST   | `/auth/register`            | Register a new user     | 409                  | None           | Email already exists                  | ✔           |
-| POST   | `/auth/login`               | Login with credentials  | 403                  | None           | Email not verified / account disabled | ✘           |
+| POST   | `/auth/login`               | Login with credentials  | 403                  | None           | Email not verified / account disabled | ✔           |
 | POST   | `/auth/login_with_social`   | Social login            | 401                  | None           | Invalid or expired social token       | ✘           |
 | POST   | `/auth/login_with_clerk`    | Clerk authentication    | 401                  | None           | Invalid Clerk token                   | ✘           |
 | POST   | `/auth/login_with_firebase` | Firebase authentication | 401                  | None           | Invalid Firebase token                | ✘           |
-| GET    | `/auth/verify_email`        | Verify email address    | 401                  | None           | Invalid or expired verification token | ✘           |
-|        |                             |                         | 404                  | None           | User not found                        | ✘           |
+| GET    | `/auth/verify_email`        | Verify email address    | 401                  | None           | Invalid or expired verification token | ✔           |
+|        |                             |                         | 404                  | None           | User not found                        | ✔           |
 
 ---
 
