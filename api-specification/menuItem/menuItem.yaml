@@ -887,7 +887,7 @@ paths:
         - Returns the updated average rating and total ratings count
       operationId: rateMenuItem
       tags:
-        - Menu Items
+        - Menu Items Rating
       security:
         - BearerAuth: []
       parameters:
@@ -1117,7 +1117,7 @@ paths:
         - Useful for displaying "Your Rating: ⭐⭐⭐⭐⭐" on frontend
       operationId: getMyRating
       tags:
-        - Menu Items
+        - Menu Items Rating
       security:
         - BearerAuth: []
       parameters:

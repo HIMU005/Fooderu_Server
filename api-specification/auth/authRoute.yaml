@@ -68,7 +68,7 @@ paths:
         - Returns user object without password
       operationId: registerWeb
       tags:
-        - Authentication
+        - Registration
       requestBody:
         required: true
         description: User registration credentials
@@ -231,7 +231,7 @@ paths:
         - Rate limited (1 minute cooldown)
       operationId: registerOTP
       tags:
-        - Authentication
+        - Registration
       requestBody:
         required: true
         description: User registration data for OTP verification
@@ -326,7 +326,7 @@ paths:
         - User can now access protected routes
       operationId: verifyOTP
       tags:
-        - Authentication
+        - Verification
       requestBody:
         required: true
         description: OTP verification credentials
@@ -481,7 +481,7 @@ paths:
         5. Sets new 5-minute expiry
       operationId: resendOTP
       tags:
-        - Authentication
+        - Verification
       requestBody:
         required: true
         description: Email address for OTP resend
@@ -584,7 +584,7 @@ paths:
         the API suggests OTP verification with email details.
       operationId: login
       tags:
-        - Authentication
+        - Login
       requestBody:
         required: true
         description: User login credentials
@@ -736,7 +736,7 @@ paths:
         - No password required for social accounts
       operationId: loginWithSocial
       tags:
-        - Authentication
+        - Login
       requestBody:
         required: true
         description: Social authentication data from provider
@@ -864,7 +864,7 @@ paths:
         When integrating Clerk into an existing system with users.
       operationId: loginWithClerk
       tags:
-        - Authentication
+        - Login
       requestBody:
         required: true
         description: Clerk authentication payload
@@ -1012,7 +1012,7 @@ paths:
         - Other Firebase user properties
       operationId: loginWithFirebase
       tags:
-        - Authentication
+        - Login
       requestBody:
         required: true
         description: Firebase authentication user object
@@ -1124,7 +1124,7 @@ paths:
         - Expired tokens return 400 error
       operationId: verifyEmail
       tags:
-        - Authentication
+        - Verification
       parameters:
         - name: token
           in: query
@@ -1214,7 +1214,7 @@ paths:
         4. Returns success message
       operationId: resendVerificationEmail
       tags:
-        - Authentication
+        - Verification
       parameters:
         - name: email
           in: query
