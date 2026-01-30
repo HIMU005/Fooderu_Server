@@ -163,8 +163,8 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 | Method | Endpoint           | Description          | Missing Status Codes | Authentication     | Purpose      | Implemented |
 | ------ | ------------------ | -------------------- | -------------------- | ------------------ | ------------ | ----------- |
-| GET    | `/trendings`       | Trending restaurants | 401                  | Required           | Unauthorized | ✘           |
-| GET    | `/trendings/posts` | Trending posts       | 401                  | Should be Required | Unauthorized | ✘           |
+| GET    | `/trendings`       | Trending restaurants | 401                  | Required           | Unauthorized | ✔           |
+| GET    | `/trendings/posts` | Trending posts       | 401                  | Should be Required | Unauthorized | ✔           |
 
 ---
 

@@ -143,12 +143,12 @@ const getTrendingRestaurants = async (req, res) => {
       restaurant_id: { $in: restaurantIds },
     });
     const followedIds = new Set(
-      userFollows.map((f) => f.restaurant_id.toString())
+      userFollows.map((f) => f.restaurant_id.toString()),
     );
 
     // Build final result using original allRestaurants (preserves all fields)
     const restaurantMap = new Map(
-      allRestaurants.map((r) => [r._id.toString(), r])
+      allRestaurants.map((r) => [r._id.toString(), r]),
     );
 
     const result = sorted.map((entry) => {
@@ -167,13 +167,12 @@ const getTrendingRestaurants = async (req, res) => {
         ? result.slice(0, parseInt(limit))
         : result;
 
-    res.json({
+    res.status(200).json({
       success: true,
       count: finalResult.length,
       data: finalResult,
     });
   } catch (error) {
-    // console.error("Trending error:", error);
     res.status(500).json({ success: false, error: "Server error" });
   }
 };
@@ -352,7 +351,7 @@ const getTrendingPosts = async (req, res) => {
           // Keep debug for console logging only
           debugScore: 1,
         },
-      }
+      },
     );
 
     const allPostsWithScores = await Post.aggregate(pipeline);
@@ -360,7 +359,7 @@ const getTrendingPosts = async (req, res) => {
 
     // Now apply the filter
     const filteredPosts = allPostsWithScores.filter(
-      (post) => post.trendingScore > 0
+      (post) => post.trendingScore > 0,
     );
     //("Posts after filtering:", filteredPosts);
 
