@@ -114,7 +114,11 @@ const getAllPostsUnderARestaurant = async (req, res, next) => {
     });
 
     if (!posts.length) {
-      throw new AppError("No posts found for this restaurant", 404);
+      return res.status(200).json({
+        status: "success",
+        message: "No posts found for this restaurant",
+        data: posts,
+      });
     }
 
     return res.status(200).json({

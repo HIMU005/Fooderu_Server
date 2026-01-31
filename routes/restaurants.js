@@ -17,6 +17,12 @@ const { protect } = require("../middlewares/authMiddleware");
 
 const router = require("express").Router({ mergeParams: true });
 
+// POST /restaurants
+router.post("/", protect, createRestaurant);
+
+// POST /restaurants/:restaurantId/items
+router.post("/:restaurantId/items", protect, createMenuItemController);
+
 router.get("/follow-status", protect, getRestaurantsWithFollowStatus);
 
 router.get("/:restaurantId/posts", protect, getAllPostsUnderARestaurant);
@@ -30,11 +36,5 @@ router.get("/byUserId/:ownerId", protect, getARestaurantByTheOwerId);
 
 // get all restaurant
 router.get("/", protect, getAllRestaurants);
-
-// POST /restaurants/:restaurantId/items
-router.post("/:restaurantId/items", protect, createMenuItemController);
-
-// POST /restaurants
-router.post("/", protect, createRestaurant);
 
 module.exports = router;
