@@ -10,6 +10,9 @@ const {
   registerControllerOTP,
   verifyOTPController,
   resendOTPController,
+  forgetPasswordController,
+  verifyResetPasswordOTPController,
+  resetPasswordController,
 } = require("../controllers/auth");
 
 router.post("/register", registerControllerWeb);
@@ -34,5 +37,14 @@ router.post("/verify_otp", verifyOTPController);
 
 // Resend OTP
 router.post("/resend_otp", resendOTPController);
+
+// forget password
+router.post("/forget_password", forgetPasswordController);
+
+// verify reset password OTP
+router.post("/verify_reset_password_otp", verifyResetPasswordOTPController);
+
+// reset password
+router.post("/reset_password", resetPasswordController);
 
 module.exports = router;

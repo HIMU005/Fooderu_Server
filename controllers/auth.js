@@ -12,7 +12,10 @@ const { findUserByProperty } = require("../services/user");
 const bcrypt = require("bcryptjs");
 const { assignToken } = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
-const { Clerk } = require("@clerk/clerk-sdk-node");
+const { Clerk, redirect } = require("@clerk/clerk-sdk-node");
+const OTPService = require("../services/otpService");
+const crypto = require("crypto");
+const OTP = require("../models/Otp");
 
 // Register controller: For OTP
 const registerControllerOTP = async (req, res, next) => {
@@ -46,6 +49,8 @@ const registerControllerOTP = async (req, res, next) => {
 const verifyOTPController = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
+
+    console.log(email, otp);
 
     if (!email || !otp) {
       throw new AppError("Email and OTP are required", 400);
@@ -322,6 +327,103 @@ const loginWithFirebaseController = async (req, res, next) => {
   }
 };
 
+// forgetPasswordController send OTP to email
+const forgetPasswordController = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      throw new AppError("Email is required", 400);
+    }
+
+    const user = await findUserByProperty("email", email);
+
+    if (!user) {
+      throw new AppError("User with this email does not exits", 404);
+    }
+
+    await OTPService.generateAndSendOTP(email, "password_reset", req);
+
+    return res.status(200).json({
+      status: "success",
+      message:
+        "If an account with that email exists, a password reset OTP has been sent.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// verify reset password OTP controller
+const verifyResetPasswordOTPController = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      throw new AppError("Email and OTP are required", 400);
+    }
+
+    const result = await verifyOTPService(email, otp, "password_reset");
+
+    if (result.user) {
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const updatedOtp = await OTP.findByIdAndUpdate(
+        result.otpId,
+        {
+          resetToken,
+        },
+        { new: true },
+      );
+      console.log(updatedOtp);
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: result.message,
+      resetToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// reset password controller
+const resetPasswordController = async (req, res, next) => {
+  console.log(388, req);
+  try {
+    const { password, resetToken } = req.body;
+    console.log(password, resetToken);
+    if (!password || !resetToken) {
+      throw new AppError("Password and reset token are required", 400);
+    }
+    const otpDoc = await OTP.findOne({
+      resetToken,
+      purpose: "password_reset",
+      isUsed: true,
+    });
+
+    if (!otpDoc) {
+      throw new AppError("Invalid or expired reset token", 400);
+    }
+    const user = await findUserByProperty("email", otpDoc.email);
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+    //   hash the password before saving it to the database
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
+
+    const updatedUser = await User.findByIdAndUpdate(user._id, {
+      password: hash,
+    });
+    return res.status(200).json({
+      status: "success",
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerControllerWeb,
   logInController,
@@ -333,4 +435,7 @@ module.exports = {
   registerControllerOTP,
   verifyOTPController,
   resendOTPController,
+  forgetPasswordController,
+  verifyResetPasswordOTPController,
+  resetPasswordController,
 };
