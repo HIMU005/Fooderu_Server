@@ -43,6 +43,10 @@ const otpSchema = new mongoose.Schema(
     userAgent: {
       type: String,
     },
+    resetToken: {
+      type: String,
+      index: true,
+    },
   },
   {
     timestamps: true,

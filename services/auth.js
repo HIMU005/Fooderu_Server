@@ -110,8 +110,8 @@ const loginService = async (email, password) => {
 };
 
 // Verify OTP service
-const verifyOTPService = async (email, otp) => {
-  const result = await OTPService.verifyEmailWithOTP(email, otp);
+const verifyOTPService = async (email, otp, purpose = "email_verification") => {
+  const result = await OTPService.verifyEmailWithOTP(email, otp, purpose);
 
   // Generate token after successful verification
   const token = assignToken(result.user._id, email, result.user.user_type);
@@ -123,6 +123,7 @@ const verifyOTPService = async (email, otp) => {
       ...result.user.toObject(),
       jwtToken: token,
     },
+    otpId: result.otpId,
   };
 };
 
