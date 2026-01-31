@@ -364,17 +364,18 @@ const verifyResetPasswordOTPController = async (req, res, next) => {
 
     const result = await verifyOTPService(email, otp, "password_reset");
 
-    if (result.user) {
-      const resetToken = crypto.randomBytes(32).toString("hex");
-      const updatedOtp = await OTP.findByIdAndUpdate(
-        result.otpId,
-        {
-          resetToken,
-        },
-        { new: true },
-      );
-      console.log(updatedOtp);
+    if (!result.user) {
+      throw new AppError("Invalid OTP or Email", 400);
     }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    await OTP.findByIdAndUpdate(
+      result.otpId,
+      {
+        resetToken,
+      },
+      { new: true },
+    );
 
     return res.status(200).json({
       status: "success",
