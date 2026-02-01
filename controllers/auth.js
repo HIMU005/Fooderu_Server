@@ -50,8 +50,6 @@ const verifyOTPController = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    console.log(email, otp);
-
     if (!email || !otp) {
       throw new AppError("Email and OTP are required", 400);
     }
@@ -389,10 +387,8 @@ const verifyResetPasswordOTPController = async (req, res, next) => {
 
 // reset password controller
 const resetPasswordController = async (req, res, next) => {
-  console.log(388, req);
   try {
     const { password, resetToken } = req.body;
-    console.log(password, resetToken);
     if (!password || !resetToken) {
       throw new AppError("Password and reset token are required", 400);
     }
