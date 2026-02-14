@@ -29,6 +29,8 @@ const menuItemSchema = new Schema(
       maxlength: [500, "Description cannot exceed 500 characters"],
       default: "",
     },
+    // Old Design: image_url as a simple string
+    // Will be deprecated in favor of MenuItemImage model for better scalability and flexibility
     image_url: {
       type: String,
       trim: true,
@@ -53,7 +55,7 @@ const menuItemSchema = new Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Compound indexes for performance
