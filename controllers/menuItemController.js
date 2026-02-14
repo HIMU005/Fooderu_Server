@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const MenuItemRating = require("../models/MenuItemRating");
+const MenuItemImage = require("../models/MenuItemImage");
 const Restaurant = require("../models/Restaurant");
 const {
   createMenuItem,
@@ -9,6 +10,10 @@ const AppError = require("../utils/AppError");
 const MenuItem = require("../models/MenuItem");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const Post = require("../models/Post");
+const {
+  uploadMultipleToImageKit,
+  formatUploadResponse,
+} = require("../services/imageService");
 
 /**
  * @desc    Create a new menu item under a restaurant
@@ -265,9 +270,18 @@ const GetMyRating = async (req, res) => {
 };
 
 // get all the menuItems
+
+/*
 const getAllMenuItems = async (req, res, next) => {
   try {
-    const { item, place, price, rating, fields = "*" } = req.query;
+    const {
+      item,
+      place,
+      price,
+      rating,
+      fields = "*",
+      includeImages = "false",
+    } = req.query;
 
     const queryParams = {};
 
@@ -311,6 +325,9 @@ const getAllMenuItems = async (req, res, next) => {
     if (place && (typeof place !== "string" || place.trim().length === 0)) {
       throw new AppError("Place must be a non-empty string", 400);
     }
+
+    // validate includeImages parameter
+    const shouldIncludeImages = includeImages.toLowerCase() === "true";
 
     // Parse requested fields
     const requestedFields =
@@ -393,6 +410,206 @@ const getAllMenuItems = async (req, res, next) => {
           .toLowerCase()
           .includes(placeSearch),
       );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      data: menuItems,
+      message: "All menu items fetched successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+*/
+
+// Using Aggregation Pipeline for better performance and flexibility in filtering, sorting, and field selection
+const getAllMenuItems = async (req, res, next) => {
+  try {
+    const {
+      item,
+      place,
+      price,
+      rating,
+      fields = "*",
+      includeImages = "false",
+    } = req.query;
+
+    // Initialize Aggregation Pipeline
+    const pipeline = [];
+
+    // ============= STAGE 1: Match =============
+    const matchStage = {};
+
+    // Validate and match item parameter
+    if (item) {
+      if (typeof item !== "string" || item.trim().length === 0) {
+        throw new AppError("Item name must be a non-empty string", 400);
+      }
+      matchStage.name = { $regex: item.trim(), $options: "i" };
+    }
+
+    // Validate and match price parameter
+    if (price) {
+      const priceNum = parseFloat(price);
+      if (isNaN(priceNum) || priceNum < 0) {
+        throw new AppError("Price must be a valid non-negative number", 400);
+      }
+
+      matchStage.price = { $lte: priceNum };
+    }
+
+    // Validate and match rating parameter
+    if (rating) {
+      const ratingNum = parseFloat(rating);
+      if (isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5) {
+        throw new AppError("Rating must be a number between 0 and 5", 400);
+      }
+
+      matchStage.averageRating = { $lte: ratingNum };
+    }
+
+    // Only add $match if we have filters
+    if (Object.keys(matchStage).length > 0) {
+      pipeline.push({ $match: matchStage });
+    }
+
+    // ============= STAGE 2: Sort =============
+    pipeline.push({ $sort: { averageRating: -1, createdAt: -1 } });
+
+    // ============= STAGE 3: Lookup Restaurant =============
+    // We need restaurant data for place filtering and if requested in fields
+    const needsRestaurantData =
+      fields === "*" ||
+      (fields && fields.split(",").some((f) => f.includes("restaurant_id")));
+
+    // Always lookup restaurant if place filter is present or restaurant data is needed
+    if (place || needsRestaurantData) {
+      pipeline.push({
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant_id",
+          foreignField: "_id",
+          as: "restaurant_id", // TODO: need to change it as restaurant
+        },
+      });
+
+      pipeline.push({
+        $addFields: {
+          restaurant_id: { $arrayElemAt: ["$restaurant_id", 0] },
+        },
+      });
+
+      // Apply place filter if provided
+      if (place) {
+        if (typeof place !== "string" || place.trim().length === 0) {
+          throw new AppError("Place must be a non-empty string", 400);
+        }
+
+        pipeline.push({
+          $match: {
+            "restaurant_id.address.mapAddress": {
+              $regex: place.trim(),
+              $options: "i",
+            },
+          },
+        });
+      }
+    }
+
+    // ============= STAGE 4: Lookup Images (if requested) =============
+
+    const shouldIncludeImages = includeImages.toLowerCase() === "true";
+
+    if (shouldIncludeImages) {
+      pipeline.push({
+        $lookup: {
+          from: "menuitemimages",
+          localField: "_id",
+          foreignField: "menuItemId",
+          as: "images",
+        },
+      });
+
+      // Transform images array to just URLs, sorted by order
+      pipeline.push({
+        $addFields: {
+          images: {
+            $map: {
+              input: {
+                $sortArray: {
+                  input: "$images",
+                  sortBy: { order: 1, createdAt: 1 },
+                },
+              },
+              as: "img",
+              in: "$$img.url",
+            },
+          },
+        },
+      });
+    } else {
+      // Add empty images array when not requested
+      pipeline.push({
+        $addFields: {
+          images: [],
+          image_url: "$image_url",
+        },
+      });
+    }
+
+    // ============= STAGE 5: Field Selection =============
+    if (fields && fields !== "*") {
+      if (typeof fields !== "string") {
+        throw new AppError("Fields must be a string", 400);
+      }
+
+      const requestedFields = fields.split(",").map((f) => f.trim());
+      const projection = {
+        _id: 1, // Always include _id
+      };
+
+      // Add requested top-level fields
+      requestedFields.forEach((field) => {
+        if (!field.includes(".")) {
+          projection[field] = 1;
+        }
+      });
+
+      // Always include images and image_url for backward compatibility
+      if (shouldIncludeImages) {
+        projection.images = 1;
+        projection.image_url = 1;
+      }
+
+      // Handle restaurant_id nested fields
+      const restaurantFields = requestedFields
+        .filter((f) => f.startsWith("restaurant_id."))
+        .map((f) => f.replace("restaurant_id.", ""));
+
+      if (restaurantFields.length > 0 || needsRestaurantData) {
+        projection.restaurant_id = {};
+
+        // Always include _id for restaurant
+        projection.restaurant_id._id = 1;
+
+        // Add requested restaurant fields
+        restaurantFields.forEach((field) => {
+          if (!field.includes(".")) {
+            projection.restaurant_id[field] = 1;
+          }
+        });
+      }
+
+      pipeline.push({ $project: projection });
+    }
+
+    // ============= Execute Pipeline =============
+    let menuItems = [];
+    if (pipeline.length === 0) {
+      menuItems = await MenuItem.find();
+    } else {
+      menuItems = await MenuItem.aggregate(pipeline);
     }
 
     return res.status(200).json({
@@ -531,6 +748,86 @@ const deleteMenuItem = async (req, res, next) => {
   }
 };
 
+const uploadMenuImages = async (req, res, next) => {
+  try {
+    const { menuItemId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
+      throw new AppError("Invalid Menu Item ID format", 400);
+    }
+
+    if (!menuItemId) {
+      throw new AppError("Menu Item ID is required", 400);
+    }
+
+    const files = req.files || (req.file ? [req.file] : []);
+
+    if (!files || files.length === 0) {
+      throw new AppError("No files uploaded", 400);
+    }
+
+    // check if menuItem exists
+    const menuItem = await MenuItem.findById(menuItemId);
+    if (!menuItem) {
+      throw new AppError("Menu Item not found", 404);
+    }
+
+    // TODO:check if the logged in user is the owner of the restaurant that this menu item belongs to
+
+    // For now only one time a user can upload images under a single menu-item. Need to work on it later
+    const ifAlreadyHasImages = await MenuItemImage.findOne({ menuItemId });
+    if (ifAlreadyHasImages) {
+      throw new AppError(
+        "Images for this menu item already exist. Multiple uploads are not allowed currently.",
+        400,
+      );
+    }
+
+    const uploadResults = await uploadMultipleToImageKit(files);
+
+    // Check if any uploads succeeded
+    if (uploadResults.successCount === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "All uploads failed",
+        errors: uploadResults.failedUploads.map((f) => ({
+          name: f.name,
+          error: f.error,
+        })),
+      });
+    }
+
+    const imageDocs = uploadResults.successfulUploads.map((result, index) => ({
+      menuItemId,
+      url: result.url,
+      isPrimary: index === 0, // Set the first uploaded image as primary
+      order: index, // Set order based on upload sequence
+    }));
+
+    const savedImages = await MenuItemImage.insertMany(imageDocs);
+
+    const response = {
+      success: true,
+      message: `Successfully uploaded and saved ${savedImages.length} image(s)`,
+      data: {
+        menuItemId,
+        images: savedImages.map((img) => ({
+          _id: img._id,
+          url: img.url,
+          isPrimary: img.isPrimary,
+          order: img.order,
+          createdAt: img.createdAt,
+        })),
+      },
+    };
+    const statusCode = uploadResults.failedCount === files.length ? 500 : 201;
+
+    return res.status(statusCode).json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createMenuItemController,
   getAllItemsUnderARestaurant,
@@ -542,4 +839,5 @@ module.exports = {
   updateMenuItem,
   deleteMenuItem,
   getAllPostsUnderARestaurant,
+  uploadMenuImages,
 };
