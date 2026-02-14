@@ -1,9 +1,6 @@
 const express = require("express");
 const multer = require("multer");
-const {
-  uploadImage,
-  uploadMultipleImages,
-} = require("../controllers/uploadController");
+const { uploadImage } = require("../controllers/uploadController");
 
 const router = express.Router();
 

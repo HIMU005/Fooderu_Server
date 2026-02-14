@@ -80,4 +80,4 @@ const uploadMultipleImages = async (req, res, next) => {
 };
 */
 
-module.exports = { uploadImage, uploadMultipleImages };
+module.exports = { uploadImage };
