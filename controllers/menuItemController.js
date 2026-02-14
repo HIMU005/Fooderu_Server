@@ -10,6 +10,10 @@ const AppError = require("../utils/AppError");
 const MenuItem = require("../models/MenuItem");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const Post = require("../models/Post");
+const {
+  uploadMultipleToImageKit,
+  formatUploadResponse,
+} = require("../services/imageService");
 
 /**
  * @desc    Create a new menu item under a restaurant
@@ -744,6 +748,86 @@ const deleteMenuItem = async (req, res, next) => {
   }
 };
 
+const uploadMenuImages = async (req, res, next) => {
+  try {
+    const { menuItemId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
+      throw new AppError("Invalid Menu Item ID format", 400);
+    }
+
+    if (!menuItemId) {
+      throw new AppError("Menu Item ID is required", 400);
+    }
+
+    const files = req.files || (req.file ? [req.file] : []);
+
+    if (!files || files.length === 0) {
+      throw new AppError("No files uploaded", 400);
+    }
+
+    // check if menuItem exists
+    const menuItem = await MenuItem.findById(menuItemId);
+    if (!menuItem) {
+      throw new AppError("Menu Item not found", 404);
+    }
+
+    // TODO:check if the logged in user is the owner of the restaurant that this menu item belongs to
+
+    // For now only one time a user can upload images under a single menu-item. Need to work on it later
+    const ifAlreadyHasImages = await MenuItemImage.findOne({ menuItemId });
+    if (ifAlreadyHasImages) {
+      throw new AppError(
+        "Images for this menu item already exist. Multiple uploads are not allowed currently.",
+        400,
+      );
+    }
+
+    const uploadResults = await uploadMultipleToImageKit(files);
+
+    // Check if any uploads succeeded
+    if (uploadResults.successCount === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "All uploads failed",
+        errors: uploadResults.failedUploads.map((f) => ({
+          name: f.name,
+          error: f.error,
+        })),
+      });
+    }
+
+    const imageDocs = uploadResults.successfulUploads.map((result, index) => ({
+      menuItemId,
+      url: result.url,
+      isPrimary: index === 0, // Set the first uploaded image as primary
+      order: index, // Set order based on upload sequence
+    }));
+
+    const savedImages = await MenuItemImage.insertMany(imageDocs);
+
+    const response = {
+      success: true,
+      message: `Successfully uploaded and saved ${savedImages.length} image(s)`,
+      data: {
+        menuItemId,
+        images: savedImages.map((img) => ({
+          _id: img._id,
+          url: img.url,
+          isPrimary: img.isPrimary,
+          order: img.order,
+          createdAt: img.createdAt,
+        })),
+      },
+    };
+    const statusCode = uploadResults.failedCount === files.length ? 500 : 201;
+
+    return res.status(statusCode).json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createMenuItemController,
   getAllItemsUnderARestaurant,
@@ -755,4 +839,5 @@ module.exports = {
   updateMenuItem,
   deleteMenuItem,
   getAllPostsUnderARestaurant,
+  uploadMenuImages,
 };
