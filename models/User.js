@@ -43,7 +43,20 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     location: {
-      type: String,
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+        // required: true,
+      },
+      coordinates: {
+        type: [Number],
+        // maxlength: 2,
+        validate: {
+          validator: (v) => v.length <= 2,
+          message: "Coordinates must be [longitude, latitude]",
+        },
+      },
     },
     interests: {
       type: String,
@@ -64,6 +77,8 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+userSchema.index({ location: "2dsphere" });
 
 const User = model("User", userSchema);
 module.exports = User;

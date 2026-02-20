@@ -35,7 +35,7 @@ exports.getUserProfile = async (req, res, next) => {
 exports.updateUserProfile = async (req, res, next) => {
   try {
     const updates = req.body;
-    console.log(updates?.email);
+    console.log(38, updates);
     if (updates.email || updates.password || updates.user_type) {
       throw new AppError(
         "Email, password, and user_type updates are not allowed here.",
@@ -64,6 +64,7 @@ exports.updateUserProfile = async (req, res, next) => {
     //   data: user,
     // });
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
