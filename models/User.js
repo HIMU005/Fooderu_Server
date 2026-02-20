@@ -78,6 +78,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+//  this is for geospatial queries and filtering based on user location
 userSchema.index({ location: "2dsphere" });
 
 const User = model("User", userSchema);
