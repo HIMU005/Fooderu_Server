@@ -27,23 +27,25 @@ const createMenuItemController = async (req, res, next) => {
       name,
       price,
       description,
-      image_url,
+      images,
       is_boosted,
       boosted_until,
       isPost,
     } = req.body;
 
     const { restaurantId } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
       throw new AppError("Invalid Restaurant ID format", 400);
     }
 
     const restaurant = await Restaurant.findById(restaurantId);
+
     if (!restaurant) {
       throw new AppError("Restaurant not found", 404);
     }
 
-    const { userId } = req.user._id;
+    const userId = req.user._id;
     if (restaurant.owner_id.toString() !== userId.toString()) {
       throw new AppError(
         "Only the owner of the restaurant can add menu items",
@@ -62,13 +64,13 @@ const createMenuItemController = async (req, res, next) => {
       name,
       price,
       description,
-      image_url,
+      images,
       is_boosted,
       boosted_until,
       restaurant_id: restaurantId,
     });
     if (isPost) {
-      const details = { name, price, description, image_url };
+      const details = { name, price, description, images };
       const postType = "menuItem";
       const post = await Post.create({
         details,
@@ -80,9 +82,11 @@ const createMenuItemController = async (req, res, next) => {
     res.status(201).json({
       status: "success",
       message: "Menu item created successfully",
-      data: newItem,
+      data: newItem.menuItem,
+      images: newItem.images,
     });
   } catch (error) {
+    console.error("Error in createMenuItemController:", error);
     next(error);
   }
 };
