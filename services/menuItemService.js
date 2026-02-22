@@ -1,5 +1,6 @@
 const MenuItem = require("../models/MenuItem");
 const Restaurant = require("../models/Restaurant");
+const MenuItemImage = require("../models/MenuItemImage");
 const AppError = require("../utils/AppError");
 
 /**
@@ -10,32 +11,36 @@ const AppError = require("../utils/AppError");
  */
 
 const createMenuItem = async (itemData) => {
-  // verify restaurant exists
-  const restaurant = await Restaurant.findById(itemData.restaurant_id);
+  // Extract images first
+  const images = itemData.images || [];
+  const image_url = images[0] || null; // Handle case when no images
 
-  if (!restaurant) {
-    throw new AppError("Restaurant not found", 404);
-  }
+  // Remove images from itemData for menu item creation
+  const { images: _, ...rest } = itemData;
 
-  //   TODO:Validate boost date if provided
-  // if (
-  //   itemData.boosted_until &&
-  //   new Date(itemData.boosted_until) <= new Date()
-  // ) {
-  //
-
-  //   throw new AppError("Boost date must be in the future", 400);
-  // }
-
-  //   Create the item
   try {
     const menuItem = await MenuItem.create({
-      ...itemData,
+      ...rest,
+      image_url,
     });
 
-    return menuItem;
+    // save images in MenuItemImage collection
+    if (images && images.length > 0) {
+      const menuItemImages = images.map((url, index) => {
+        return {
+          menuItemId: menuItem._id,
+          url,
+          isPrimary: index === 0, // first image is primary
+          order: index,
+        };
+      });
+
+      await MenuItemImage.insertMany(menuItemImages);
+    }
+
+    return { menuItem, images };
   } catch (error) {
-    throw new AppError(`Failed to create menu Item: ${error.message}`, 400);
+    throw new AppError(`Failed to create menu Item: ${error.message}`, 500);
   }
 };
 
@@ -59,7 +64,7 @@ const getAllItemsUnderARestaurantService = async (restaurantId) => {
 
     return response;
   } catch (error) {
-    throw new AppError(`Failed to get menu Items: ${error.message}`, 400);
+    throw new AppError(`Failed to get menu Items: ${error.message}`, 500);
   }
 };
 

@@ -1,6 +1,9 @@
 const express = require("express");
 const multer = require("multer");
-const { uploadImage } = require("../controllers/uploadController");
+const {
+  uploadImage,
+  uploadMultipleImages,
+} = require("../controllers/uploadController");
 
 const router = express.Router();
 
@@ -9,7 +12,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Route for multiple image uploads
-// router.post("/multiple", upload.array("images", 10), uploadMultipleImages);
+router.post("/multiple", upload.array("images", 10), uploadMultipleImages);
 
 // 2. Define Route with Debugging
 router.post(
