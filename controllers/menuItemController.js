@@ -45,6 +45,8 @@ const createMenuItemController = async (req, res, next) => {
       throw new AppError("Restaurant not found", 404);
     }
 
+    console.log(req.user);
+
     const userId = req.user._id;
     if (restaurant.owner_id.toString() !== userId.toString()) {
       throw new AppError(
