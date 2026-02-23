@@ -5,28 +5,35 @@ const AppError = require("../utils/AppError");
 
 const postByUser = async (req, res, next) => {
   try {
-    const { restaurant_id, description, image_url } = req.body;
+    // const { restaurant_id, description, image_url } = req.body;
+    const { restaurant_id, details } = req.body;
+    const { description, resources } = details;
+
+    // return res.json({ description, resources });
     if (!restaurant_id) {
       throw new AppError("restaurant_id is required", 404);
     }
-    // if (typeof isEvent !== "boolean") {
-    //   return res.json({ status: 422, message: "Unprocessable Entity" });
-    // }
+
     if (!mongoose.Types.ObjectId.isValid(restaurant_id)) {
       throw new AppError("Invalid restaurant ID", 400);
     }
 
-    if (!description && !image_url) {
+    if (!description && !resources) {
       throw new AppError("Required items is not provided", 400);
     }
 
-    await Post.create({
+    if (restaurant_id !== req.user.restaurant_id?.toString()) {
+      throw new AppError("You are not the owner of the restaurant", 403);
+    }
+    const newPost = await Post.create({
       restaurant_id,
-      description,
-      image_url,
-      // isEvent,
+      details,
     });
-    return res.json({ status: 201, message: "A post is created..." });
+    return res.json({
+      status: 201,
+      message: "A post is created...",
+      // data: newPost,
+    });
   } catch (error) {
     next(error);
   }
