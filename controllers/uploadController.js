@@ -57,9 +57,6 @@ const uploadImage = async (req, res) => {
  * Upload multiple images to ImageKit
  * Handles both single file (req.file) and multiple files (req.files)
  */
-
-// This function is currently not used in routes, but can be enabled for multiple uploads in the future
-/*
 const uploadMultipleImages = async (req, res, next) => {
   try {
     const files = req.files || (req.file ? [req.file] : []);
@@ -71,13 +68,18 @@ const uploadMultipleImages = async (req, res, next) => {
     const uploadResults = await uploadMultipleToImageKit(files);
 
     const response = formatUploadResponse(uploadResults);
+    const urls = uploadResults.successfulUploads.map((upload) => upload.url);
     const statusCode = uploadResults.failedCount === files.length ? 500 : 200;
 
-    return res.status(statusCode).json(response);
+    return res.status(statusCode).json({
+      success: true,
+      message: "Uploaded successfully",
+      urls: urls,
+      details: response, // sending full details for debugging on frontend
+    });
   } catch (error) {
     next(error);
   }
 };
-*/
 
-module.exports = { uploadImage };
+module.exports = { uploadImage, uploadMultipleImages };
