@@ -14,10 +14,10 @@ const router = express.Router();
 router.get("/followedRestaurantsPosts", protect, getPostsByFollowedRestaurants);
 
 // POST  a post by user
-router.post("/", postByUser);
+router.post("/", protect, postByUser);
 
 // get all posts
-router.get("/", getAllPosts);
+router.get("/", protect, getAllPosts);
 
 // get a single post
 router.get("/:id", protect, getASinglePost);
