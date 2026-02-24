@@ -50,6 +50,18 @@ const menuItemSchema = new Schema(
       type: Number,
       default: 0,
     },
+    ingredients: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    cautions: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
   },
   {
     timestamps: true,
