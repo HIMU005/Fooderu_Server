@@ -1,6 +1,8 @@
 const MenuItem = require("../models/MenuItem");
 const Restaurant = require("../models/Restaurant");
 const MenuItemImage = require("../models/MenuItemImage");
+const Ingredient = require("../models/Ingredient");
+const Caution = require("../models/Caution");
 const AppError = require("../utils/AppError");
 
 /**
@@ -36,6 +38,36 @@ const createMenuItem = async (itemData) => {
       });
 
       await MenuItemImage.insertMany(menuItemImages);
+    }
+
+    if (itemData.ingredients && itemData.ingredients.length > 0) {
+      const ingredientOps = itemData.ingredients.map((ingredient) => ({
+        updateOne: {
+          filter: { name: ingredient },
+          update: { $setOnInsert: { name: ingredient } }, // Only insert if not exists
+          upsert: true, // Create if doesn't exist
+        },
+      }));
+
+      await Ingredient.bulkWrite(ingredientOps);
+    }
+
+    if (itemData.cautions && itemData.cautions.length > 0) {
+      const cautionOps = itemData.cautions.map((caution) => ({
+        updateOne: {
+          filter: {
+            name: caution,
+          },
+          update: {
+            $setOnInsert: {
+              name: caution,
+            },
+          },
+          upsert: true,
+        },
+      }));
+
+      await Caution.bulkWrite(cautionOps);
     }
 
     return { menuItem, images };
