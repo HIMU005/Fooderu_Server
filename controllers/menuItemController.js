@@ -31,6 +31,8 @@ const createMenuItemController = async (req, res, next) => {
       is_boosted,
       boosted_until,
       isPost,
+      ingredients,
+      cautions,
     } = req.body;
 
     const { restaurantId } = req.params;
@@ -56,8 +58,19 @@ const createMenuItemController = async (req, res, next) => {
     if (!name || !price) {
       throw new AppError("Name and Price are required", 400);
     }
+
     if (name.length > 100) {
       throw new AppError("Name cannot exceed 100 characters", 400);
+    }
+
+    if (images) {
+      const arrayOfStrings =
+        Array.isArray(images) &&
+        images.every((image) => typeof image === "string");
+
+      if (!arrayOfStrings) {
+        throw new AppError("Images must be Array of Strings", 400);
+      }
     }
 
     const newItem = await createMenuItem({
@@ -68,7 +81,10 @@ const createMenuItemController = async (req, res, next) => {
       is_boosted,
       boosted_until,
       restaurant_id: restaurantId,
+      ingredients,
+      cautions,
     });
+
     if (isPost) {
       const details = { name, price, description, images };
       const postType = "menuItem";
