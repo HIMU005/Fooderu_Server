@@ -2,12 +2,13 @@ const { default: mongoose } = require("mongoose");
 const Post = require("../models/Post");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const AppError = require("../utils/AppError");
+const PostImage = require("../models/PostImage");
 
 const postByUser = async (req, res, next) => {
   try {
     // const { restaurant_id, description, image_url } = req.body;
-    const { restaurant_id, details } = req.body;
-    const { description, resources } = details;
+    const { restaurant_id, details = {}, media = [] } = req.body;
+    const { description } = details;
 
     // return res.json({ description, resources });
     if (!restaurant_id) {
@@ -18,8 +19,8 @@ const postByUser = async (req, res, next) => {
       throw new AppError("Invalid restaurant ID", 400);
     }
 
-    if (!description && !resources) {
-      throw new AppError("Required items is not provided", 400);
+    if (!description && media.length === 0) {
+      throw new AppError("Post must have description or media", 400);
     }
 
     if (restaurant_id !== req.user.restaurant_id?.toString()) {
@@ -29,10 +30,24 @@ const postByUser = async (req, res, next) => {
       restaurant_id,
       details,
     });
+
+    // post images and videos in the PostImage collection
+    var imageData = [];
+    if (media.length > 0) {
+      const mediaDocs = media.map((item, index) => ({
+        postId: newPost._id,
+        url: item.url,
+        type: item.type || "image",
+        isPrimary: item.isPrimary || false,
+        order: item.order ?? index,
+      }));
+      imageData = await PostImage.insertMany(mediaDocs);
+    }
+
     return res.json({
       status: 201,
       message: "A post is created...",
-      // data: newPost,
+      // data: { newPost, media: imageData || [] },
     });
   } catch (error) {
     next(error);
@@ -50,7 +65,11 @@ const getAllPosts = async (req, res) => {
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate({
+        path: "media",
+        options: { sort: { order: 1 } }, // Sort media by 'order' field
+      });
 
     res.json({
       status: 200,
@@ -110,7 +129,10 @@ const getASinglePost = async (req, res, next) => {
       throw new AppError("Invalid post ID", 400);
     }
 
-    const post = await Post.findById(id);
+    const post = await Post.findById(id).populate({
+      path: "media",
+      options: { sort: { order: 1 } }, // keep media ordered
+    });
     if (!post) {
       throw new AppError("Post not found", 404);
     }
@@ -131,8 +153,8 @@ const updatePostDetails = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return next(new AppError("Invalid post ID", 400));
     }
-    const updateData = req.body;
     const userId = req.user._id;
+    const { details, media } = req.body;
     // const userId = "68b9b5178e9b3b4eaa03a438";
 
     const singlePost = await Post.findById(id).populate(
@@ -151,9 +173,37 @@ const updatePostDetails = async (req, res, next) => {
       );
     }
 
-    const updatedPost = await Post.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
+    // update the details
+    if (details) {
+      singlePost.details = {
+        ...singlePost.details,
+        ...details,
+      };
+
+      await singlePost.save();
+    }
+
+    // replace media if provided
+    if (Array.isArray(media)) {
+      // delete old media
+      await PostImage.deleteMany({ postId: id });
+
+      if (media.length > 0) {
+        const mediaDocs = media.map((item, index) => ({
+          postId: id,
+          url: item.url,
+          type: item.type || "image",
+          isPrimary: item.isPrimary || false,
+          order: item.order ?? index,
+        }));
+
+        await PostImage.insertMany(mediaDocs);
+      }
+    }
+
+    const updatedPost = await Post.findById(id).populate({
+      path: "media",
+      options: { sort: { order: 1 } },
     });
 
     return res.json({
@@ -189,6 +239,10 @@ const deletePost = async (req, res, next) => {
         403,
       );
     }
+
+    // delete post media first
+    await PostImage.deleteMany({ postId: id });
+
     // delete the post
     await Post.findByIdAndDelete(id);
 
