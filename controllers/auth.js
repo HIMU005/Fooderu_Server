@@ -201,6 +201,10 @@ const logInWithSocialController = async (req, res, next) => {
         oauth_provider,
         profile_picture,
         name: `${firstName} ${lastName}`,
+        location: {
+          type: "Point",
+          coordinates: [0, 0],
+        },
       });
     }
 
@@ -273,6 +277,10 @@ const logInWithClerkcontroller = async (req, res, next) => {
         oauth_provider,
         profile_picture,
         name: `${firstName} ${lastName}`,
+        location: {
+          type: "Point",
+          coordinates: [0, 0],
+        },
       });
       // assign jwt token
       const token = assignToken(user._id, email);
@@ -309,6 +317,10 @@ const loginWithFirebaseController = async (req, res, next) => {
       const newUser = await User.create({
         ...payload,
         verified: true,
+        location: {
+          type: "Point",
+          coordinates: [0, 0],
+        },
       });
 
       const token = assignToken(newUser._id, payload.email);

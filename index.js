@@ -15,7 +15,11 @@ cleanupOTPJob.start();
 const app = express();
 app.use(express.json());
 const corsOptions = {
-  origin: [process.env.FRONTEND_URL, "http://localhost:8081"],
+  origin: [
+    process.env.FRONTEND_URL,
+    "http://localhost:8081",
+    "http://192.168.0.101",
+  ],
   // credentials: true,
   optionSuccessStatus: 200,
 };

@@ -23,6 +23,10 @@ const createNewUser = async ({ email, password }) => {
   const user = new User({
     email,
     password,
+    location: {
+      type: "Point",
+      coordinates: [0, 0], // Default coordinates, can be updated later
+    },
   });
 
   await user.save();
