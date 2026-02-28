@@ -2,16 +2,13 @@ const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 const Restaurant = require("./Restaurant");
 
-const userSchema = new mongoose.Schema(
+const userSchema = new Schema(
   {
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
-    },
-    phone: {
-      type: String,
     },
     password: {
       type: String,
@@ -42,7 +39,23 @@ const userSchema = new mongoose.Schema(
     coverPhoto: {
       type: String,
     },
+    phone: {
+      type: String,
+      trim: true,
+      match: [/^\+?[0-9]{7,15}$/, "Invalid phone number"],
+      sparse: true,
+      unique: true,
+    },
+    date_of_birth: {
+      type: Date,
+      validate: {
+        validator: (v) => !v || v < new Date(),
+      },
+    },
     location: {
+      address: {
+        type: String,
+      },
       type: {
         type: String,
         enum: ["Point"],
