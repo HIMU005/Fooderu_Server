@@ -109,6 +109,7 @@ const registerControllerWeb = async (req, res, next) => {
   }
 };
 
+// controller for email verification
 const verifyEmailController = async (req, res, next) => {
   try {
     const { token } = req.query;
@@ -135,6 +136,7 @@ const verifyEmailController = async (req, res, next) => {
   }
 };
 
+// controller for resend email verification
 const ressendVerificationEmailController = async (req, res, next) => {
   try {
     const { email } = req.query;
