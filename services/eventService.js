@@ -2,15 +2,26 @@ const Event = require("../models/Event");
 const Restaurant = require("../models/Restaurant");
 const AppError = require("../utils/AppError");
 
+function splitDateTime(dateObj) {
+  if (!dateObj) return null;
+
+  const date = new Date(dateObj);
+
+  return {
+    date: date.toISOString().slice(0, 10), // YYYY-MM-DD
+    time: date.toTimeString().slice(0, 5), // HH:mm
+  };
+}
+
 // Create a new event
 const createEvent = async (restaurantId, eventData) => {
-  // Check if restaurant exists
-  const restaurantExists = await Restaurant.findOne({ _id: restaurantId });
-  // console.log("exist : ", restaurantExists);
-  if (!restaurantExists) {
-    // throw new Error("Restaurant not found");
-    return next(new AppError("Restaurant not found", 404));
-  }
+  // // Check if restaurant exists
+  // const restaurantExists = await Restaurant.findOne({ _id: restaurantId });
+  // // console.log("exist : ", restaurantExists);
+  // if (!restaurantExists) {
+  //   // throw new Error("Restaurant not found");
+  //   return next(new AppError("Restaurant not found", 404));
+  // }
 
   // Create and save the event
   const event = new Event({
