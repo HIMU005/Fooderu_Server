@@ -20,14 +20,14 @@ const eventSchema = new Schema(
       default: true, // Events start as not live
     },
     image_url: String, // Optional image link
-    // expires_at: {
-    //   type: Date,
-    //   required: true, // Must have an expiration date
-    // },
-    // created_at: {
-    //   type: Date,
-    //   default: Date.now, // Automatically set when created
-    // },
+    start_at: {
+      type: Date,
+      required: true,
+    },
+    expires_at: {
+      type: Date,
+      required: true,
+    },
   },
   {
     timestamps: true,
