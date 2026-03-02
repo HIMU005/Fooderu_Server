@@ -3,6 +3,8 @@ const Post = require("../models/Post");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const AppError = require("../utils/AppError");
 const PostImage = require("../models/PostImage");
+const PostLike = require("../models/PostLike");
+const { likeAndUnlikePostService } = require("../services/postService");
 
 const postByUser = async (req, res, next) => {
   try {
@@ -249,10 +251,33 @@ const deletePost = async (req, res, next) => {
     // delete post media first
     await PostImage.deleteMany({ postId: id });
 
+    // delete all the likes associated with the post
+    await PostLike.deleteMany({ postId: id });
+
     // delete the post
     await Post.findByIdAndDelete(id);
 
     return res.json({ status: 200, message: "Post deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// toggle like and unlike a post
+const likeAndUnlikePost = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req?.user?._id;
+
+    const result = await likeAndUnlikePostService(id, userId);
+    console.log(270, result);
+
+    return res.json({
+      status: "success",
+      message: result.liked
+        ? "Post liked successfully"
+        : "Post unliked successfully",
+    });
   } catch (error) {
     next(error);
   }
@@ -265,4 +290,5 @@ module.exports = {
   updatePostDetails,
   deletePost,
   getPostsByFollowedRestaurants,
+  likeAndUnlikePost,
 };
