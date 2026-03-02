@@ -7,7 +7,12 @@ const PostImage = require("../models/PostImage");
 const postByUser = async (req, res, next) => {
   try {
     // const { restaurant_id, description, image_url } = req.body;
-    const { restaurant_id, details = {}, media = [] } = req.body;
+    const {
+      restaurant_id,
+      details = {},
+      media = [],
+      type = "normal",
+    } = req.body;
     const { description } = details;
 
     // return res.json({ description, resources });
@@ -29,6 +34,7 @@ const postByUser = async (req, res, next) => {
     const newPost = await Post.create({
       restaurant_id,
       details,
+      type,
     });
 
     // post images and videos in the PostImage collection
