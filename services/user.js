@@ -34,4 +34,8 @@ const createNewUser = async ({ email, password }) => {
   return user;
 };
 
-module.exports = { findUsers, findUserByProperty, createNewUser };
+module.exports = {
+  findUsers,
+  findUserByProperty,
+  createNewUser,
+};
