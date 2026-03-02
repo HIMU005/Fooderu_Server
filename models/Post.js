@@ -14,6 +14,48 @@ const postSchema = new Schema(
         type: String,
         trim: true,
       },
+      name: {
+        type: String,
+        trim: true,
+        maxlength: [100, "Name cannot exceed 100 characters"],
+        index: true,
+      },
+      price: {
+        type: Number,
+      },
+      ingredients: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      cautions: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      is_boosted: {
+        type: Boolean,
+        default: false,
+      },
+      boosted_until: {
+        type: Date,
+      },
+      averageRating: {
+        type: Number,
+        default: 0,
+      },
+      totalRatings: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    type: {
+      type: String,
+      enum: ["normal", "menuItem"],
+      default: "normal",
     },
   },
   {
