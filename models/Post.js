@@ -72,6 +72,13 @@ postSchema.virtual("media", {
   foreignField: "postId",
 });
 
+postSchema.virtual("likeCount", {
+  ref: "PostLike",
+  localField: "_id",
+  foreignField: "postId",
+  count: true,
+});
+
 // indexes for text search and filtering
 postSchema.index({ "details.description": "text" });
 postSchema.index({ restaurant_id: 1 });
