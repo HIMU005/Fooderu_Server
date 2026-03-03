@@ -30,6 +30,6 @@ router.put("/:id", protect, updatePostDetails);
 router.delete("/:id", protect, deletePost);
 
 // like and unlike a post
-router.post("/:id/like", likeAndUnlikePost);
+router.post("/:id/like", protect, likeAndUnlikePost);
 
 module.exports = router;
