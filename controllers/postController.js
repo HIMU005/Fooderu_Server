@@ -270,7 +270,6 @@ const likeAndUnlikePost = async (req, res, next) => {
     const userId = req?.user?._id;
 
     const result = await likeAndUnlikePostService(id, userId);
-    console.log(270, result);
 
     return res.json({
       status: "success",

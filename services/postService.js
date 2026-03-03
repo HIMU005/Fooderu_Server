@@ -1,21 +1,25 @@
+const { mongoose } = require("mongoose");
+const Post = require("../models/Post");
+const AppError = require("../utils/AppError");
+const PostLike = require("../models/PostLike");
+
 const likeAndUnlikePostService = async (postId, userId) => {
   // not valid post id
   if (!mongoose.Types.ObjectId.isValid(postId)) {
     throw new AppError("Invalid post ID", 400);
   }
 
-  const post = await Post.findById(id);
+  const post = await Post.findById(postId);
 
   // not found post with the id
   if (!post) {
     throw new AppError("Post not found", 404);
   }
 
-  const existingLike = await PostLike.findOne({ postId: id, userId });
+  const existingLike = await PostLike.findOne({ postId, userId });
   if (existingLike) {
     // unlike the post
     const likeDetails = await PostLike.findByIdAndDelete(existingLike._id);
-    console.log(18, likeDetails);
     return {
       status: "success",
       message: "Post unliked successfully",
@@ -23,8 +27,7 @@ const likeAndUnlikePostService = async (postId, userId) => {
     };
   } else {
     // like the post
-    const newLike = await PostLike.create({ postId: id, userId });
-    console.log(27, newLike);
+    const newLike = await PostLike.create({ postId, userId });
     return {
       status: "success",
       message: "Post liked successfully",
