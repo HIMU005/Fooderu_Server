@@ -63,10 +63,11 @@ const postByUser = async (req, res, next) => {
 };
 
 // get all posts
-const getAllPosts = async (req, res) => {
+const getAllPosts = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 5; // Default limit to 5 if not provided
     const skip = parseInt(req.query.skip) || 0; // Default skip to 0 if not provided
+    const userId = req?.user?._id;
 
     const totalPosts = await Post.countDocuments();
 
@@ -77,11 +78,29 @@ const getAllPosts = async (req, res) => {
       .populate({
         path: "media",
         options: { sort: { order: 1 } }, // Sort media by 'order' field
-      });
+      })
+      .populate("likeCount")
+      .lean();
+
+    let likedPostIds = [];
+
+    if (userId) {
+      const likes = await PostLike.find({
+        userId,
+        postId: { $in: posts.map((post) => post._id) },
+      }).select("postId");
+
+      likedPostIds = likes.map((like) => like.postId.toString());
+    }
+
+    const postsWithLikeStatus = posts.map((post) => ({
+      ...post,
+      isLiked: likedPostIds.includes(post._id.toString()),
+    }));
 
     res.json({
       status: 200,
-      data: posts,
+      data: postsWithLikeStatus,
       total: totalPosts,
       skip,
       limit,
@@ -131,22 +150,39 @@ const getPostsByFollowedRestaurants = async (req, res) => {
 
 // get a single post details
 const getASinglePost = async (req, res, next) => {
-  const { id } = req.params;
   try {
+    const { id } = req.params;
+    const userId = req?.user?._id;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid post ID", 400);
     }
 
-    const post = await Post.findById(id).populate({
-      path: "media",
-      options: { sort: { order: 1 } }, // keep media ordered
-    });
+    const post = await Post.findById(id)
+      .populate({
+        path: "media",
+        options: { sort: { order: 1 } }, // keep media ordered
+      })
+      .populate("likeCount")
+      .lean({ virtuals: true });
     if (!post) {
       throw new AppError("Post not found", 404);
     }
+
+    let isLiked = false;
+
+    if (userId) {
+      const existingLike = await PostLike.findOne({
+        postId: id,
+        userId,
+      });
+
+      isLiked = !!existingLike;
+    }
+
     return res.json({
       status: 200,
-      data: post,
+      data: { ...post, isLiked, likeCount: post.likeCount || 0 },
       message: "Single post fetched",
     });
   } catch (error) {
