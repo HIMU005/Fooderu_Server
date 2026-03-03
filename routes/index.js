@@ -10,7 +10,8 @@ const uploadRoutes = require("./uploadRoutes");
 const commentRoutes = require("./commentRoutes");
 const trendingRoutes = require("./trendingRoutes");
 const docRoutes = require("./docRoutes");
-
+const ingredientRoute = require("./ingredientRoutes");
+const cautionRoute = require("./cautionRoutes");
 // auth routes
 router.use("/auth", authRoutes);
 
@@ -38,6 +39,12 @@ router.use("/upload", uploadRoutes);
 
 // trending routes
 router.use("/trendings", trendingRoutes);
+
+// Ingredient route
+router.use("/ingredients", ingredientRoute);
+
+// caution route
+router.use("/cautions", cautionRoute);
 
 // documentation route
 router.use("/docs", docRoutes);
