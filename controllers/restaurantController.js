@@ -31,7 +31,7 @@ const getRestaurant = async (req, res, next) => {
     const postCount = await Post.countDocuments({ restaurant_id: id });
     return res.json({
       status: 200,
-      data: { ...restaurant, itemCount, postCount },
+      data: { ...restaurant.toObject(), itemCount, postCount },
       message: "single restaurant fetched successfully",
     });
   } catch (error) {
