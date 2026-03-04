@@ -21,9 +21,15 @@ const getRestaurant = async (req, res, next) => {
     if (!restaurant) {
       throw new AppError("No Restaurant againts that Id", 404);
     }
+
+    // Count menu items
+    const itemCount = await MenuItem.countDocuments({ restaurant_id: id });
+
+    // Count posts
+    const postCount = await Post.countDocuments({ restaurant_id: id });
     return res.json({
       status: 200,
-      data: restaurant,
+      data: { ...restaurant, itemCount, postCount },
       message: "single restaurant fetched successfully",
     });
   } catch (error) {
