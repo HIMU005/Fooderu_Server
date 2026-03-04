@@ -8,6 +8,8 @@ const {
   getRestaurantById,
 } = require("../services/restaurantService");
 const AppError = require("../utils/AppError");
+const MenuItem = require("../models/MenuItem");
+const Post = require("../models/Post");
 
 // Public access
 const getRestaurant = async (req, res, next) => {
