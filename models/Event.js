@@ -34,6 +34,9 @@ const eventSchema = new Schema(
   },
 );
 
+// deletes from database after expires
+eventSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
+
 // Create the Event model from our schema
 const Event = mongoose.model("Event", eventSchema);
 module.exports = Event;
