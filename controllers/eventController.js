@@ -137,19 +137,20 @@ const getEventsOfSingleRestaurant = async (req, res, next) => {
 };
 
 //get all events from all restaurant
-const getAllEventsFromAllRestaurants = async (req, res) => {
+const getAllEventsFromAllRestaurants = async (req, res, next) => {
   try {
     const now = new Date();
 
     const query = {
-      is_live: true,
       expires_at: { $gt: now }, // not expired
     };
 
     const events = await Event.find(query).sort({ created_at: -1 }).lean();
 
     const formattedEvents = events.map((event) => {
-      const start = splitDateTime(event.start_at);
+      const start = splitDateTime(
+        event.start_at ? event.start_at : event.created_at, // backward compitability as some are saved as created_at
+      );
       const expire = splitDateTime(event.expires_at);
 
       const { start_at, expires_at, ...rest } = event;
@@ -168,10 +169,8 @@ const getAllEventsFromAllRestaurants = async (req, res) => {
       data: formattedEvents,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Server error while fetching events",
-    });
+    next(error);
+    console.error(error);
   }
 };
 
