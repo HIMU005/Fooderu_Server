@@ -53,9 +53,9 @@ exports.updateUserProfile = async (req, res, next) => {
       const { coordinates } = updates.location;
 
       if (coordinates) {
-        const [lat, lng] = coordinates;
+        const [lng, lat] = coordinates;
         if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
-          throw new AppError("Invalid location coordinated", 400);
+          throw new AppError("Invalid location coordinates", 400);
         }
       }
 
