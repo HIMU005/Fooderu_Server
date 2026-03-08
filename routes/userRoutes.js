@@ -8,4 +8,10 @@ router.get("/me", protect, userController.getUserProfile);
 
 router.put("/me", protect, userController.updateUserProfile);
 
+router.patch(
+  "/changePasswrord",
+  protect,
+  userController.changePasswordController,
+);
+
 module.exports = router;
