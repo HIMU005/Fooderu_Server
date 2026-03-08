@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const Restaurant = require("../models/Restaurant");
 const AppError = require("../utils/AppError");
+const bcrypt = require("bcryptjs");
 
 exports.getUserProfile = async (req, res, next) => {
   try {
@@ -91,6 +92,38 @@ exports.updateUserProfile = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
+    next(error);
+  }
+};
+
+exports.changePasswordController = async (req, res, next) => {
+  try {
+    const { email } = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findOne({ email }).select("+password");
+
+    if (!user) {
+      throw new AppError("No user found", 404);
+    }
+
+    const isMatch = bcrypt.compare(currentPassword, user.password);
+
+    if (!isMatch) {
+      throw new AppError("Current password incorrect", 400);
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.json({
+      status: "success",
+      message: "Password updated successfully",
+    });
+  } catch (error) {
     next(error);
   }
 };
