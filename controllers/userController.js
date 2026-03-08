@@ -51,10 +51,10 @@ exports.updateUserProfile = async (req, res, next) => {
 
     // check the location
     if (updates.location) {
-      const { coordinates } = updates.location;
+      const { coordinates } = updates.location; 
 
       if (coordinates) {
-        const [lng, lat] = coordinates;
+        const [lng, lat] = coordinates; // lng should come first 
         if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
           throw new AppError("Invalid location coordinates", 400);
         }
