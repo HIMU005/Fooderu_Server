@@ -119,7 +119,7 @@ exports.changePasswordController = async (req, res, next) => {
     user.password = hashedPassword;
     await user.save();
 
-    res.status(200).json({
+    return res.json({
       status: "success",
       message: "Password updated successfully",
     });
