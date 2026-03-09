@@ -26,6 +26,6 @@ const eventRatingSchema = new Schema(
 
 eventRatingSchema.index({ userId: 1, eventId: 1 }, { unique: true });
 
-const Eventrating = model("EventRating", eventRatingSchema);
+const EventRating = model("EventRating", eventRatingSchema);
 
-module.exports = Eventrating;
+module.exports = EventRating;
