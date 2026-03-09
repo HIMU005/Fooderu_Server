@@ -455,6 +455,8 @@ const getAllMenuItems = async (req, res, next) => {
       includeImages = "false",
     } = req.query;
 
+    const userId = req.user?._id;
+
     // Initialize Aggregation Pipeline
     const pipeline = [];
 
@@ -574,6 +576,35 @@ const getAllMenuItems = async (req, res, next) => {
         $addFields: {
           images: [],
           image_url: "$image_url",
+        },
+      });
+    }
+
+    if (userId) {
+      pipeline.push({
+        $lookup: {
+          from: "menuitemratings",
+          let: { menuItemId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$menuItem", "$$menuItemId"] },
+                    { $eq: ["$user", new mongoose.Types.ObjectId(userId)] },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: "userRating",
+        },
+      });
+
+      pipeline.push({
+        $addFields: {
+          isRated: { $gt: [{ $size: "$userRating" }, 0] },
         },
       });
     }
