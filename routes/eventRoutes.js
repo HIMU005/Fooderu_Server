@@ -7,6 +7,7 @@ const {
   toggleStatus,
   getAllEventsFromAllRestaurants,
   likeAndUnlikeEvent,
+  rateAnEvent,
 } = require("../controllers/eventController");
 
 // Protect routes that modify data
@@ -17,6 +18,9 @@ router.get("/:restaurantId", protect, getEventsOfSingleRestaurant);
 
 // like an event
 router.post("/:id/like", protect, likeAndUnlikeEvent);
+
+// rate an event controller
+router.post("/:id/rate", protect, rateAnEvent);
 
 //api for getting all the events of all restaurant
 router.get("/", protect, getAllEventsFromAllRestaurants);

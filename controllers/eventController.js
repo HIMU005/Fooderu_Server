@@ -9,6 +9,8 @@ const {
 } = require("../services/eventService");
 const AppError = require("../utils/AppError");
 const { default: mongoose } = require("mongoose");
+const Eventrating = require("../models/EventRating");
+const EventRating = require("../models/EventRating");
 
 function combineDateTime(dateStr, timeStr) {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -220,10 +222,78 @@ const likeAndUnlikeEvent = async (req, res, next) => {
   }
 };
 
+const rateAnEvent = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+
+    if (!userId) {
+      throw new AppError("User not authenticated", 401);
+    }
+
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("Invalid Event ID format", 400);
+    }
+    const { rating } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      throw new AppError("Rating must be between 1 and 5", 400);
+    }
+    // create or update rating
+    await EventRating.findOneAndUpdate(
+      {
+        userId: userId,
+        eventId: id,
+      },
+      {
+        rating,
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+
+    const eventObjectId = new mongoose.Types.ObjectId(id);
+
+    // recalculate rating
+    const agg = await EventRating.aggregate([
+      {
+        $match: { eventId: eventObjectId },
+      },
+      {
+        $group: {
+          _id: "$eventId",
+          averageRating: { $avg: "$rating" },
+          totalRatings: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // update event rating stats
+    await Event.findByIdAndUpdate(id, {
+      averageRating: agg[0]?.averageRating || 0,
+      totalRatings: agg[0]?.totalRatings || 0,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Thanks for your rating.",
+      averageRating: agg[0]?.averageRating || 0,
+      totalRatings: agg[0]?.totalRatings || 0,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   create,
   getEventsOfSingleRestaurant,
   getAllEventsFromAllRestaurants,
   toggleStatus,
   likeAndUnlikeEvent,
+  rateAnEvent,
 };
