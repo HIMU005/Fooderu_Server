@@ -84,10 +84,12 @@ const likeAndUnlikeEventService = async (eventId, userId) => {
   const existingLike = await EventLike.findOne({ eventId, userId });
 
   if (existingLike) {
-    await EventLike.findByIdAndDelete(existingLike._id);
-    await Event.findByIdAndUpdate(eventId, {
-      $inc: { totalLikes: -1 },
-    });
+    await EventLike.deleteOne({ _id: existingLike._id });
+
+    await Event.updateOne(
+      { _id: eventId, totalLikes: { $gt: 0 } },
+      { $inc: { totalLikes: -1 } },
+    );
 
     return {
       status: "success",
@@ -97,9 +99,7 @@ const likeAndUnlikeEventService = async (eventId, userId) => {
   } else {
     await EventLike.create({ eventId, userId });
 
-    await Event.findByIdAndUpdate(eventId, {
-      $inc: { totalLikes: 1 },
-    });
+    await Event.updateOne({ _id: eventId }, { $inc: { totalLikes: 1 } });
     return {
       status: "success",
       message: "event like successful",
