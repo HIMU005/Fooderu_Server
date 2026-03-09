@@ -11,6 +11,7 @@ const AppError = require("../utils/AppError");
 const { default: mongoose } = require("mongoose");
 const Eventrating = require("../models/EventRating");
 const EventRating = require("../models/EventRating");
+const EventLike = require("../models/EventLike");
 
 function combineDateTime(dateStr, timeStr) {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -143,6 +144,7 @@ const getEventsOfSingleRestaurant = async (req, res, next) => {
 const getAllEventsFromAllRestaurants = async (req, res, next) => {
   try {
     const now = new Date();
+    const userId = req?.user?._id;
 
     const query = {
       expires_at: { $gt: now }, // not expired
@@ -150,7 +152,32 @@ const getAllEventsFromAllRestaurants = async (req, res, next) => {
 
     const events = await Event.find(query).sort({ created_at: -1 }).lean();
 
+    //  Get liked events by this user
+    let likedEventIds = [];
+    if (userId && events.length) {
+      const likes = await EventLike.find({
+        userId,
+        eventId: { $in: events.map((e) => e._id) },
+      }).select("eventId");
+
+      likedEventIds = likes.map((like) => like.eventId.toString());
+    }
+
+    //  Get rated events by this user
+    let ratingsMap = {};
+    if (userId && events.length) {
+      const ratings = await EventRating.find({
+        userId,
+        eventId: { $in: events.map((e) => e._id) },
+      }).select("eventId rating");
+
+      ratings.forEach((r) => {
+        ratingsMap[r.eventId.toString()] = r.rating;
+      });
+    }
+
     const formattedEvents = events.map((event) => {
+      const eventIdStr = event._id.toString();
       const start = splitDateTime(
         event.start_at ? event.start_at : event.created_at, // backward compitability as some are saved as created_at
       );
@@ -159,6 +186,8 @@ const getAllEventsFromAllRestaurants = async (req, res, next) => {
       const { start_at, expires_at, ...rest } = event;
       return {
         ...rest,
+        isLiked: likedEventIds.includes(eventIdStr),
+        isRated: ratingsMap[eventIdStr] ? true : false,
         start_date: start.date,
         start_time: start.time,
         expire_date: expire.date,
