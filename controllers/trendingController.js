@@ -193,7 +193,7 @@ const getTrendingPosts = async (req, res) => {
       {
         $match: {
           createdAt: { $gte: sinceDate },
-          postType: { $in: ["normal", "menuItem"] },
+          type: { $in: ["normal", "menuItem"] },
         },
       },
     ];
@@ -217,7 +217,7 @@ const getTrendingPosts = async (req, res) => {
 
       // Try without time filter
       pipeline[0].$match = {
-        postType: { $in: ["normal", "menuItem"] },
+        type: { $in: ["normal", "menuItem"] },
       };
     }
 
@@ -292,7 +292,7 @@ const getTrendingPosts = async (req, res) => {
               { $multiply: ["$recentCommentsCount", 0.8] },
               { $multiply: ["$restaurantFollowersCount", 0.15] },
               {
-                $cond: [{ $eq: ["$postType", "menuItem"] }, 2.0, 1.0],
+                $cond: [{ $eq: ["$type", "menuItem"] }, 2.0, 1.0],
               },
             ],
           },
@@ -327,7 +327,7 @@ const getTrendingPosts = async (req, res) => {
       {
         $project: {
           // Post basic info
-          postType: 1,
+          type: 1,
           //using for now :::: after changing the schema of post no longer need it ::: remove it then
           image_url: 1,
           description: 1,
