@@ -24,7 +24,7 @@ const eventRatingSchema = new Schema(
   { timestamps: true },
 );
 
-eventRatingSchema.index({ user: 1, event: 1 }, { unique: true });
+eventRatingSchema.index({ userId: 1, eventId: 1 }, { unique: true });
 
 const Eventrating = model("EventRating", eventRatingSchema);
 
