@@ -19,7 +19,7 @@ const likeAndUnlikePostService = async (postId, userId) => {
   const existingLike = await PostLike.findOne({ postId, userId });
   if (existingLike) {
     // unlike the post
-    const likeDetails = await PostLike.findByIdAndDelete(existingLike._id);
+    await PostLike.findByIdAndDelete(existingLike._id);
     return {
       status: "success",
       message: "Post unliked successfully",
@@ -27,7 +27,7 @@ const likeAndUnlikePostService = async (postId, userId) => {
     };
   } else {
     // like the post
-    const newLike = await PostLike.create({ postId, userId });
+    await PostLike.create({ postId, userId });
     return {
       status: "success",
       message: "Post liked successfully",

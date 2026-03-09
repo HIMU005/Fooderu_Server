@@ -5,6 +5,7 @@ const {
   createEvent,
   toggleEventStatus,
   getEventsOfRestaurant,
+  likeAndUnlikeEventService,
 } = require("../services/eventService");
 const AppError = require("../utils/AppError");
 const { default: mongoose } = require("mongoose");
@@ -205,9 +206,24 @@ const toggleStatus = async (req, res, next) => {
   }
 };
 
+// like unlike controller
+const likeAndUnlikeEvent = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req?.user?._id;
+
+    const result = await likeAndUnlikeEventService(id, userId);
+
+    return res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   create,
   getEventsOfSingleRestaurant,
   getAllEventsFromAllRestaurants,
   toggleStatus,
+  likeAndUnlikeEvent,
 };
