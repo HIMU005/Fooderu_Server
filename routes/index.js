@@ -12,6 +12,8 @@ const trendingRoutes = require("./trendingRoutes");
 const docRoutes = require("./docRoutes");
 const ingredientRoute = require("./ingredientRoutes");
 const cautionRoute = require("./cautionRoutes");
+const savedItemRoutes = require("./savedItemRoutes");
+
 // auth routes
 router.use("/auth", authRoutes);
 
@@ -45,6 +47,9 @@ router.use("/ingredients", ingredientRoute);
 
 // caution route
 router.use("/cautions", cautionRoute);
+
+// saved items routes
+router.use("/saved-items", savedItemRoutes);
 
 // documentation route
 router.use("/docs", docRoutes);
