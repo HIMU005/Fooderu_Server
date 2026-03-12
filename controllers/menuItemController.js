@@ -605,7 +605,13 @@ const getAllMenuItems = async (req, res, next) => {
       pipeline.push({
         $addFields: {
           isRated: { $gt: [{ $size: "$userRating" }, 0] },
+          myRating: { $arrayElemAt: ["$userRating.rating", 0] },
         },
+      });
+
+      // remove userRating from response
+      pipeline.push({
+        $project: { userRating: 0 },
       });
     }
 
