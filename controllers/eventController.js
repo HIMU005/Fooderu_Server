@@ -184,10 +184,13 @@ const getAllEventsFromAllRestaurants = async (req, res, next) => {
       const expire = splitDateTime(event.expires_at);
 
       const { start_at, expires_at, ...rest } = event;
+      const myRating = ratingsMap[eventIdStr] ?? null;
+
       return {
         ...rest,
         isLiked: likedEventIds.includes(eventIdStr),
         isRated: ratingsMap[eventIdStr] ? true : false,
+        ...(isRated && { myRating }),
         start_date: start.date,
         start_time: start.time,
         expire_date: expire.date,
