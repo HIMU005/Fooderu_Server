@@ -11,7 +11,7 @@ const EventRating = require("../models/EventRating");
 const searchController = async (req, res, next) => {
   try {
     let { minPrice, maxPrice, ratings, searchText } = req.query;
-    const userId = "6909a478a3689790c1ce304b";
+    const userId = req?.user?._id;
 
     // ------------------ NORMALIZE INPUT ------------------
     minPrice = minPrice ? parseInt(minPrice) : null;
