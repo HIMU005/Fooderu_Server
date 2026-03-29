@@ -23,6 +23,9 @@ function splitDateTime(dateObj) {
 
   const date = new Date(dateObj);
 
+  // ✅ check for invalid date
+  if (isNaN(date.getTime())) return null;
+
   return {
     date: date.toISOString().slice(0, 10), // YYYY-MM-DD
     time: date.toTimeString().slice(0, 5), // HH:mm
