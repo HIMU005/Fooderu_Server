@@ -104,7 +104,7 @@ const searchController = async (req, res, next) => {
     const formattedEvents = events.map((event) => {
       const id = event._id.toString();
 
-      const start = splitDateTime(event.start_at || event.created_at);
+      const start = splitDateTime(event.start_at);
       const expire = splitDateTime(event.expires_at);
 
       const { start_at, expires_at, ...rest } = event;
@@ -117,10 +117,10 @@ const searchController = async (req, res, next) => {
         isLiked: likedEventSet.has(id),
         isRated,
         ...(isRated && { myRating }),
-        start_date: start.date,
-        start_time: start.time,
-        expire_date: expire.date,
-        expire_time: expire.time,
+        start_date: start?.date || null,
+        start_time: start?.time || null,
+        expire_date: expire?.date || null,
+        expire_time: expire?.time || null,
       };
     });
 
