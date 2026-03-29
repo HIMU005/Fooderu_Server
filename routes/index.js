@@ -13,6 +13,7 @@ const docRoutes = require("./docRoutes");
 const ingredientRoute = require("./ingredientRoutes");
 const cautionRoute = require("./cautionRoutes");
 const savedItemRoutes = require("./savedItemRoutes");
+const searchRoutes = require("./searchRoutes");
 
 // auth routes
 router.use("/auth", authRoutes);
@@ -47,6 +48,9 @@ router.use("/ingredients", ingredientRoute);
 
 // caution route
 router.use("/cautions", cautionRoute);
+
+// search route
+router.use("/search", searchRoutes);
 
 // saved items routes
 router.use("/saved-items", savedItemRoutes);

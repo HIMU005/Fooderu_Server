@@ -9,7 +9,6 @@ const {
 } = require("../services/eventService");
 const AppError = require("../utils/AppError");
 const { default: mongoose } = require("mongoose");
-const Eventrating = require("../models/EventRating");
 const EventRating = require("../models/EventRating");
 const EventLike = require("../models/EventLike");
 
@@ -328,4 +327,5 @@ module.exports = {
   toggleStatus,
   likeAndUnlikeEvent,
   rateAnEvent,
+  splitDateTime,
 };
