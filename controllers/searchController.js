@@ -7,6 +7,7 @@ const MenuItemRating = require("../models/MenuItemRating");
 const { splitDateTime } = require("./eventController");
 const EventLike = require("../models/EventLike");
 const EventRating = require("../models/EventRating");
+const RestaurantFollow = require("../models/RestaurantFollow");
 
 const searchController = async (req, res, next) => {
   try {
@@ -178,6 +179,28 @@ const searchController = async (req, res, next) => {
       };
     });
 
+    // ================== RESTAURANT FOLLOW ==================
+    const restaurantIds = restaurants.map((r) => r._id);
+
+    let followedSet = new Set();
+
+    if (userId && restaurantIds.length) {
+      const follows = await RestaurantFollow.find({
+        userId,
+        restaurantId: { $in: restaurantIds },
+      }).lean();
+
+      followedSet = new Set(follows.map((f) => f.restaurantId.toString()));
+    }
+
+    // ================== FORMAT RESTAURANTS ==================
+    const formattedRestaurants = restaurants.map((r) => ({
+      _id: r._id,
+      name: r.name,
+      displayPicture: r.displayPicture,
+      isFollowed: followedSet.has(r._id.toString()),
+      // if future distance will add
+    }));
     // ================== RESPONSE ==================
     return res.status(200).json({
       message: "search results",
@@ -185,7 +208,7 @@ const searchController = async (req, res, next) => {
         events: formattedEvents,
         posts: formattedPosts,
         menuItems: formattedMenuItems,
-        restaurants,
+        restaurants: formattedRestaurants,
       },
     });
   } catch (error) {
