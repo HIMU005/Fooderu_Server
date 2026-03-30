@@ -231,16 +231,73 @@ const PostARating = async (req, res, next) => {
 const GetASingleMenuItem = async (req, res, next) => {
   try {
     const { menuItemId } = req.params;
+    const { includeImages = "false" } = req.query;
 
     // 1. Check if ID format is valid to prevent CastError
     if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
       throw new AppError("Invalid Menu Item ID format", 400);
     }
 
-    const menuItem = await MenuItem.findById(menuItemId).populate(
-      "restaurant_id",
-      "name",
-    );
+    const shouldIncludeImages = includeImages.toLowerCase() === "true";
+
+    // Build Agregation Pipeline
+    const pipeline = [
+      { $match: { _id: new mongoose.Types.ObjectId(menuItemId) } },
+
+      // Lookup restaurant details
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurant_id",
+          foreignField: "_id",
+          as: "restaurant_id",
+        },
+      },
+      {
+        $addFields: {
+          restaurant_id: { $arrayElemAt: ["$restaurant_id", 0] },
+        },
+      },
+    ];
+
+    // Lookup Images if requested
+    if (shouldIncludeImages) {
+      pipeline.push({
+        $lookup: {
+          from: "menuitemimages",
+          localField: "_id",
+          foreignField: "menuItemId",
+          as: "images",
+        },
+      });
+
+      // Sort Images by order and transform to just URLs
+      pipeline.push({
+        $addFields: {
+          images: {
+            $map: {
+              input: {
+                $sortArray: {
+                  input: "$images",
+                  sortBy: { order: 1, createdAt: 1 },
+                },
+              },
+              as: "img",
+              in: "$$img.url",
+            },
+          },
+        },
+      });
+    } else {
+      pipeline.push({
+        $addFields: {
+          images: [],
+        },
+      });
+    }
+
+    const menuItems = await MenuItem.aggregate(pipeline);
+    const menuItem = menuItems[0];
 
     if (!menuItem) {
       throw new AppError("Menu Item not found", 404);
