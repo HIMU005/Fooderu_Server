@@ -1,4 +1,4 @@
-const { default: mongoose } = require("mongoose");
+const { default: mongoose, get } = require("mongoose");
 const MenuItemRating = require("../models/MenuItemRating");
 const MenuItemImage = require("../models/MenuItemImage");
 const Restaurant = require("../models/Restaurant");
@@ -14,6 +14,10 @@ const {
   uploadMultipleToImageKit,
   formatUploadResponse,
 } = require("../services/imageService");
+const {
+  getRestaurantLookupStages,
+  getImagePipelineStages,
+} = require("../utils/aggregationHelpers");
 
 /**
  * @desc    Create a new menu item under a restaurant
@@ -115,7 +119,18 @@ const getAllItemsUnderARestaurant = async (req, res, next) => {
       throw new AppError("Invalid Restaurant ID format", 400);
     }
 
+    const restaurant = await Restaurant.findById(restaurantId);
+
+    if (!restaurant) {
+      throw new AppError("Restaurant not found", 404);
+    }
+
     const response = await getAllItemsUnderARestaurantService(restaurantId);
+
+    if (response.length === 0 || !response) {
+      throw new AppError("No menu items found for this restaurant", 404);
+    }
+
     res.status(200).json({
       status: "success",
       data: response,
@@ -243,58 +258,9 @@ const GetASingleMenuItem = async (req, res, next) => {
     // Build Agregation Pipeline
     const pipeline = [
       { $match: { _id: new mongoose.Types.ObjectId(menuItemId) } },
-
-      // Lookup restaurant details
-      {
-        $lookup: {
-          from: "restaurants",
-          localField: "restaurant_id",
-          foreignField: "_id",
-          as: "restaurant_id",
-        },
-      },
-      {
-        $addFields: {
-          restaurant_id: { $arrayElemAt: ["$restaurant_id", 0] },
-        },
-      },
+      ...getRestaurantLookupStages(),
+      ...getImagePipelineStages(shouldIncludeImages),
     ];
-
-    // Lookup Images if requested
-    if (shouldIncludeImages) {
-      pipeline.push({
-        $lookup: {
-          from: "menuitemimages",
-          localField: "_id",
-          foreignField: "menuItemId",
-          as: "images",
-        },
-      });
-
-      // Sort Images by order and transform to just URLs
-      pipeline.push({
-        $addFields: {
-          images: {
-            $map: {
-              input: {
-                $sortArray: {
-                  input: "$images",
-                  sortBy: { order: 1, createdAt: 1 },
-                },
-              },
-              as: "img",
-              in: "$$img.url",
-            },
-          },
-        },
-      });
-    } else {
-      pipeline.push({
-        $addFields: {
-          images: [],
-        },
-      });
-    }
 
     const menuItems = await MenuItem.aggregate(pipeline);
     const menuItem = menuItems[0];
@@ -564,20 +530,7 @@ const getAllMenuItems = async (req, res, next) => {
 
     // Always lookup restaurant if place filter is present or restaurant data is needed
     if (place || needsRestaurantData) {
-      pipeline.push({
-        $lookup: {
-          from: "restaurants",
-          localField: "restaurant_id",
-          foreignField: "_id",
-          as: "restaurant_id", // TODO: need to change it as restaurant
-        },
-      });
-
-      pipeline.push({
-        $addFields: {
-          restaurant_id: { $arrayElemAt: ["$restaurant_id", 0] },
-        },
-      });
+      pipeline.push(...getRestaurantLookupStages());
 
       // Apply place filter if provided
       if (place) {
@@ -600,42 +553,7 @@ const getAllMenuItems = async (req, res, next) => {
 
     const shouldIncludeImages = includeImages.toLowerCase() === "true";
 
-    if (shouldIncludeImages) {
-      pipeline.push({
-        $lookup: {
-          from: "menuitemimages",
-          localField: "_id",
-          foreignField: "menuItemId",
-          as: "images",
-        },
-      });
-
-      // Transform images array to just URLs, sorted by order
-      pipeline.push({
-        $addFields: {
-          images: {
-            $map: {
-              input: {
-                $sortArray: {
-                  input: "$images",
-                  sortBy: { order: 1, createdAt: 1 },
-                },
-              },
-              as: "img",
-              in: "$$img.url",
-            },
-          },
-        },
-      });
-    } else {
-      // Add empty images array when not requested
-      pipeline.push({
-        $addFields: {
-          images: [],
-          image_url: "$image_url",
-        },
-      });
-    }
+    pipeline.push(...getImagePipelineStages(shouldIncludeImages));
 
     if (userId) {
       pipeline.push({
