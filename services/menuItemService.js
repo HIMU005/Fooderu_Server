@@ -4,6 +4,11 @@ const MenuItemImage = require("../models/MenuItemImage");
 const Ingredient = require("../models/Ingredient");
 const Caution = require("../models/Caution");
 const AppError = require("../utils/AppError");
+const { default: mongoose } = require("mongoose");
+const {
+  getRestaurantLookupStages,
+  getImagePipelineStages,
+} = require("../utils/aggregationHelpers");
 
 /**
  * Create a new menu item under a restaurant
@@ -77,26 +82,18 @@ const createMenuItem = async (itemData) => {
 };
 
 const getAllItemsUnderARestaurantService = async (restaurantId) => {
-  const restaurant = await Restaurant.findById(restaurantId);
-
-  if (!restaurant) {
-    throw new AppError("Restaurant not found", 404);
-  }
-
   try {
-    const response = await MenuItem.find({
-      restaurant_id: restaurantId,
-    })
-      .sort({ createdAt: -1 })
-      .populate("restaurant_id");
-
-    if (response.length === 0 || !response) {
-      throw new AppError("No menu items found for this restaurant", 404);
-    }
+    const pipeline = [
+      { $match: { restaurant_id: new mongoose.Types.ObjectId(restaurantId) } },
+      ...getRestaurantLookupStages(),
+      ...getImagePipelineStages(true), // Include images for all items
+    ];
+    const response = await MenuItem.aggregate(pipeline);
+    console.log(response);
 
     return response;
   } catch (error) {
-    throw new AppError(`Failed to get menu Items: ${error.message}`, 500);
+    console.error("Error in getAllItemsUnderARestaurantService:", error);
   }
 };
 
