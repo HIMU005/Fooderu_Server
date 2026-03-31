@@ -80,5 +80,11 @@ menuItemSchema.index({
   description: "text",
 });
 
+menuItemSchema.virtual("images", {
+  ref: "MenuItemImage",
+  localField: "_id",
+  foreignField: "menuItemId",
+});
+
 const MenuItem = mongoose.model("MenuItem", menuItemSchema);
 module.exports = MenuItem;
