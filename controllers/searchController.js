@@ -190,11 +190,11 @@ const searchController = async (req, res, next) => {
 
     if (userId && restaurantIds.length) {
       const follows = await RestaurantFollow.find({
-        userId,
-        restaurantId: { $in: restaurantIds },
+        user_id: userId,
+        restaurant_id: { $in: restaurantIds },
       }).lean();
 
-      followedSet = new Set(follows.map((f) => f.restaurantId.toString()));
+      followedSet = new Set(follows.map((f) => f.restaurant_id.toString()));
     }
 
     // ================== FORMAT RESTAURANTS ==================
