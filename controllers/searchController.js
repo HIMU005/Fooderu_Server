@@ -32,9 +32,6 @@ const searchController = async (req, res, next) => {
     if (!isSearchEmpty) {
       postFilter["details.description"] = { $regex: searchRegex };
     }
-    if (ratings !== null) {
-      postFilter["details.averageRating"] = { $gte: ratings };
-    }
 
     const menuItemFilter = {};
     if (!isSearchEmpty) {
