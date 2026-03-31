@@ -68,6 +68,10 @@ const searchController = async (req, res, next) => {
 
     const menuItemPromise = MenuItem.find(menuItemFilter)
       .populate("restaurant_id")
+      .populate({
+        path: "images",
+        options: { sort: { isPrimary: -1, order: 1 } },
+      })
       .lean();
 
     const restaurantPromise = Restaurant.find(restaurantFilter).lean();
@@ -173,7 +177,7 @@ const searchController = async (req, res, next) => {
         totalRatings: item.totalRatings,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
-        images: item.images || [],
+        images: (item.images || []).map((img) => img.url),
         isRated: !!myRating,
         myRating: myRating || null,
       };
