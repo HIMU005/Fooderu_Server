@@ -17,6 +17,8 @@ const {
 const {
   getRestaurantLookupStages,
   getImagePipelineStages,
+  getPostImageLookupStages,
+  getPostLikeLookupStages,
 } = require("../utils/aggregationHelpers");
 
 /**
@@ -144,14 +146,21 @@ const getAllItemsUnderARestaurant = async (req, res, next) => {
 // get all posts under a restaurant
 const getAllPostsUnderARestaurant = async (req, res, next) => {
   try {
+    const userId = req.user._id;
+
     const { restaurantId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
       throw new AppError("Invalid Restaurant ID format", 400);
     }
 
-    const posts = await Post.find({ restaurant_id: restaurantId }).sort({
-      createdAt: -1,
-    });
+    const pipeline = [
+      { $match: { restaurant_id: new mongoose.Types.ObjectId(restaurantId) } },
+      { $sort: { createdAt: -1 } },
+      ...getPostImageLookupStages(),
+      ...getPostLikeLookupStages(userId),
+    ];
+
+    const posts = await Post.aggregate(pipeline);
 
     if (!posts.length) {
       return res.status(200).json({

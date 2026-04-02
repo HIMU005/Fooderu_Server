@@ -89,7 +89,6 @@ const getAllItemsUnderARestaurantService = async (restaurantId) => {
       ...getImagePipelineStages(true), // Include images for all items
     ];
     const response = await MenuItem.aggregate(pipeline);
-    console.log(response);
 
     return response;
   } catch (error) {
