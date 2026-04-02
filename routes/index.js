@@ -13,6 +13,7 @@ const docRoutes = require("./docRoutes");
 const ingredientRoute = require("./ingredientRoutes");
 const cautionRoute = require("./cautionRoutes");
 const savedItemRoutes = require("./savedItemRoutes");
+const feedRoutes = require("./feedRoutes");
 const searchRoutes = require("./searchRoutes");
 
 // auth routes
@@ -54,6 +55,9 @@ router.use("/search", searchRoutes);
 
 // saved items routes
 router.use("/saved-items", savedItemRoutes);
+
+// Route to fetch feed (both posts and menu items)
+router.use("/feeds", feedRoutes);
 
 // documentation route
 router.use("/docs", docRoutes);
