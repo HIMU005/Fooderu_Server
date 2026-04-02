@@ -48,6 +48,43 @@ const getImagePipelineStages = (shouldIncludeImages) => {
   ];
 };
 
+const getMenuItemRatingLookupStages = (userId) => {
+  return [
+    ...(userId
+      ? [
+          {
+            $lookup: {
+              from: "menuitemratings",
+              let: { menuItemId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$menuItem", "$$menuItemId"] },
+                        {
+                          $eq: ["$user", new mongoose.Types.ObjectId(userId)],
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+              as: "userRating",
+            },
+          },
+          {
+            $addFields: {
+              isRated: { $gt: [{ $size: "$userRating" }, 0] },
+              myRating: { $arrayElemAt: ["$userRating.rating", 0] },
+            },
+          },
+          { $project: { userRating: 0 } },
+        ]
+      : [{ $addFields: { isRated: false, myRating: null } }]),
+  ];
+};
+
 // ==================== USER RATING LOOKUP ====================
 
 /**
@@ -107,8 +144,83 @@ const getRestaurantLookupStages = () => [
   },
 ];
 
+const getPostImageLookupStages = () => {
+  return [
+    {
+      $lookup: {
+        from: "postimages",
+        localField: "_id",
+        foreignField: "postId",
+        as: "media",
+      },
+    },
+    {
+      $addFields: {
+        media: {
+          $sortArray: {
+            input: "$media",
+            sortBy: { order: 1 },
+          },
+        },
+      },
+    },
+  ];
+};
+
+const getPostLikeLookupStages = (userId) => {
+  return [
+    {
+      $lookup: {
+        from: "postlikes", // Fixed: Use lowercase (MongoDB collection name)
+        localField: "_id",
+        foreignField: "postId",
+        as: "likeCount",
+      },
+    },
+    {
+      $addFields: {
+        likeCount: { $size: "$likeCount" },
+      },
+    },
+    ...(userId
+      ? [
+          {
+            $lookup: {
+              from: "postlikes", // Fixed: Use lowercase for consistency
+              let: { postId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$postId", "$$postId"] },
+                        {
+                          $eq: ["$userId", new mongoose.Types.ObjectId(userId)],
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+              as: "userLike",
+            },
+          },
+          {
+            $addFields: {
+              isLiked: { $gt: [{ $size: "$userLike" }, 0] },
+            },
+          },
+          { $project: { userLike: 0 } },
+        ]
+      : [{ $addFields: { isLiked: false } }]),
+  ];
+};
+
 module.exports = {
   getImagePipelineStages,
+  getPostImageLookupStages,
   getUserRatingPipelineStages,
   getRestaurantLookupStages,
+  getPostLikeLookupStages,
+  getMenuItemRatingLookupStages,
 };

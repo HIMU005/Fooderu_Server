@@ -50,6 +50,11 @@ const menuItemSchema = new Schema(
       type: Number,
       default: 0,
     },
+    type: {
+      type: String,
+      enum: ["menuItem"],
+      default: "menuItem",
+    },
     ingredients: [
       {
         type: String,
