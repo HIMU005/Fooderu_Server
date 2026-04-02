@@ -25,27 +25,25 @@ const getAllFeeds = async (req, res, next) => {
     const queryConditions = {};
     if (cursor) {
       const cursorDate = new Date(cursor);
-      if (isNaN(cursorDate.getTime())) {
+      if (!isNaN(cursorDate.getTime())) {
         queryConditions.createdAt = { $lt: cursorDate };
       }
     }
 
     // Fetch items from both collections with cursor condition
     const [posts, menuItems] = await Promise.all([
-      // Posts query with cursor
       Post.aggregate([
         { $match: queryConditions },
         { $sort: { createdAt: -1 } },
-        { $limit: limit * 2 }, // Fetch extra to account for merging
+        { $limit: limit + 1 }, // Fetch one extra to check for more items
         ...getPostImageLookupStages(),
         ...getPostLikeLookupStages(userId),
       ]),
 
-      // MenuItems query with cursor
       MenuItem.aggregate([
         { $match: queryConditions },
         { $sort: { createdAt: -1 } },
-        { $limit: limit * 2 },
+        { $limit: limit + 1 }, // Fetch one extra to check for more items
         ...getRestaurantLookupStages(),
         ...getImagePipelineStages(includeImages),
         ...getMenuItemRatingLookupStages(userId),
@@ -56,33 +54,28 @@ const getAllFeeds = async (req, res, next) => {
     const combinedFeeds = [...posts, ...menuItems];
     combinedFeeds.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    // Take exactly what we need
+    // Check if we have more items
+    const hasMore = combinedFeeds.length > limit;
+
+    // Take only what we need (limit items)
     const paginatedFeeds = combinedFeeds.slice(0, limit);
 
-    // Get next cursor (timestamp of last item)
+    // Get next cursor (timestamp of last item in current page)
     const nextCursor =
-      paginatedFeeds.length === limit
+      paginatedFeeds.length > 0
         ? paginatedFeeds[paginatedFeeds.length - 1].createdAt
         : null;
 
-    // Check if there are more items
-    let hasMore = false;
-    if (nextCursor) {
-      // Quick check if more items exist
-      const [morePosts, moreMenuItems] = await Promise.all([
-        Post.findOne({ createdAt: { $lt: nextCursor } }).select("_id"),
-        MenuItem.findOne({
-          createdAt: { $lt: nextCursor },
-        }).select("_id"),
-      ]);
-      hasMore = !!(morePosts || moreMenuItems);
-    }
+    // Important: Convert to ISO string for consistency
+    const nextCursorString = nextCursor
+      ? new Date(nextCursor).toISOString()
+      : null;
 
     res.json({
       status: 200,
       data: paginatedFeeds,
       pagination: {
-        nextCursor,
+        nextCursor: nextCursorString,
         hasMore,
         limit,
       },
@@ -90,7 +83,6 @@ const getAllFeeds = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error fetching feed:", error);
-
     next(error);
   }
 };
