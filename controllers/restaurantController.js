@@ -29,9 +29,20 @@ const getRestaurant = async (req, res, next) => {
 
     // Count posts
     const postCount = await Post.countDocuments({ restaurant_id: id });
+
+    let isFollowed = false;
+
+    if (req.user?._id) {
+      const follow = await RestaurantFollow.findOne({
+        user_id: req.user._id,
+        restaurant_id: id,
+      });
+      isFollowed == !!follow;
+    }
+
     return res.json({
       status: 200,
-      data: { ...restaurant.toObject(), itemCount, postCount },
+      data: { ...restaurant.toObject(), itemCount, postCount, isFollowed },
       message: "single restaurant fetched successfully",
     });
   } catch (error) {
