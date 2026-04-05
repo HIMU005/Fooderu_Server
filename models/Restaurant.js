@@ -72,7 +72,7 @@ const restaurantSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 restaurantSchema.virtual("followers", {
@@ -87,6 +87,9 @@ restaurantSchema.virtual("followersCount", {
   foreignField: "restaurant_id",
   count: true,
 });
+
+// this is for filtering the restaurant by location and distance
+restaurantSchema.index({ location: "2dsphere" });
 
 const Restaurant = model("Restaurant", restaurantSchema);
 module.exports = Restaurant;

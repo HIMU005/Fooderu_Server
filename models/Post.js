@@ -9,32 +9,79 @@ const postSchema = new Schema(
       required: true,
       index: true,
     },
-    description: {
-      type: String,
-      trim: true,
-    },
-    image_url: {
-      type: String,
-      trim: true,
-    },
-    isEvent: {
-      type: Boolean,
-      default: false,
-    },
-    postType: {
-      type: String,
-      enum: ["normal", "menuItem", "event"],
-      default: "normal",
-    },
     details: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
+      description: {
+        type: String,
+        trim: true,
+      },
+      name: {
+        type: String,
+        trim: true,
+        maxlength: [100, "Name cannot exceed 100 characters"],
+        index: true,
+      },
+      price: {
+        type: Number,
+      },
+      ingredients: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      cautions: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      is_boosted: {
+        type: Boolean,
+        default: false,
+      },
+      boosted_until: {
+        type: Date,
+      },
+      averageRating: {
+        type: Number,
+        default: 0,
+      },
+      totalRatings: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    type: {
+      type: String,
+      enum: ["normal", "menuItem"],
+      default: "normal",
     },
   },
   {
     timestamps: true,
-  }
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+// virtual populate for post media
+postSchema.virtual("media", {
+  ref: "PostImage",
+  localField: "_id",
+  foreignField: "postId",
+});
+
+postSchema.virtual("likeCount", {
+  ref: "PostLike",
+  localField: "_id",
+  foreignField: "postId",
+  count: true,
+});
+
+// indexes for text search and filtering
+postSchema.index({ "details.description": "text" });
+postSchema.index({ restaurant_id: 1 });
 
 const Post = model("Post", postSchema);
 module.exports = Post;

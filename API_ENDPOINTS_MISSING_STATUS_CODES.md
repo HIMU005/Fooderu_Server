@@ -15,12 +15,12 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 | Method | Endpoint                    | Description             | Missing Status Codes | Authentication | Purpose                               | Implemented |
 | ------ | --------------------------- | ----------------------- | -------------------- | -------------- | ------------------------------------- | ----------- |
 | POST   | `/auth/register`            | Register a new user     | 409                  | None           | Email already exists                  | ✔           |
-| POST   | `/auth/login`               | Login with credentials  | 403                  | None           | Email not verified / account disabled | ✘           |
+| POST   | `/auth/login`               | Login with credentials  | 403                  | None           | Email not verified / account disabled | ✔           |
 | POST   | `/auth/login_with_social`   | Social login            | 401                  | None           | Invalid or expired social token       | ✘           |
 | POST   | `/auth/login_with_clerk`    | Clerk authentication    | 401                  | None           | Invalid Clerk token                   | ✘           |
 | POST   | `/auth/login_with_firebase` | Firebase authentication | 401                  | None           | Invalid Firebase token                | ✘           |
-| GET    | `/auth/verify_email`        | Verify email address    | 401                  | None           | Invalid or expired verification token | ✘           |
-|        |                             |                         | 404                  | None           | User not found                        | ✘           |
+| GET    | `/auth/verify_email`        | Verify email address    | 401                  | None           | Invalid or expired verification token | ✔           |
+|        |                             |                         | 404                  | None           | User not found                        | ✔           |
 
 ---
 
@@ -48,15 +48,15 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 | GET    | `/restaurants/:restaurantId`       | Get restaurant                 | 401                  | Should be Required | Unauthorized              | ✅          |
 |        |                                    | Restaurant id object missmatch | 400                  |                    | Object id missmatch       | ✅          |
 |        |                                    |                                | 404                  |                    | Restaurant not found      | ✅          |
-| GET    | `/restaurants/:restaurantId/items` | Get menu items                 | 401                  | Should be Required | Unauthorized              | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
+| GET    | `/restaurants/:restaurantId/items` | Get menu items                 | 401                  | Should be Required | Unauthorized              | ✔           |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✔           |
 | GET    | `/restaurants/:restaurantId/posts` | Get posts                      | 401                  | Should be Required | Unauthorized              | ✘           |
 |        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
 | POST   | `/restaurants`                     | Create restaurant              | 401                  | Should be Required | Unauthorized              | ✅          |
 |        |                                    |                                | 409                  | Should be Required | Already have a restaurant | ✅          |
-| POST   | `/restaurants/:restaurantId/items` | Create menu item               | 401                  | Should be Required | Unauthorized              | ✘           |
-|        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✘           |
-|        |                                    |                                | 404                  |                    | Restaurant not found      | ✘           |
+| POST   | `/restaurants/:restaurantId/items` | Create menu item               | 401                  | Should be Required | Unauthorized              | ✔           |
+|        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✔           |
+|        |                                    |                                | 404                  |                    | Restaurant not found      | ✔           |
 | PUT    | `/restaurants/:restaurantId`       | Update restaurant              | 401                  | Required           | Unauthorized              | ✅          |
 |        |                                    |                                | 403                  |                    | Not owner of restaurant   | ✅          |
 |        |                                    |                                | 404                  |                    | Restaurant not found      | ✅          |
@@ -145,8 +145,8 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 | Method | Endpoint                       | Description   | Missing Status Codes | Authentication | Purpose              | Implemented |
 | ------ | ------------------------------ | ------------- | -------------------- | -------------- | -------------------- | ----------- |
-| POST   | `/follow/:restaurantId/toggle` | Toggle follow | 401                  | Required       | Unauthorized         | ✘           |
-|        |                                |               | 404                  |                | Restaurant not found | ✘           |
+| POST   | `/follow/:restaurantId/toggle` | Toggle follow | 401                  | Required       | Unauthorized         | ✔           |
+|        |                                |               | 404                  |                | Restaurant not found | ✔           |
 
 ---
 
@@ -163,8 +163,8 @@ This documentation serves as a guide for developers, QA engineers, and API consu
 
 | Method | Endpoint           | Description          | Missing Status Codes | Authentication     | Purpose      | Implemented |
 | ------ | ------------------ | -------------------- | -------------------- | ------------------ | ------------ | ----------- |
-| GET    | `/trendings`       | Trending restaurants | 401                  | Required           | Unauthorized | ✘           |
-| GET    | `/trendings/posts` | Trending posts       | 401                  | Should be Required | Unauthorized | ✘           |
+| GET    | `/trendings`       | Trending restaurants | 401                  | Required           | Unauthorized | ✔           |
+| GET    | `/trendings/posts` | Trending posts       | 401                  | Should be Required | Unauthorized | ✔           |
 
 ---
 

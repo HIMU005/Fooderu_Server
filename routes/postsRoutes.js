@@ -6,6 +6,7 @@ const {
   updatePostDetails,
   deletePost,
   getPostsByFollowedRestaurants,
+  likeAndUnlikePost,
 } = require("../controllers/postController");
 const { protect } = require("../middlewares/authMiddleware");
 const router = express.Router();
@@ -14,10 +15,10 @@ const router = express.Router();
 router.get("/followedRestaurantsPosts", protect, getPostsByFollowedRestaurants);
 
 // POST  a post by user
-router.post("/", postByUser);
+router.post("/", protect, postByUser);
 
 // get all posts
-router.get("/", getAllPosts);
+router.get("/", protect, getAllPosts);
 
 // get a single post
 router.get("/:id", protect, getASinglePost);
@@ -27,5 +28,8 @@ router.put("/:id", protect, updatePostDetails);
 
 // delete a post by id
 router.delete("/:id", protect, deletePost);
+
+// like and unlike a post
+router.post("/:id/like", protect, likeAndUnlikePost);
 
 module.exports = router;

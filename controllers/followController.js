@@ -2,22 +2,16 @@
 const RestaurantFollow = require("../models/RestaurantFollow");
 const Restaurant = require("../models/Restaurant");
 const mongoose = require("mongoose");
+const AppError = require("../utils/AppError");
 
-const toggleFollow = async (req, res) => {
-  //   console.log(req.params);
-  //   console.log(req.user);
-
+const toggleFollow = async (req, res, next) => {
   const { restaurantId } = req.params;
   const userId = req.user._id;
-
-  //   console.log("toggle", restaurantId, userId);
 
   // Validate restaurant exists (quick check without full document)
   const restaurantExists = await Restaurant.exists({ _id: restaurantId });
   if (!restaurantExists) {
-    return res
-      .status(404)
-      .json({ success: false, error: "Restaurant not found" });
+    throw new AppError("Restaurant not found", 404);
   }
 
   // Check current follow status
@@ -50,11 +44,7 @@ const toggleFollow = async (req, res) => {
       followersCount,
     });
   } catch (error) {
-    // console.error("Follow toggle error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to update follow status",
-    });
+    next(error);
   }
 };
 

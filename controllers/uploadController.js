@@ -1,4 +1,9 @@
 const imagekit = require("../config/imagekit");
+const AppError = require("../utils/AppError");
+const {
+  uploadMultipleToImageKit,
+  formatUploadResponse,
+} = require("../services/imageService");
 
 const uploadImage = async (req, res) => {
   try {
@@ -6,7 +11,6 @@ const uploadImage = async (req, res) => {
 
     // 1. Validate File Existence
     if (!req.file) {
-      console.error("DEBUG ERROR: No file received by Multer.");
       return res.status(400).json({ message: "No file uploaded" });
     }
 
@@ -49,4 +53,33 @@ const uploadImage = async (req, res) => {
   }
 };
 
-module.exports = { uploadImage };
+/**
+ * Upload multiple images to ImageKit
+ * Handles both single file (req.file) and multiple files (req.files)
+ */
+const uploadMultipleImages = async (req, res, next) => {
+  try {
+    const files = req.files || (req.file ? [req.file] : []);
+
+    if (!files || files.length === 0) {
+      throw new AppError("No files uploaded", 400);
+    }
+
+    const uploadResults = await uploadMultipleToImageKit(files);
+
+    const response = formatUploadResponse(uploadResults);
+    const urls = uploadResults.successfulUploads.map((upload) => upload.url);
+    const statusCode = uploadResults.failedCount === files.length ? 500 : 200;
+
+    return res.status(statusCode).json({
+      success: true,
+      message: "Uploaded successfully",
+      urls: urls,
+      details: response, // sending full details for debugging on frontend
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { uploadImage, uploadMultipleImages };

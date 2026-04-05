@@ -23,6 +23,10 @@ const createNewUser = async ({ email, password }) => {
   const user = new User({
     email,
     password,
+    location: {
+      type: "Point",
+      coordinates: [0, 0], // Default coordinates, can be updated later
+    },
   });
 
   await user.save();
@@ -30,4 +34,8 @@ const createNewUser = async ({ email, password }) => {
   return user;
 };
 
-module.exports = { findUsers, findUserByProperty, createNewUser };
+module.exports = {
+  findUsers,
+  findUserByProperty,
+  createNewUser,
+};

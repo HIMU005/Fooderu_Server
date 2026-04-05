@@ -2,52 +2,105 @@ const { default: mongoose } = require("mongoose");
 const Post = require("../models/Post");
 const RestaurantFollow = require("../models/RestaurantFollow");
 const AppError = require("../utils/AppError");
+const PostImage = require("../models/PostImage");
+const PostLike = require("../models/PostLike");
+const { likeAndUnlikePostService } = require("../services/postService");
 
 const postByUser = async (req, res, next) => {
   try {
-    const { restaurant_id, description, image_url } = req.body;
+    // const { restaurant_id, description, image_url } = req.body;
+    const {
+      restaurant_id,
+      details = {},
+      media = [],
+      type = "normal",
+    } = req.body;
+    const { description } = details;
+
+    // return res.json({ description, resources });
     if (!restaurant_id) {
       throw new AppError("restaurant_id is required", 404);
     }
-    // if (typeof isEvent !== "boolean") {
-    //   return res.json({ status: 422, message: "Unprocessable Entity" });
-    // }
+
     if (!mongoose.Types.ObjectId.isValid(restaurant_id)) {
       throw new AppError("Invalid restaurant ID", 400);
     }
 
-    if (!description && !image_url) {
-      throw new AppError("Required items is not provided", 400);
+    if (!description && media.length === 0) {
+      throw new AppError("Post must have description or media", 400);
     }
 
-    await Post.create({
+    if (restaurant_id !== req.user.restaurant_id?.toString()) {
+      throw new AppError("You are not the owner of the restaurant", 403);
+    }
+    const newPost = await Post.create({
       restaurant_id,
-      description,
-      image_url,
-      // isEvent,
+      details,
+      type,
     });
-    return res.json({ status: 201, message: "A post is created..." });
+
+    // post images and videos in the PostImage collection
+    var imageData = [];
+    if (media.length > 0) {
+      const mediaDocs = media.map((item, index) => ({
+        postId: newPost._id,
+        url: item.url,
+        type: item.type || "image",
+        isPrimary: item.isPrimary || false,
+        order: item.order ?? index,
+      }));
+      imageData = await PostImage.insertMany(mediaDocs);
+    }
+
+    return res.json({
+      status: 201,
+      message: "A post is created...",
+      // data: { newPost, media: imageData || [] },
+    });
   } catch (error) {
     next(error);
   }
 };
 
 // get all posts
-const getAllPosts = async (req, res) => {
+const getAllPosts = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 5; // Default limit to 5 if not provided
     const skip = parseInt(req.query.skip) || 0; // Default skip to 0 if not provided
+    const userId = req?.user?._id;
 
     const totalPosts = await Post.countDocuments();
 
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate({
+        path: "media",
+        options: { sort: { order: 1 } }, // Sort media by 'order' field
+      })
+      .populate("likeCount")
+      .lean();
+
+    let likedPostIds = [];
+
+    if (userId) {
+      const likes = await PostLike.find({
+        userId,
+        postId: { $in: posts.map((post) => post._id) },
+      }).select("postId");
+
+      likedPostIds = likes.map((like) => like.postId.toString());
+    }
+
+    const postsWithLikeStatus = posts.map((post) => ({
+      ...post,
+      isLiked: likedPostIds.includes(post._id.toString()),
+    }));
 
     res.json({
       status: 200,
-      data: posts,
+      data: postsWithLikeStatus,
       total: totalPosts,
       skip,
       limit,
@@ -97,19 +150,39 @@ const getPostsByFollowedRestaurants = async (req, res) => {
 
 // get a single post details
 const getASinglePost = async (req, res, next) => {
-  const { id } = req.params;
   try {
+    const { id } = req.params;
+    const userId = req?.user?._id;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new AppError("Invalid post ID", 400);
     }
 
-    const post = await Post.findById(id);
+    const post = await Post.findById(id)
+      .populate({
+        path: "media",
+        options: { sort: { order: 1 } }, // keep media ordered
+      })
+      .populate("likeCount")
+      .lean({ virtuals: true });
     if (!post) {
       throw new AppError("Post not found", 404);
     }
+
+    let isLiked = false;
+
+    if (userId) {
+      const existingLike = await PostLike.findOne({
+        postId: id,
+        userId,
+      });
+
+      isLiked = !!existingLike;
+    }
+
     return res.json({
       status: 200,
-      data: post,
+      data: { ...post, isLiked, likeCount: post.likeCount || 0 },
       message: "Single post fetched",
     });
   } catch (error) {
@@ -124,8 +197,8 @@ const updatePostDetails = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return next(new AppError("Invalid post ID", 400));
     }
-    const updateData = req.body;
     const userId = req.user._id;
+    const { details, media } = req.body;
     // const userId = "68b9b5178e9b3b4eaa03a438";
 
     const singlePost = await Post.findById(id).populate(
@@ -144,9 +217,37 @@ const updatePostDetails = async (req, res, next) => {
       );
     }
 
-    const updatedPost = await Post.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
+    // update the details
+    if (details) {
+      singlePost.details = {
+        ...singlePost.details,
+        ...details,
+      };
+
+      await singlePost.save();
+    }
+
+    // replace media if provided
+    if (Array.isArray(media)) {
+      // delete old media
+      await PostImage.deleteMany({ postId: id });
+
+      if (media.length > 0) {
+        const mediaDocs = media.map((item, index) => ({
+          postId: id,
+          url: item.url,
+          type: item.type || "image",
+          isPrimary: item.isPrimary || false,
+          order: item.order ?? index,
+        }));
+
+        await PostImage.insertMany(mediaDocs);
+      }
+    }
+
+    const updatedPost = await Post.findById(id).populate({
+      path: "media",
+      options: { sort: { order: 1 } },
     });
 
     return res.json({
@@ -183,10 +284,36 @@ const deletePost = async (req, res, next) => {
         403,
       );
     }
+
+    // delete post media first
+    await PostImage.deleteMany({ postId: id });
+
+    // delete all the likes associated with the post
+    await PostLike.deleteMany({ postId: id });
+
     // delete the post
     await Post.findByIdAndDelete(id);
 
     return res.json({ status: 200, message: "Post deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// toggle like and unlike a post
+const likeAndUnlikePost = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req?.user?._id;
+
+    const result = await likeAndUnlikePostService(id, userId);
+
+    return res.json({
+      status: "success",
+      message: result.liked
+        ? "Post liked successfully"
+        : "Post unliked successfully",
+    });
   } catch (error) {
     next(error);
   }
@@ -199,4 +326,5 @@ module.exports = {
   updatePostDetails,
   deletePost,
   getPostsByFollowedRestaurants,
+  likeAndUnlikePost,
 };

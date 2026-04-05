@@ -131,10 +131,10 @@ class OTPService {
   }
 
   // Verify OTP for email verification (specific use case)
-  static async verifyEmailWithOTP(email, otp) {
+  static async verifyEmailWithOTP(email, otp, purpose = "email_verification") {
     try {
       // Verify OTP
-      const result = await this.verifyOTP(email, otp, "email_verification");
+      const result = await this.verifyOTP(email, otp, purpose);
 
       // Mark user as verified
       result.user.verified = true;
@@ -150,6 +150,7 @@ class OTPService {
         success: true,
         message: "Email verified successfully",
         user: result.user,
+        otpId: result.otpId,
       };
     } catch (error) {
       console.error("Error in verifyEmailWithOTP:", error);

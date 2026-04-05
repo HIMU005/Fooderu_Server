@@ -10,6 +10,11 @@ const uploadRoutes = require("./uploadRoutes");
 const commentRoutes = require("./commentRoutes");
 const trendingRoutes = require("./trendingRoutes");
 const docRoutes = require("./docRoutes");
+const ingredientRoute = require("./ingredientRoutes");
+const cautionRoute = require("./cautionRoutes");
+const savedItemRoutes = require("./savedItemRoutes");
+const feedRoutes = require("./feedRoutes");
+const searchRoutes = require("./searchRoutes");
 
 // auth routes
 router.use("/auth", authRoutes);
@@ -38,6 +43,21 @@ router.use("/upload", uploadRoutes);
 
 // trending routes
 router.use("/trendings", trendingRoutes);
+
+// Ingredient route
+router.use("/ingredients", ingredientRoute);
+
+// caution route
+router.use("/cautions", cautionRoute);
+
+// search route
+router.use("/search", searchRoutes);
+
+// saved items routes
+router.use("/saved-items", savedItemRoutes);
+
+// Route to fetch feed (both posts and menu items)
+router.use("/feeds", feedRoutes);
 
 // documentation route
 router.use("/docs", docRoutes);

@@ -12,7 +12,10 @@ const { findUserByProperty } = require("../services/user");
 const bcrypt = require("bcryptjs");
 const { assignToken } = require("../utils/jwtFunction");
 const AppError = require("../utils/AppError");
-const { Clerk } = require("@clerk/clerk-sdk-node");
+const { Clerk, redirect } = require("@clerk/clerk-sdk-node");
+const OTPService = require("../services/otpService");
+const crypto = require("crypto");
+const OTP = require("../models/Otp");
 
 // Register controller: For OTP
 const registerControllerOTP = async (req, res, next) => {
@@ -106,6 +109,7 @@ const registerControllerWeb = async (req, res, next) => {
   }
 };
 
+// controller for email verification
 const verifyEmailController = async (req, res, next) => {
   try {
     const { token } = req.query;
@@ -132,6 +136,7 @@ const verifyEmailController = async (req, res, next) => {
   }
 };
 
+// controller for resend email verification
 const ressendVerificationEmailController = async (req, res, next) => {
   try {
     const { email } = req.query;
@@ -198,6 +203,10 @@ const logInWithSocialController = async (req, res, next) => {
         oauth_provider,
         profile_picture,
         name: `${firstName} ${lastName}`,
+        location: {
+          type: "Point",
+          coordinates: [0, 0],
+        },
       });
     }
 
@@ -270,6 +279,10 @@ const logInWithClerkcontroller = async (req, res, next) => {
         oauth_provider,
         profile_picture,
         name: `${firstName} ${lastName}`,
+        location: {
+          type: "Point",
+          coordinates: [0, 0],
+        },
       });
       // assign jwt token
       const token = assignToken(user._id, email);
@@ -306,6 +319,10 @@ const loginWithFirebaseController = async (req, res, next) => {
       const newUser = await User.create({
         ...payload,
         verified: true,
+        location: {
+          type: "Point",
+          coordinates: [0, 0],
+        },
       });
 
       const token = assignToken(newUser._id, payload.email);
@@ -322,6 +339,102 @@ const loginWithFirebaseController = async (req, res, next) => {
   }
 };
 
+// forgetPasswordController send OTP to email
+const forgetPasswordController = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      throw new AppError("Email is required", 400);
+    }
+
+    const user = await findUserByProperty("email", email);
+
+    if (!user) {
+      throw new AppError("User with this email does not exits", 404);
+    }
+
+    await OTPService.generateAndSendOTP(email, "password_reset", req);
+
+    return res.status(200).json({
+      status: "success",
+      message:
+        "If an account with that email exists, a password reset OTP has been sent.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// verify reset password OTP controller
+const verifyResetPasswordOTPController = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      throw new AppError("Email and OTP are required", 400);
+    }
+
+    const result = await verifyOTPService(email, otp, "password_reset");
+
+    if (!result.user) {
+      throw new AppError("Invalid OTP or Email", 400);
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    await OTP.findByIdAndUpdate(
+      result.otpId,
+      {
+        resetToken,
+      },
+      { new: true },
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: result.message,
+      resetToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// reset password controller
+const resetPasswordController = async (req, res, next) => {
+  try {
+    const { password, resetToken } = req.body;
+    if (!password || !resetToken) {
+      throw new AppError("Password and reset token are required", 400);
+    }
+    const otpDoc = await OTP.findOne({
+      resetToken,
+      purpose: "password_reset",
+      isUsed: true,
+    });
+
+    if (!otpDoc) {
+      throw new AppError("Invalid or expired reset token", 400);
+    }
+    const user = await findUserByProperty("email", otpDoc.email);
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+    //   hash the password before saving it to the database
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
+
+    const updatedUser = await User.findByIdAndUpdate(user._id, {
+      password: hash,
+    });
+    return res.status(200).json({
+      status: "success",
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerControllerWeb,
   logInController,
@@ -333,4 +446,7 @@ module.exports = {
   registerControllerOTP,
   verifyOTPController,
   resendOTPController,
+  forgetPasswordController,
+  verifyResetPasswordOTPController,
+  resetPasswordController,
 };

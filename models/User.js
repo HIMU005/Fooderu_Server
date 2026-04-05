@@ -2,16 +2,13 @@ const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 const Restaurant = require("./Restaurant");
 
-const userSchema = new mongoose.Schema(
+const userSchema = new Schema(
   {
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
-    },
-    phone: {
-      type: String,
     },
     password: {
       type: String,
@@ -42,8 +39,37 @@ const userSchema = new mongoose.Schema(
     coverPhoto: {
       type: String,
     },
-    location: {
+    phone: {
       type: String,
+      trim: true,
+      match: [/^\+?[0-9]{7,15}$/, "Invalid phone number"],
+      sparse: true,
+      unique: true,
+    },
+    date_of_birth: {
+      type: Date,
+      validate: {
+        validator: (v) => !v || v < new Date(),
+      },
+    },
+    location: {
+      address: {
+        type: String,
+      },
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+        // required: true,
+      },
+      coordinates: {
+        type: [Number],
+        // maxlength: 2,
+        validate: {
+          validator: (v) => v.length <= 2,
+          message: "Coordinates must be [longitude, latitude]",
+        },
+      },
     },
     interests: {
       type: String,
@@ -64,6 +90,9 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+//  this is for geospatial queries and filtering based on user location
+userSchema.index({ location: "2dsphere" });
 
 const User = model("User", userSchema);
 module.exports = User;

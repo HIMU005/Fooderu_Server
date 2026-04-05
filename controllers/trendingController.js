@@ -143,12 +143,12 @@ const getTrendingRestaurants = async (req, res) => {
       restaurant_id: { $in: restaurantIds },
     });
     const followedIds = new Set(
-      userFollows.map((f) => f.restaurant_id.toString())
+      userFollows.map((f) => f.restaurant_id.toString()),
     );
 
     // Build final result using original allRestaurants (preserves all fields)
     const restaurantMap = new Map(
-      allRestaurants.map((r) => [r._id.toString(), r])
+      allRestaurants.map((r) => [r._id.toString(), r]),
     );
 
     const result = sorted.map((entry) => {
@@ -167,13 +167,12 @@ const getTrendingRestaurants = async (req, res) => {
         ? result.slice(0, parseInt(limit))
         : result;
 
-    res.json({
+    res.status(200).json({
       success: true,
       count: finalResult.length,
       data: finalResult,
     });
   } catch (error) {
-    // console.error("Trending error:", error);
     res.status(500).json({ success: false, error: "Server error" });
   }
 };
@@ -194,7 +193,7 @@ const getTrendingPosts = async (req, res) => {
       {
         $match: {
           createdAt: { $gte: sinceDate },
-          postType: { $in: ["normal", "menuItem"] },
+          type: { $in: ["normal", "menuItem"] },
         },
       },
     ];
@@ -218,7 +217,7 @@ const getTrendingPosts = async (req, res) => {
 
       // Try without time filter
       pipeline[0].$match = {
-        postType: { $in: ["normal", "menuItem"] },
+        type: { $in: ["normal", "menuItem"] },
       };
     }
 
@@ -293,7 +292,7 @@ const getTrendingPosts = async (req, res) => {
               { $multiply: ["$recentCommentsCount", 0.8] },
               { $multiply: ["$restaurantFollowersCount", 0.15] },
               {
-                $cond: [{ $eq: ["$postType", "menuItem"] }, 2.0, 1.0],
+                $cond: [{ $eq: ["$type", "menuItem"] }, 2.0, 1.0],
               },
             ],
           },
@@ -328,7 +327,7 @@ const getTrendingPosts = async (req, res) => {
       {
         $project: {
           // Post basic info
-          postType: 1,
+          type: 1,
           //using for now :::: after changing the schema of post no longer need it ::: remove it then
           image_url: 1,
           description: 1,
@@ -352,7 +351,7 @@ const getTrendingPosts = async (req, res) => {
           // Keep debug for console logging only
           debugScore: 1,
         },
-      }
+      },
     );
 
     const allPostsWithScores = await Post.aggregate(pipeline);
@@ -360,7 +359,7 @@ const getTrendingPosts = async (req, res) => {
 
     // Now apply the filter
     const filteredPosts = allPostsWithScores.filter(
-      (post) => post.trendingScore > 0
+      (post) => post.trendingScore > 0,
     );
     //("Posts after filtering:", filteredPosts);
 

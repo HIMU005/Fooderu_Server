@@ -29,6 +29,8 @@ const menuItemSchema = new Schema(
       maxlength: [500, "Description cannot exceed 500 characters"],
       default: "",
     },
+    // Old Design: image_url as a simple string
+    // Will be deprecated in favor of MenuItemImage model for better scalability and flexibility
     image_url: {
       type: String,
       trim: true,
@@ -48,12 +50,29 @@ const menuItemSchema = new Schema(
       type: Number,
       default: 0,
     },
+    type: {
+      type: String,
+      enum: ["menuItem"],
+      default: "menuItem",
+    },
+    ingredients: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    cautions: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Compound indexes for performance
@@ -64,6 +83,12 @@ menuItemSchema.index({
 menuItemSchema.index({
   name: "text",
   description: "text",
+});
+
+menuItemSchema.virtual("images", {
+  ref: "MenuItemImage",
+  localField: "_id",
+  foreignField: "menuItemId",
 });
 
 const MenuItem = mongoose.model("MenuItem", menuItemSchema);

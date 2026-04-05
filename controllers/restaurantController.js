@@ -8,6 +8,8 @@ const {
   getRestaurantById,
 } = require("../services/restaurantService");
 const AppError = require("../utils/AppError");
+const MenuItem = require("../models/MenuItem");
+const Post = require("../models/Post");
 
 // Public access
 const getRestaurant = async (req, res, next) => {
@@ -21,9 +23,26 @@ const getRestaurant = async (req, res, next) => {
     if (!restaurant) {
       throw new AppError("No Restaurant againts that Id", 404);
     }
+
+    // Count menu items
+    const itemCount = await MenuItem.countDocuments({ restaurant_id: id });
+
+    // Count posts
+    const postCount = await Post.countDocuments({ restaurant_id: id });
+
+    let isFollowed = false;
+
+    if (req.user?._id) {
+      const follow = await RestaurantFollow.findOne({
+        user_id: req.user._id,
+        restaurant_id: id,
+      });
+      isFollowed == !!follow;
+    }
+
     return res.json({
       status: 200,
-      data: restaurant,
+      data: { ...restaurant.toObject(), itemCount, postCount, isFollowed },
       message: "single restaurant fetched successfully",
     });
   } catch (error) {
