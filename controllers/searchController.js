@@ -140,7 +140,7 @@ const searchController = async (req, res, next) => {
       _id: post._id,
       details: post.details,
       restaurant_id: post.restaurant_id._id,
-
+      createdAt: post.createdAt,
       media: post.media || [],
       likeCount: post.likeCount || 0,
       isLiked: likedPostSet.has(post._id.toString()),
