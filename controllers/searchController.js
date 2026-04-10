@@ -139,7 +139,8 @@ const searchController = async (req, res, next) => {
     const formattedPosts = posts.map((post) => ({
       _id: post._id,
       details: post.details,
-      restaurant: post.restaurant_id,
+      restaurant_id: post.restaurant_id._id,
+
       media: post.media || [],
       likeCount: post.likeCount || 0,
       isLiked: likedPostSet.has(post._id.toString()),
