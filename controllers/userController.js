@@ -33,7 +33,7 @@ exports.getUserProfile = async (req, res, next) => {
       status: "success",
       data: {
         user: {
-          userData,
+          ...userData,
         },
       },
       message: "User profile fetched successfully",
