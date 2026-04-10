@@ -116,7 +116,8 @@ exports.changePasswordController = async (req, res, next) => {
       throw new AppError("No user found", 404);
     }
 
-    const isMatch = bcrypt.compare(currentPassword, user.password);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    console.log(120, "ismatch", isMatch);
 
     if (!isMatch) {
       throw new AppError("Current password incorrect", 400);
