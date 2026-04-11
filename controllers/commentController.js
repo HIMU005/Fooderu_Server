@@ -17,7 +17,7 @@ const addComment = async (req, res) => {
 const getCommentsByPost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const comments = await Comment.find({ postId }).populate("userId", "name");
+    const comments = await Comment.find({ postId }).populate("userId", "name profile_picture"); //add profile picture
     res.json(comments);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch comments", error });

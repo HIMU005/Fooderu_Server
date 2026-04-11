@@ -267,7 +267,8 @@ const deletePost = async (req, res, next) => {
       throw new AppError("Invalid post ID", 400);
     }
     const userId = req.user._id;
-    // const userId = "68b993dc1597be1c656b3bbf";
+    console.log("userId:", userId,id);
+    // const userId = "68b9b5178e9b3b4eaa03a438";
     const singlePost = await Post.findById(id).populate(
       "restaurant_id",
       "owner_id",
