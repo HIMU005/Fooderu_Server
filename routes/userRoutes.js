@@ -7,7 +7,7 @@ const userController = require("../controllers/userController");
 router.get("/me", protect, userController.getUserProfile);
 
 router.put("/me",
-  // protect,
+  protect,
    userController.updateUserProfile);
 
 router.patch(
