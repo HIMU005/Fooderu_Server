@@ -11,6 +11,7 @@ const {
   formatTrendingResponse,
   getUnifiedMenuItemPipeline,
   getUnifiedPostPipeline,
+  getTrendingScoreStages,
 } = require("../utils/aggregationHelpers");
 const AppError = require("../utils/AppError");
 
@@ -411,18 +412,36 @@ const getTrendingPostItems = async (req, res, next) => {
     const sinceDate = new Date();
     sinceDate.setHours(sinceDate.getHours() - parseInt(timeWindow));
 
-    // Get complete trending pipeline
-    const pipeline = getTrendingPipeline({
-      sinceDate,
-      limit: parseInt(limit),
-      userId,
-    });
+    // Fetch posts and menuItems separately
+    const postPipeline = [
+      ...getUnifiedPostPipeline(sinceDate, userId),
+      ...getTrendingScoreStages(),
+    ];
 
-    // Execute aggregation
-    const trendingItems = await Post.aggregate(pipeline);
+    const menuItemPipeline = [
+      ...getUnifiedMenuItemPipeline(sinceDate, userId),
+      ...getTrendingScoreStages(),
+    ];
+
+    // Execute both pipelines
+    const [posts, menuItems] = await Promise.all([
+      Post.aggregate(postPipeline),
+      MenuItem.aggregate(menuItemPipeline),
+    ]);
+
+    // Combine all items
+    const allItems = [...posts, ...menuItems];
+
+    // Sort by trending score
+    const sortedItems = allItems.sort(
+      (a, b) => b.trendingScore - a.trendingScore,
+    );
+
+    // Apply limit
+    const limitedItems = sortedItems.slice(0, parseInt(limit));
 
     // Format response
-    const formattedData = formatTrendingResponse(trendingItems, !!userId);
+    const formattedData = formatTrendingResponse(limitedItems, !!userId);
 
     res.json({
       status: 200,
@@ -431,7 +450,7 @@ const getTrendingPostItems = async (req, res, next) => {
       data: formattedData,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error in trending:", error);
     next(error);
   }
 };

@@ -625,44 +625,53 @@ const formatTrendingResponse = (items, isUserLoggedIn = false) => {
 const getTrendingPipeline = ({ sinceDate, limit = 20, userId }) => {
   const isUserLoggedIn = !!userId;
 
+  // Get post pipeline stages
+  const postStages = getUnifiedPostPipeline(sinceDate, userId);
+  // Get menuItem pipeline stages
+  const menuItemStages = getUnifiedMenuItemPipeline(sinceDate, userId);
+
   return [
-    // Start with empty result to enable $unionWith
-    // {
-    //   $match: { _id: null },
-    // },
-
-    // Union with posts using the existing helper
+    // Dummy stage to start pipeline
     {
-      $unionWith: {
-        coll: "posts",
-        pipeline: getUnifiedPostPipeline(sinceDate, userId),
-      },
+      $match: { _id: { $exists: true } },
     },
 
-    // Union with menu items using the existing helper
+    // Use $facet with proper structure
     {
-      $unionWith: {
-        coll: "menuitems",
-        pipeline: getUnifiedMenuItemPipeline(sinceDate, userId),
+      $facet: {
+        posts: postStages,
+        menuItems: menuItemStages,
       },
     },
-
+    // Combine results
+    {
+      $project: {
+        items: {
+          $concatArrays: ["$posts", "$menuItems"],
+        },
+      },
+    },
+    // Unwind the combined array
+    {
+      $unwind: "$items",
+    },
+    // Replace root with the item
+    {
+      $replaceRoot: { newRoot: "$items" },
+    },
     // Calculate trending scores
     ...getTrendingScoreStages(),
-
     // Sort by trending score
     {
       $sort: {
         trendingScore: -1,
       },
     },
-
     // Apply limit
     {
       $limit: parseInt(limit),
     },
-
-    // Final projection for frontend
+    // Final projection
     {
       $project: {
         _id: 1,
@@ -682,12 +691,10 @@ const getTrendingPipeline = ({ sinceDate, limit = 20, userId }) => {
         avgRating: 1,
         restaurantFollowersCount: 1,
         hoursSinceCreation: 1,
-        details: 1,
-        is_boosted: 1,
-        boosted_until: 1,
         ingredients: 1,
         cautions: 1,
-        // User-specific fields
+        is_boosted: 1,
+        boosted_until: 1,
         ...(isUserLoggedIn && {
           isLiked: 1,
           isRated: 1,
