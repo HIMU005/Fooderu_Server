@@ -5,7 +5,17 @@ const RestaurantFollow = require("../models/RestaurantFollow");
 const Post = require("../models/Post");
 
 const Comment = require("../models/Comment");
-const MenuItemRating = require("../models/MenuItemRating"); // ADD THIS LINE
+const MenuItemRating = require("../models/MenuItemRating");
+const {
+  getTrendingPipeline,
+  formatTrendingResponse,
+  getUnifiedMenuItemPipeline,
+  getUnifiedPostPipeline,
+} = require("../utils/aggregationHelpers");
+const AppError = require("../utils/AppError");
+
+const MenuItem = require("../models/MenuItem");
+const PostLike = require("../models/PostLike");
 
 const getTrendingRestaurants = async (req, res) => {
   try {
@@ -393,4 +403,41 @@ const getTrendingPosts = async (req, res) => {
   }
 };
 
-module.exports = { getTrendingRestaurants, getTrendingPosts };
+const getTrendingPostItems = async (req, res, next) => {
+  try {
+    const { limit = 20, timeWindow = 168 } = req.query;
+    const userId = req.user?._id;
+
+    const sinceDate = new Date();
+    sinceDate.setHours(sinceDate.getHours() - parseInt(timeWindow));
+
+    // Get complete trending pipeline
+    const pipeline = getTrendingPipeline({
+      sinceDate,
+      limit: parseInt(limit),
+      userId,
+    });
+
+    // Execute aggregation
+    const trendingItems = await Post.aggregate(pipeline);
+
+    // Format response
+    const formattedData = formatTrendingResponse(trendingItems, !!userId);
+
+    res.json({
+      status: 200,
+      count: formattedData.length,
+      timeWindow: `${timeWindow} hours`,
+      data: formattedData,
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};
+
+module.exports = {
+  getTrendingRestaurants,
+  getTrendingPostItems,
+  getTrendingPosts,
+};
